@@ -1,4 +1,4 @@
-import { Args, Mutation } from "@nestjs/graphql";
+import { Args, Mutation, Query } from "@nestjs/graphql";
 import { AuthPayload } from "./entities/auth.entity";
 import { SignInInput } from "./dto/signInInput";
 import { AuthService } from "./auth.service";
@@ -12,4 +12,8 @@ export class AuthResolver{
         return await this.authService.login(user)
     }
     
+    @Query(() => String)
+    hello() {
+        return "Hello World";
+    }
 }

@@ -4,16 +4,23 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "turbo run dev",
-    "build": "turbo run build",
-    "lint": "turbo run lint"
+    "dev": "pnpm -r --parallel dev",
+    "build": "pnpm -w run build:all",
+    "lint": "pnpm -w run lint:all",
+    "dev:all": "pnpm --filter \"./apps/*\" dev",
+    "build:all": "pnpm --filter \"./apps/*\" build",
+    "lint:all": "pnpm --filter \"./apps/*\" lint"
   },
-  "packageManager": "npm@10.8.1",
-  "workspaces": [
-    "apps/*"
-  ],
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "packageManager": "pnpm@10.30.3"
+  "packageManager": "pnpm@10.28.1",
+  "dependencies": {
+    "@prisma/client": "^6.19.2",
+    "dotenv": "^17.2.3",
+    "prisma": "^6.19.2"
+  },
+  "devDependencies": {
+    "@types/node": "^25.0.9"
+  }
 }

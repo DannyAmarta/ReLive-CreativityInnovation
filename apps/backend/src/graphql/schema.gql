@@ -1,0 +1,23 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+type AuthPayload {
+  id: Float!
+  name: String!
+  avatar: String
+  accessToken: String
+}
+
+type Query {
+  hello: String!
+}
+
+type Mutation {
+  signIn(signInInput: SignInInput!): AuthPayload!
+}
+
+input SignInInput {
+  email: String!
+  password: String!
+}
