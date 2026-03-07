@@ -72,7 +72,7 @@ const renderBatch = (batchDelay = 0) => {
             src={leaf}
             alt="leaf"
             width={24 + Math.random() * 24}
-            className="absolute"
+            className="absolute overflow-hidden"
             initial={{ y: -100, x: `${Math.random() * 100}vw` }}
             animate={{
                 y: "100vh",
@@ -110,7 +110,7 @@ const renderTreeLeaves = (batchDelay = 0) => {
                 src={leaf}
                 alt="leaf"
                 width={24 + Math.random() * 24}
-                className="absolute z-15"
+                className="absolute z-15 overflow-hidden"
                 initial={{
                     y: Math.random() * 120,
                     x: startX,
@@ -172,14 +172,14 @@ const FallingLeaves = () => {
                     <div className="absolute inset-0 z-18 overflow-hidden hidden xl:block">
                         {renderTreeLeaves(1)}
                         {renderTreeLeaves(1)}
-                        {renderTreeLeaves(1)}
+                        {/* {renderTreeLeaves(1)} */}
                     </div>
 
                     <div className="fixed inset-0 z-25 overflow-hidden">
                         {renderBatch(0)}
-                        {renderBatch(3)}
-                        {renderBatch(6)}
-                        {renderBatch(9)}
+                        {/* {renderBatch(3)} */}
+                        {/* {renderBatch(6)} */}
+                        {/* {renderBatch(9)} */}
                     </div>
                 </>
             )}
