@@ -285,16 +285,35 @@ export default function Face({
   const el = containerRef.current
   if (el) {
     const rect = el.getBoundingClientRect()
-    const dx = mouse.x - (rect.left + rect.width / 2)
-    const dy = mouse.y - (rect.top + rect.height / 2)
 
+const centerX = rect.left + rect.width / 2 + pairX
+const centerY = rect.top + rect.height / 2 + pairY
+
+const dx = mouse.x - centerX
+const dy = mouse.y - centerY
+
+    // if (pairTracking) {
+    //   const parentRect = el.parentElement?.getBoundingClientRect()
+    //   const availableX = parentRect
+    //     ? (parentRect.width / 2) - eyeSize - eyeGap / 2 - 8
+    //     : eyeSize * 2
+    //   pairX = Math.max(-availableX, Math.min(availableX, dx * 0.08))
+    //   pairY = Math.max(-(eyeSize * 0.4), Math.min(eyeSize * 0.4, dy * 0.05))
+    // }
     if (pairTracking) {
-      const parentRect = el.parentElement?.getBoundingClientRect()
+     const parentRect = el.parentElement?.getBoundingClientRect()
+
       const availableX = parentRect
         ? (parentRect.width / 2) - eyeSize - eyeGap / 2 - 8
         : eyeSize * 2
+
+      // const maxPairY = (rect.height / 2) - eyeSize / 2
+      const maxPairY = parentRect
+        ? (parentRect.height / 2) - eyeSize / 2
+        : eyeSize * 2
+
       pairX = Math.max(-availableX, Math.min(availableX, dx * 0.08))
-      pairY = Math.max(-(eyeSize * 0.4), Math.min(eyeSize * 0.4, dy * 0.05))
+      pairY = Math.max(-maxPairY, Math.min(maxPairY, dy * 0.08))
     }
 
     const maxPupil = (eyeSize - pupilSize) / 2
@@ -310,21 +329,51 @@ export default function Face({
     : 0
 
   return (
+    //ini problem di sini
     <div
       ref={containerRef}
+      // style={{
+      //   display: "flex",
+      //   flexDirection: "column",
+      //   alignItems: "center",
+      //   gap: eyeSize * 0.5,
+      //   overflow: "visible",
+      // }}
       style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        gap: eyeSize * 0.5,
-        overflow: "visible",
-      }}
+        
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: eyeSize * 0.5,
+    overflow: "visible",
+    width: "100%",
+    height: "100%",
+    // display: "flex",
+    // alignItems: "center",
+    // justifyContent: "center",
+    // overflow: "visible",
+    // width: "100%",
+  }}
     >
       {/* Eyes row */}
       <motion.div
         animate={pairTracking ? { x: pairX, y: pairY } : { x: 0, y: 0 }}
         transition={spring}
-        style={{ display: "flex", gap: eyeGap, alignItems: "center" }}
+        // style={{ display: "flex", gap: eyeGap, alignItems: "center" }}
+        // style={{
+        //   position: "absolute",
+        //   top: "50%",
+        //   left: "50%",
+        //   translate: "-50% -50%",
+        //   display: "flex",
+        //   gap: eyeGap,
+        // }}
+        style={{
+    display: "flex",
+    gap: eyeGap,
+    alignItems: "center",
+  }}
       >
         {(["left", "right"] as const).map((side) => (
           <Eyeball

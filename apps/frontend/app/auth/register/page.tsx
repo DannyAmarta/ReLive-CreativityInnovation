@@ -13,21 +13,26 @@ type FormState = "idle" | "error"
 
 const RegisterForm = () => {
   // authentication
-  const [state, action] = useActionState(Register, undefined)
+  const [state, action, pending] = useActionState(Register, undefined)
   // animation
     const [mouse, setMouse] = useState({ x: 0, y: 0 })
     const [focusField, setFocusField] = useState<FocusField>("none")
-    const [formState, setFormState] = useState<FormState>("idle")
+
+    const [name, setName] = useState("")
     const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
+    const [password2, setPassword2] = useState("")
+
     const [showPassword, setShowPassword] = useState(false)
+
     const [rememberMe, setRememberMe] = useState(false)
     const [isTypingPassword, setIsTypingPassword] = useState(false)
   
     const [orangeSmiling, setOrangeSmiling] = useState(false)
     const [yellowYawning, setYellowYawning] = useState(false)
   
-    const isError = formState === "error"
+    const isError = !!state?.errors || !!state?.message
+
     const isPasswordActive = focusField === "password"
     const isEmailActive = focusField === "email"
     const isAnyActive = isPasswordActive || isEmailActive
@@ -55,14 +60,7 @@ const RegisterForm = () => {
     const handleMouseMove = (e: React.MouseEvent) => {
       setMouse({ x: e.clientX, y: e.clientY })
     }
-  
-    const handleLogin = () => {
-      if (!email || !password || password.length < 3) {
-        setFormState("error")
-        setTimeout(() => setFormState("idle"), 2200)
-      }
-    }
-  
+
     const spring = { type: "spring" as const, stiffness: 130, damping: 16 }
     const peekSpring = { type: "spring" as const, stiffness: 90, damping: 14 }
     const fastSpring = { type: "spring" as const, stiffness: 260, damping: 20 }
@@ -159,7 +157,8 @@ const RegisterForm = () => {
             {/* <div style={{ position: "absolute", top: "13%", left: 0, width: "100%", height: "17%" }}>
               <Eyes mouse={mouse} size={14} sad={isError} />
             </div> */}
-            <div style={{ position: "absolute", top: "10%", left: "50%", transform: "translateX(-50%)" }}>
+            {/* <div style={{ position: "absolute", top: "10%", left: "50%", transform: "translateX(-50%)" }}> */}
+            <div style={{ position: "absolute", top: "13%", left: 0, width: "100%", height: "17%" }}>
               <Face mouse={mouse} eyeSize={14} eyeGap={5} mouthWidth={28} expression={purpleExpr} pairTracking eyeballColor="white" pupilColor="black" />
             </div>
 
@@ -326,29 +325,52 @@ const RegisterForm = () => {
             className="text-[2rem] font-bold text-center mb-7 text-gray-900"
             style={{ letterSpacing: "-0.025em" }}
           >
-            Welcome Back
+            Register Your Account Now!
           </h1>
-
+          
           {/* Error banner */}
-          <AnimatePresence>
-            {isError && (
-              <motion.div
-                initial={{ opacity: 0, y: -6, height: 0 }}
-                animate={{ opacity: 1, y: 0, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                className="overflow-hidden mb-4"
-              >
-                <div className="px-4 py-2.5 rounded-lg bg-red-50 border border-red-200 text-red-600 text-sm text-center">
-                  Invalid email or password. Please try again.
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
+          {!!state?.message && (
+            <AnimatePresence>
+              {isError && (
+                <motion.div
+                  initial={{ opacity: 0, y: -6, height: 0 }}
+                  animate={{ opacity: 1, y: 0, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="overflow-hidden mb-4"
+                >
+                  <div className="px-4 py-2.5 rounded-lg bg-red-50 border border-red-200 text-red-600 text-sm text-center">
+                    {state.message}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          )}
+          
+          
+          {/* Name */}
+          <div className="mb-5">
+            <label className="block text-sm font-semibold text-gray-600 mb-1.5">Username</label>
+            <input
+              name="name"
+              type="name"
+              value={name}
+              onChange={e => setName(e.target.value)}
+              placeholder="Jonathan Fernandes"
+              className="w-full outline-none py-2 text-gray-900 placeholder-gray-400 bg-transparent transition-colors"
+              style={{
+                borderBottom: `2px solid ${isError ? "#ef4444" : "#d1d5db"}`,
+              }}
+            />
+          </div>
+          {!!state?.errors?.name && (
+            <p className='text-red-500 text-sm'>{state.errors.name}</p>
+          )}
+          
           {/* Email */}
           <div className="mb-5">
             <label className="block text-sm font-semibold text-gray-600 mb-1.5">Email</label>
             <input
+              name="email"
               type="email"
               value={email}
               onChange={e => setEmail(e.target.value)}
@@ -361,12 +383,16 @@ const RegisterForm = () => {
               }}
             />
           </div>
-
+          {!!state?.errors?.email && (
+            <p className='text-red-500 text-sm'>{state.errors.email}</p>
+          )}
+          
           {/* Password */}
           <div className="mb-5">
             <label className="block text-sm font-semibold text-gray-600 mb-1.5">Password</label>
             <div className="relative">
               <input
+                name="password"
                 type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={e => {
@@ -403,52 +429,54 @@ const RegisterForm = () => {
               </button>
             </div>
           </div>
+          {!!state?.errors?.password && (
+            state.errors.password.map((err, i) => {
+              return(
+                <p key={i} className='text-red-500 text-sm'>{err}</p>
+              )
+            })
+          )}  
 
-          {/* Remember me + Forgot */}
-          <div className="flex items-center justify-between mb-7">
-            <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={rememberMe}
-                onChange={e => setRememberMe(e.target.checked)}
-                className="w-4 h-4 rounded accent-purple-600 cursor-pointer"
-              />
-              Remember Me
-            </label>
-            <button className="text-sm text-gray-500 hover:text-purple-600 transition-colors">
-              Forgot Password
-            </button>
+          {/* Reenter password one more time */}
+          <div className="mb-5">
+            <label className="block text-sm font-semibold text-gray-600 mb-1.5">Reenter password one more time!</label>
+            <input
+              name="password2"
+              type="password"
+              value={password2}
+              onChange={e => setPassword2(e.target.value)}
+              onFocus={() => setFocusField("email")}
+              onBlur={() => setFocusField("none")}
+              placeholder="••••••••••••"
+              className="w-full outline-none py-2 text-gray-900 placeholder-gray-400 bg-transparent transition-colors"
+              style={{
+                borderBottom: `2px solid ${isError ? "#ef4444" : "#d1d5db"}`,
+              }}
+            />
           </div>
-
-          {/* Login button */}
+          {!!state?.errors?.password2 && (
+            <p className='text-red-500 text-sm'>{state.errors.password2}</p>
+          )}
+          
+          {/* Register button */}
           <motion.button
-            onClick={handleLogin}
+            type='submit'
             whileHover={{ scale: 1.015 }}
             whileTap={{ scale: 0.975 }}
             animate={isError ? { x: [0, -8, 8, -6, 6, -3, 3, 0] } : { x: 0 }}
             transition={isError ? { duration: 0.45 } : { type: "spring" }}
             className="w-full py-3.5 rounded-full text-white font-semibold text-base mb-3 transition-opacity hover:opacity-90"
             style={{ background: "linear-gradient(135deg, #8B4FFF 0%, #5A25E8 100%)" }}
+            disabled={pending}
           >
-            Login
+            {pending? "Please wait...": "Register Account"}
           </motion.button>
 
-          {/* Google */}
-          <button className="w-full py-3.5 rounded-full border border-gray-200 bg-gray-50 text-gray-700 font-medium text-base flex items-center justify-center gap-3 hover:bg-gray-100 transition-colors mb-8">
-            <svg width="18" height="18" viewBox="0 0 18 18">
-              <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/>
-              <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 009 18z"/>
-              <path fill="#FBBC05" d="M3.964 10.707A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.707V4.961H.957A8.996 8.996 0 000 9c0 1.452.348 2.827.957 4.039l3.007-2.332z"/>
-              <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.961L3.964 7.293C4.672 5.166 6.656 3.58 9 3.58z"/>
-            </svg>
-            Login With Google
-          </button>
-
           <p className="text-center text-sm text-gray-500">
-            Don't Have An Account?{" "}
-            <button className="font-semibold text-gray-900 underline underline-offset-2 hover:text-purple-600 transition-colors">
-              Sign Up
-            </button>
+            Already have an account?{" "}
+            <a href="/auth/login"className="font-semibold text-gray-900 underline underline-offset-2 hover:text-purple-600 transition-colors">
+              Sign In
+            </a>
           </p>
 
         </div>

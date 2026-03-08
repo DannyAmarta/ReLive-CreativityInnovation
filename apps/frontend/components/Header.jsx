@@ -1,5 +1,6 @@
 import Image from 'next/image'
 import Tree from "@/public/assets/wallpaper/tree.png"
+import Logo from "@/public/assets/wallpaper/logo.png"
 
 const Header = () => {
   return (
@@ -34,7 +35,7 @@ const Header = () => {
       <div className='w-full px-10 x-20'>
         <div className='py-5'>
             <div className='flex flex-wrap mx-auto items-center justify-between px-5'>
-              <Image src={Tree} alt="Autumn" height={40} width={40}/>
+              <Image src={Logo} alt="Logo" height={40} width={40}/>
               {/* <MenuIcon className="h-5 w-5 md:hidden"/> mobile */}
               <nav className='hidden md:flex gap-6 items-center'>
                 <a className="text-white" href="#">About</a>
