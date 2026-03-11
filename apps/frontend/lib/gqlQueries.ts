@@ -11,10 +11,11 @@ import gql from 'graphql-tag';
 // 		name
 // 	}
 // }
+// sesuai dengan return yang sekarang yaitu hanya messsage.
 export const CREATE_USER_MUTATION = gql`
-    mutation createUser($input: CreateUserInput!){
-        createUser(createUserInput: $input){
-            id
+    mutation register($input: CreateUserInput!){
+        register(createUserInput: $input){
+            message
         }
     }
 `;

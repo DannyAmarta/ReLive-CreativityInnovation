@@ -7,9 +7,9 @@ import { useState, useEffect, useActionState } from "react"
 // import Eyes from "./Eyes"
 import Face, { Expression } from '@/components/DoksliFaceAlias2'
 import { Login } from "@/lib/auth"
+import { BACKEND_URL } from "@/lib/constants"
 
 type FocusField = "none" | "email" | "password"
-type FormState = "idle" | "error"
 
 const LoginForm = () => {
   // authentication
@@ -17,17 +17,16 @@ const LoginForm = () => {
   // animation
     const [mouse, setMouse] = useState({ x: 0, y: 0 })
     const [focusField, setFocusField] = useState<FocusField>("none")
-    const [formState, setFormState] = useState<FormState>("idle")
     const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
     const [showPassword, setShowPassword] = useState(false)
-    const [rememberMe, setRememberMe] = useState(false)
     const [isTypingPassword, setIsTypingPassword] = useState(false)
   
     const [orangeSmiling, setOrangeSmiling] = useState(false)
     const [yellowYawning, setYellowYawning] = useState(false)
   
-    const isError = formState === "error"
+    const isError = !!state?.errors || !!state?.message
+
     const isPasswordActive = focusField === "password"
     const isEmailActive = focusField === "email"
     const isAnyActive = isPasswordActive || isEmailActive
@@ -386,6 +385,7 @@ const LoginForm = () => {
                 }}
               />
               <button
+                type="button"
                 onClick={() => setShowPassword(v => !v)}
                 className="absolute right-0 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 transition-colors"
                 tabIndex={-1}
@@ -413,19 +413,10 @@ const LoginForm = () => {
           )} 
 
           {/* Remember me + Forgot */}
-          <div className="flex items-center justify-between mb-7">
-            <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={rememberMe}
-                onChange={e => setRememberMe(e.target.checked)}
-                className="w-4 h-4 rounded accent-purple-600 cursor-pointer"
-              />
-              Remember Me
-            </label>
-            <button className="text-sm text-gray-500 hover:text-purple-600 transition-colors">
+          <div className="flex items-center mb-7">
+            <a href="/auth/forgot-password/" className="flex ml-auto text-sm text-gray-500 hover:text-purple-600 transition-colors">
               Forgot Password
-            </button>
+            </a>
           </div>
 
           {/* Login button */}
@@ -443,7 +434,7 @@ const LoginForm = () => {
           </motion.button>
 
           {/* Google */}
-          <button className="w-full py-3.5 rounded-full border border-gray-200 bg-gray-50 text-gray-700 font-medium text-base flex items-center justify-center gap-3 hover:bg-gray-100 transition-colors mb-8">
+          <a href={`${BACKEND_URL}/auth/google/login`} className="w-full py-3.5 rounded-full border border-gray-200 bg-gray-50 text-gray-700 font-medium text-base flex items-center justify-center gap-3 hover:bg-gray-100 transition-colors mb-8">
             <svg width="18" height="18" viewBox="0 0 18 18">
               <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/>
               <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 009 18z"/>
@@ -451,13 +442,13 @@ const LoginForm = () => {
               <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.961L3.964 7.293C4.672 5.166 6.656 3.58 9 3.58z"/>
             </svg>
             Login With Google
-          </button>
+          </a>
 
           <p className="text-center text-sm text-gray-500">
             Don't Have An Account?{" "}
-            <button className="font-semibold text-gray-900 underline underline-offset-2 hover:text-purple-600 transition-colors">
+            <a href="/auth/register/"type="button" className="font-semibold text-gray-900 underline underline-offset-2 hover:text-purple-600 transition-colors">
               Create Account
-            </button>
+            </a>
           </p>
 
         </div>

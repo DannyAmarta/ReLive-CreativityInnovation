@@ -1,4 +1,5 @@
 import { BACKEND_URL } from "./constants";
+import { getSession } from "./session.server";
 
 export const fetchGraphql = async (query: string, variables?: {}) => {
 

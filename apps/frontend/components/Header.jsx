@@ -1,8 +1,11 @@
 import Image from 'next/image'
 import Tree from "@/public/assets/wallpaper/tree.png"
 import Logo from "@/public/assets/wallpaper/logo.png"
+import { getSession } from '@/lib/session.server';
 
-const Header = () => {
+export default async function Header(){
+  const session = await getSession();
+
   return (
     <header className="sticky top-0 z-30 h-20">
       <div
@@ -43,7 +46,11 @@ const Header = () => {
                 <a className="text-white" href="#">Costumer</a>
                 <a className="text-white" href="#">Update</a>
                 <a className="text-white" href="#">Help</a>
-                <button className="text-white">Login</button>
+                {session? (
+                  <a className='text-white' href="/auth/logout/">Logout as {session.user?.name}</a>
+                ) : (
+                 <a className="text-white" href="/auth/login/">Login</a>
+                )}
               </nav>
             </div>
           </div>
@@ -51,5 +58,3 @@ const Header = () => {
     </header>
   )
 }
-
-export default Header

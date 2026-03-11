@@ -15,8 +15,8 @@ export default function Home() {
         <Hero/>
         <AboutUs/>
         {/* <LoremC/> */}
-        <Lorem2/>
-        <Lorem3/>
+        {/* <Lorem2/> */}
+        {/* <Lorem3/> */}
       </main>
     </>
   );

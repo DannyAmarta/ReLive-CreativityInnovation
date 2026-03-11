@@ -1,0 +1,1012 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VITALIS — SDG3 Health Registration</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@100;300;400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/MotionPathPlugin.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/CustomEase.min.js"></script>
+<style>
+:root {
+  --g: #00ff88;
+  --c: #00e5ff;
+  --l: #aaff00;
+  --o: #ff6b00;
+  --p: #ff2d78;
+  --y: #ffe600;
+  --v: #bf00ff;
+  --bg: #020b14;
+  --bg2: #041625;
+  --f1: 'Orbitron', sans-serif;
+  --f2: 'Exo 2', sans-serif;
+  --f3: 'Share Tech Mono', monospace;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-family:var(--f2);cursor:none}
+
+/* CURSOR */
+#cx{position:fixed;width:44px;height:44px;border:2px solid var(--g);border-radius:50%;pointer-events:none;z-index:99999;transform:translate(-50%,-50%);box-shadow:0 0 20px rgba(0,255,136,.5),0 0 40px rgba(0,255,136,.2);mix-blend-mode:screen;transition:border-color .3s}
+#ci{position:fixed;width:8px;height:8px;background:var(--g);border-radius:50%;pointer-events:none;z-index:99999;transform:translate(-50%,-50%);box-shadow:0 0 15px var(--g)}
+#ct{position:fixed;width:70px;height:70px;border:1px solid rgba(0,255,136,.15);border-radius:50%;pointer-events:none;z-index:99998;transform:translate(-50%,-50%)}
+
+/* CANVAS */
+#pc{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none}
+
+/* GRID */
+#gb{position:fixed;inset:0;z-index:1;pointer-events:none;
+  background-image:linear-gradient(rgba(0,255,136,.028) 1px,transparent 1px),linear-gradient(90deg,rgba(0,255,136,.028) 1px,transparent 1px);
+  background-size:55px 55px}
+#gb::after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 50%,transparent 35%,var(--bg) 75%)}
+
+/* SCAN LINE */
+#sl{position:fixed;top:-5px;left:0;width:100%;height:4px;background:linear-gradient(90deg,transparent,var(--g),var(--c),transparent);z-index:2;pointer-events:none;opacity:.5;filter:blur(1px);box-shadow:0 0 20px var(--g)}
+
+/* ORBS */
+.orb{position:fixed;border-radius:50%;pointer-events:none;z-index:1;filter:blur(90px);opacity:.1}
+#o1{width:700px;height:700px;background:var(--g);top:-250px;left:-250px}
+#o2{width:600px;height:600px;background:var(--c);bottom:-200px;right:-200px}
+#o3{width:450px;height:450px;background:var(--p);top:40%;left:50%;transform:translate(-50%,-50%)}
+#o4{width:350px;height:350px;background:var(--o);top:15%;right:5%}
+#o5{width:280px;height:280px;background:var(--v);bottom:20%;left:5%}
+
+/* VIGNETTE + NOISE */
+#vig{position:fixed;inset:0;z-index:2;pointer-events:none;background:radial-gradient(ellipse at center,transparent 38%,rgba(2,11,20,.75) 100%)}
+#noise{position:fixed;inset:0;z-index:2;pointer-events:none;opacity:.022;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size:200px}
+
+/* HUD TL */
+#hud-tl{position:fixed;top:28px;left:28px;z-index:15;pointer-events:none}
+.hl{font-family:var(--f3);font-size:8px;letter-spacing:3px;color:rgba(0,255,136,.3);text-transform:uppercase;margin-bottom:3px}
+.hv{font-family:var(--f3);font-size:13px;color:rgba(0,255,136,.5);letter-spacing:2px}
+.sdot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--g);box-shadow:0 0 8px var(--g);margin-right:6px;animation:blink 1.5s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+
+/* HUD TR */
+#hud-tr{position:fixed;top:28px;right:28px;z-index:15;pointer-events:none;text-align:right}
+#clk{font-family:var(--f1);font-size:22px;color:rgba(0,229,255,.55);letter-spacing:4px;text-shadow:0 0 15px rgba(0,229,255,.3)}
+#dtl{font-family:var(--f3);font-size:8px;letter-spacing:3px;color:rgba(0,229,255,.3);margin-top:3px}
+
+/* HUD BL */
+#hud-bl{position:fixed;bottom:170px;left:28px;z-index:15;pointer-events:none}
+.hs{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+.hs-lb{font-family:var(--f3);font-size:7px;letter-spacing:2px;color:rgba(255,255,255,.25);text-transform:uppercase;width:48px}
+.hs-tr{width:78px;height:3px;background:rgba(255,255,255,.05);border-radius:2px;overflow:hidden}
+.hs-fl{height:100%;border-radius:2px}
+.hs-vl{font-family:var(--f3);font-size:8px;color:rgba(0,255,136,.45);min-width:35px}
+
+/* HUD BR */
+#hud-br{position:fixed;bottom:170px;right:28px;z-index:15;pointer-events:none;text-align:right}
+
+/* HEARTBEAT */
+#hb-wrap{position:fixed;bottom:55px;left:0;right:0;height:85px;z-index:6;pointer-events:none;overflow:hidden}
+#hb-svg{width:200%;height:100%;animation:hbscroll 4s linear infinite}
+@keyframes hbscroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+.hbp{fill:none;stroke:var(--g);stroke-width:2;filter:drop-shadow(0 0 6px var(--g)) drop-shadow(0 0 14px rgba(0,255,136,.45))}
+
+/* CORNER DECO */
+.cdeco{position:fixed;z-index:3;pointer-events:none}
+#cdtl{top:0;left:0}
+#cdtr{top:0;right:0;transform:scaleX(-1)}
+#cdbl{bottom:0;left:0;transform:scaleY(-1)}
+#cdbr{bottom:0;right:0;transform:scale(-1,-1)}
+
+/* FLOATING OBJECTS */
+.gobj{position:absolute;pointer-events:none;z-index:5;will-change:transform}
+
+/* METRIC CARDS */
+.mc{position:absolute;z-index:7;background:rgba(0,0,0,.62);border:1px solid rgba(0,255,136,.22);border-radius:12px;padding:13px 16px;backdrop-filter:blur(12px);min-width:135px;pointer-events:none;box-shadow:0 0 25px rgba(0,255,136,.07),inset 0 1px 0 rgba(0,255,136,.09)}
+.mc-lb{font-family:var(--f3);font-size:8px;letter-spacing:2px;color:rgba(0,255,136,.45);text-transform:uppercase;margin-bottom:4px}
+.mc-vl{font-family:var(--f1);font-size:22px;font-weight:700;color:var(--g);text-shadow:0 0 20px rgba(0,255,136,.55);line-height:1}
+.mc-un{font-family:var(--f3);font-size:9px;color:rgba(255,255,255,.3);margin-top:2px}
+.mc-br{height:3px;background:rgba(0,255,136,.1);border-radius:2px;margin-top:8px;overflow:hidden}
+.mc-bf{height:100%;background:linear-gradient(90deg,var(--g),var(--c));border-radius:2px;box-shadow:0 0 6px var(--g);animation:barpulse 2.2s ease-in-out infinite}
+@keyframes barpulse{0%,100%{opacity:1}50%{opacity:.55}}
+
+/* DATA TAGS */
+.dtag{position:absolute;z-index:8;font-family:var(--f3);font-size:8px;letter-spacing:2px;text-transform:uppercase;color:rgba(0,255,136,.32);pointer-events:none;white-space:nowrap;display:flex;align-items:center;gap:6px}
+.dtag::before{content:'';width:18px;height:1px;background:linear-gradient(90deg,transparent,currentColor)}
+
+/* ORBIT RINGS */
+.oring{position:absolute;border-radius:50%;pointer-events:none;z-index:4;top:50%;left:50%;transform:translate(-50%,-50%)}
+#r1{width:330px;height:330px;border:1px solid rgba(0,255,136,.14)}
+#r2{width:480px;height:480px;border:1px dashed rgba(0,229,255,.09)}
+#r3{width:640px;height:640px;border:1px solid rgba(170,255,0,.07)}
+#r4{width:800px;height:800px;border:1px dotted rgba(255,45,120,.05)}
+
+/* MAIN WRAPPER */
+#mw{position:fixed;inset:0;z-index:10;display:flex;align-items:center;justify-content:center;overflow:hidden}
+
+/* CENTER STAGE */
+#cs{position:relative;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center}
+
+/* PLATFORM */
+#plat{position:absolute;width:290px;height:290px;border-radius:50%;background:radial-gradient(ellipse,rgba(0,255,136,.05) 0%,transparent 70%);border:2px solid rgba(0,255,136,.18);animation:platpulse 3s ease-in-out infinite}
+#plat::before{content:'';position:absolute;inset:18px;border-radius:50%;border:1px solid rgba(0,255,136,.09);animation:platpulse 3s ease-in-out infinite .6s}
+#plat::after{content:'';position:absolute;inset:36px;border-radius:50%;border:1px dashed rgba(0,229,255,.08);animation:platpulse 3s ease-in-out infinite 1.2s}
+@keyframes platpulse{0%,100%{box-shadow:0 0 30px rgba(0,255,136,.08)}50%{box-shadow:0 0 70px rgba(0,255,136,.22),0 0 120px rgba(0,255,136,.08)}}
+
+/* BRACKETS */
+#brk{position:absolute;width:330px;height:330px;pointer-events:none}
+.bk{position:absolute;width:28px;height:28px}
+.bktl{top:0;left:0;border-top:2px solid var(--g);border-left:2px solid var(--g);box-shadow:-3px -3px 10px rgba(0,255,136,.3)}
+.bktr{top:0;right:0;border-top:2px solid var(--c);border-right:2px solid var(--c);box-shadow:3px -3px 10px rgba(0,229,255,.3)}
+.bkbl{bottom:0;left:0;border-bottom:2px solid var(--c);border-left:2px solid var(--c);box-shadow:-3px 3px 10px rgba(0,229,255,.3)}
+.bkbr{bottom:0;right:0;border-bottom:2px solid var(--g);border-right:2px solid var(--g);box-shadow:3px 3px 10px rgba(0,255,136,.3)}
+
+/* BRAND */
+#brand{position:absolute;top:-140px;text-align:center}
+#brand h1{font-family:var(--f1);font-size:44px;font-weight:900;letter-spacing:10px;background:linear-gradient(135deg,var(--g) 0%,var(--c) 50%,var(--l) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;filter:drop-shadow(0 0 22px rgba(0,255,136,.6));line-height:1;animation:titleglow 4s ease-in-out infinite}
+@keyframes titleglow{0%,100%{filter:drop-shadow(0 0 22px rgba(0,255,136,.6))}50%{filter:drop-shadow(0 0 45px rgba(0,229,255,.8)) drop-shadow(0 0 90px rgba(0,255,136,.4))}}
+#brand p{font-family:var(--f3);font-size:9px;letter-spacing:5px;color:rgba(0,229,255,.45);text-transform:uppercase;margin-top:7px}
+
+/* SDG BADGE */
+#sdgb{position:absolute;top:-80px;font-family:var(--f3);font-size:8px;letter-spacing:4px;color:rgba(0,229,255,.55);text-transform:uppercase;text-shadow:0 0 10px rgba(0,229,255,.3);display:flex;align-items:center;gap:8px}
+#sdgb::before,#sdgb::after{content:'──';opacity:.35}
+
+/* REGISTER BUTTON */
+#rb{position:relative;z-index:25;width:210px;height:210px;border-radius:50%;background:radial-gradient(circle at 35% 35%,rgba(0,255,136,.22) 0%,rgba(0,229,255,.12) 45%,rgba(0,0,0,.55) 70%);border:2px solid rgba(0,255,136,.55);cursor:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;box-shadow:0 0 35px rgba(0,255,136,.28),0 0 90px rgba(0,255,136,.12),0 0 180px rgba(0,255,136,.05),inset 0 0 35px rgba(0,255,136,.05);overflow:hidden;will-change:transform;transition:box-shadow .3s}
+#rb::before{content:'';position:absolute;inset:-4px;border-radius:50%;background:conic-gradient(var(--g) 0deg,var(--c) 72deg,var(--l) 144deg,transparent 200deg,transparent 300deg,var(--g) 360deg);animation:bspin 4s linear infinite;z-index:-1;filter:blur(2.5px)}
+#rb::after{content:'';position:absolute;inset:2px;border-radius:50%;background:radial-gradient(circle at 35% 30%,rgba(0,255,136,.08) 0%,var(--bg) 60%);z-index:0}
+@keyframes bspin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
+.rpr{position:absolute;border-radius:50%;background:transparent;border:1px solid rgba(0,255,136,.25);pointer-events:none;z-index:1;top:50%;left:50%;transform:translate(-50%,-50%);animation:rpout 2.8s ease-out infinite}
+.rpr:nth-child(2){animation-delay:.9s}
+.rpr:nth-child(3){animation-delay:1.8s}
+@keyframes rpout{0%{width:210px;height:210px;opacity:.6}100%{width:440px;height:440px;opacity:0}}
+.rbi{position:relative;z-index:2;width:50px;height:50px;filter:drop-shadow(0 0 10px var(--g))}
+.rbt{position:relative;z-index:2;font-family:var(--f1);font-size:11px;font-weight:700;letter-spacing:3px;color:var(--g);text-shadow:0 0 18px rgba(0,255,136,.8);text-transform:uppercase;text-align:center;line-height:1.4}
+.rbs{position:relative;z-index:2;font-family:var(--f3);font-size:8px;letter-spacing:2px;color:rgba(0,229,255,.55);text-transform:uppercase}
+
+/* STATUS */
+#stl{position:absolute;bottom:-65px;font-family:var(--f3);font-size:8px;letter-spacing:3px;color:rgba(0,255,136,.38);display:flex;align-items:center;gap:10px;text-transform:uppercase}
+
+/* FORM OVERLAY */
+#fo{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;background:rgba(2,11,20,.93);backdrop-filter:blur(22px);opacity:0;pointer-events:none}
+#fo.active{pointer-events:all}
+
+/* FORM CONTAINER */
+#fc{position:relative;width:530px;max-width:95vw;background:linear-gradient(145deg,rgba(0,30,20,.9),rgba(0,10,30,.95));border:1px solid rgba(0,255,136,.28);border-radius:24px;padding:48px 46px;overflow:hidden;transform:scale(.5) rotateX(30deg);opacity:0;box-shadow:0 0 70px rgba(0,255,136,.13),0 0 140px rgba(0,255,136,.05),inset 0 1px 0 rgba(0,255,136,.14),inset 0 0 90px rgba(0,255,136,.02)}
+#fc::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--g) 25%,var(--c) 50%,var(--g) 75%,transparent);box-shadow:0 0 25px var(--g)}
+#fc::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(0,229,255,.35),transparent)}
+.fgrid{position:absolute;inset:0;border-radius:24px;background-image:linear-gradient(rgba(0,255,136,.018) 1px,transparent 1px),linear-gradient(90deg,rgba(0,255,136,.018) 1px,transparent 1px);background-size:28px 28px;pointer-events:none}
+.fco{position:absolute;width:18px;height:18px}
+.fco.tl{top:14px;left:14px;border-top:2px solid var(--g);border-left:2px solid var(--g)}
+.fco.tr{top:14px;right:14px;border-top:2px solid var(--c);border-right:2px solid var(--c)}
+.fco.bl{bottom:14px;left:14px;border-bottom:2px solid var(--c);border-left:2px solid var(--c)}
+.fco.br{bottom:14px;right:14px;border-bottom:2px solid var(--g);border-right:2px solid var(--g)}
+.fhdr{text-align:center;margin-bottom:34px;position:relative;z-index:1}
+.fey{font-family:var(--f3);font-size:8px;letter-spacing:5px;color:rgba(0,229,255,.45);text-transform:uppercase;margin-bottom:10px}
+.fhdr h2{font-family:var(--f1);font-size:27px;font-weight:900;letter-spacing:5px;background:linear-gradient(135deg,#fff 0%,var(--g) 55%,var(--c) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:8px;filter:drop-shadow(0 0 14px rgba(0,255,136,.4))}
+.fhdr p{font-family:var(--f2);font-size:12px;color:rgba(255,255,255,.3);letter-spacing:1px;line-height:1.6}
+.fdiv{height:1px;margin:0 auto 30px;background:linear-gradient(90deg,transparent,rgba(0,255,136,.28),transparent);width:75%}
+.ig{margin-bottom:18px;position:relative;z-index:1}
+.ig label{display:block;font-family:var(--f3);font-size:8px;letter-spacing:3px;text-transform:uppercase;color:rgba(0,255,136,.45);margin-bottom:7px;padding-left:4px}
+.iw{position:relative}
+.iico{position:absolute;left:15px;top:50%;transform:translateY(-50%);color:rgba(0,255,136,.38);font-size:14px;pointer-events:none;transition:color .3s}
+.fi{width:100%;height:52px;background:rgba(0,255,136,.038);border:1px solid rgba(0,255,136,.18);border-radius:10px;padding:0 18px 0 46px;font-family:var(--f2);font-size:14px;color:rgba(255,255,255,.82);letter-spacing:1px;outline:none;transition:all .3s;caret-color:var(--g)}
+.fi::placeholder{color:rgba(255,255,255,.18)}
+.fi:focus{border-color:rgba(0,255,136,.55);background:rgba(0,255,136,.055);box-shadow:0 0 0 1px rgba(0,255,136,.18),0 0 22px rgba(0,255,136,.07)}
+.fi:focus~.iln{width:100%}
+.iln{position:absolute;bottom:0;left:0;height:1px;width:0;background:linear-gradient(90deg,var(--g),var(--c));border-radius:1px;transition:width .4s;box-shadow:0 0 8px var(--g)}
+.fsel{width:100%;height:52px;background:rgba(0,255,136,.038);border:1px solid rgba(0,255,136,.18);border-radius:10px;padding:0 18px;font-family:var(--f2);font-size:14px;color:rgba(255,255,255,.82);outline:none;cursor:pointer;-webkit-appearance:none;transition:all .3s}
+.fsel option{background:#041625;color:#fff}
+.fsel:focus{border-color:rgba(0,255,136,.55);box-shadow:0 0 22px rgba(0,255,136,.07)}
+.irow{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.trow{display:flex;align-items:flex-start;gap:12px;margin-bottom:26px;position:relative;z-index:1}
+.cck{position:relative;width:20px;height:20px;flex-shrink:0;cursor:pointer;margin-top:1px}
+.cck input{position:absolute;opacity:0;width:0;height:0}
+.cbx{position:absolute;inset:0;border:1px solid rgba(0,255,136,.38);border-radius:4px;background:rgba(0,255,136,.04);transition:all .22s;display:flex;align-items:center;justify-content:center}
+.cck input:checked+.cbx{background:rgba(0,255,136,.14);border-color:var(--g);box-shadow:0 0 10px rgba(0,255,136,.28)}
+.cbx::after{content:'✓';color:var(--g);font-size:12px;opacity:0;transition:opacity .22s}
+.cck input:checked+.cbx::after{opacity:1}
+.ttxt{font-size:12px;color:rgba(255,255,255,.3);line-height:1.55;letter-spacing:.4px}
+.ttxt a{color:var(--c);text-decoration:none}
+#sbt{width:100%;height:56px;background:linear-gradient(135deg,rgba(0,255,136,.18),rgba(0,229,255,.12),rgba(0,255,136,.09));border:1px solid rgba(0,255,136,.45);border-radius:12px;cursor:pointer;font-family:var(--f1);font-size:11px;font-weight:700;letter-spacing:4px;color:var(--g);text-transform:uppercase;position:relative;z-index:1;overflow:hidden;transition:all .3s;box-shadow:0 0 20px rgba(0,255,136,.09)}
+#sbt::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(0,255,136,.28),rgba(0,229,255,.18));opacity:0;transition:opacity .3s}
+#sbt:hover::before{opacity:1}
+#sbt:hover{box-shadow:0 0 45px rgba(0,255,136,.28),0 0 90px rgba(0,255,136,.1);border-color:var(--g);transform:translateY(-2px)}
+.slb{position:absolute;bottom:0;left:0;height:2px;width:0%;background:linear-gradient(90deg,var(--g),var(--c));box-shadow:0 0 10px var(--g)}
+.sbtc{position:relative;z-index:1}
+#fclose{position:absolute;top:18px;right:18px;width:35px;height:35px;background:rgba(255,45,120,.09);border:1px solid rgba(255,45,120,.28);border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:rgba(255,45,120,.65);font-size:15px;transition:all .22s;z-index:10;font-family:var(--f2)}
+#fclose:hover{background:rgba(255,45,120,.18);color:var(--p);box-shadow:0 0 15px rgba(255,45,120,.28)}
+
+/* SUCCESS OVERLAY */
+#so{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;background:rgba(2,11,20,.97);opacity:0;pointer-events:none;backdrop-filter:blur(30px)}
+#so.active{pointer-events:all}
+#sb{text-align:center;transform:scale(0);opacity:0}
+.sir{width:120px;height:120px;border-radius:50%;margin:0 auto 30px;background:radial-gradient(circle,rgba(0,255,136,.14),transparent);border:2px solid var(--g);display:flex;align-items:center;justify-content:center;box-shadow:0 0 45px rgba(0,255,136,.28),0 0 90px rgba(0,255,136,.12);animation:srpulse 2s ease-in-out infinite}
+@keyframes srpulse{0%,100%{box-shadow:0 0 45px rgba(0,255,136,.28)}50%{box-shadow:0 0 90px rgba(0,255,136,.55),0 0 160px rgba(0,255,136,.2)}}
+.sir svg{width:52px;height:52px}
+#sb h2{font-family:var(--f1);font-size:30px;font-weight:900;letter-spacing:6px;color:var(--g);text-shadow:0 0 32px rgba(0,255,136,.6);margin-bottom:12px}
+#sb .sp{font-family:var(--f2);font-size:13px;color:rgba(255,255,255,.38);letter-spacing:2px;margin-bottom:7px}
+.seml{font-family:var(--f3);font-size:13px;color:var(--c);text-shadow:0 0 14px rgba(0,229,255,.5);margin-bottom:34px}
+#actbtn{display:inline-flex;align-items:center;gap:12px;padding:16px 42px;background:transparent;border:1px solid rgba(0,255,136,.38);border-radius:50px;cursor:pointer;font-family:var(--f1);font-size:11px;font-weight:700;letter-spacing:4px;color:var(--g);text-transform:uppercase;position:relative;overflow:hidden;transition:all .4s;box-shadow:0 0 22px rgba(0,255,136,.09)}
+#actbtn::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(0,255,136,.2),rgba(0,229,255,.1));opacity:0;transition:opacity .3s}
+#actbtn:hover{border-color:var(--g);box-shadow:0 0 45px rgba(0,255,136,.38),0 0 90px rgba(0,255,136,.15);transform:scale(1.05);color:#fff}
+#actbtn:hover::before{opacity:1}
+#actbtn svg{width:18px;height:18px;position:relative;z-index:1}
+#actbtn span{position:relative;z-index:1}
+#actsuc{display:none;text-align:center;margin-top:26px}
+.aico{font-size:48px;margin-bottom:14px;animation:bouncein .5s cubic-bezier(.68,-.55,.265,1.55)}
+@keyframes bouncein{0%{transform:scale(0)}100%{transform:scale(1)}}
+#actsuc h3{font-family:var(--f1);font-size:17px;letter-spacing:4px;color:var(--g);text-shadow:0 0 22px rgba(0,255,136,.5);margin-bottom:7px}
+#actsuc p{font-family:var(--f3);font-size:10px;color:rgba(0,229,255,.55);letter-spacing:2px}
+
+/* LOADER */
+#ldr{position:fixed;inset:0;z-index:200;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:22px}
+.llogo{font-family:var(--f1);font-size:50px;font-weight:900;letter-spacing:12px;background:linear-gradient(135deg,var(--g),var(--c));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;filter:drop-shadow(0 0 22px rgba(0,255,136,.5))}
+.lstat{font-family:var(--f3);font-size:9px;letter-spacing:4px;color:rgba(0,255,136,.45);text-transform:uppercase}
+.ltrk{width:280px;height:2px;background:rgba(0,255,136,.1);border-radius:1px;overflow:hidden}
+.lfil{height:100%;width:0%;background:linear-gradient(90deg,var(--g),var(--c));box-shadow:0 0 10px var(--g);border-radius:1px}
+.lpct{font-family:var(--f1);font-size:16px;color:rgba(0,255,136,.38);letter-spacing:4px}
+
+/* ENERGY BARS SIDE */
+#ebar{position:absolute;z-index:8;pointer-events:none}
+.ebi{display:flex;align-items:center;gap:7px;margin-bottom:5px}
+.ebl{font-family:var(--f3);font-size:7px;color:rgba(255,255,255,.22);letter-spacing:1px;width:55px;text-align:right}
+.ebt{width:90px;height:4px;background:rgba(255,255,255,.05);border-radius:2px;overflow:hidden}
+.ebf{height:100%;border-radius:2px}
+
+/* GLITCH */
+.glitch{position:relative}
+.glitch::before,.glitch::after{content:attr(data-text);position:absolute;top:0;left:0;width:100%;height:100%}
+.glitch::before{color:var(--c);clip-path:polygon(0 30%,100% 30%,100% 50%,0 50%);animation:gl1 5s infinite}
+.glitch::after{color:var(--p);clip-path:polygon(0 60%,100% 60%,100% 80%,0 80%);animation:gl2 5s infinite .7s}
+@keyframes gl1{0%,90%,100%{transform:translate(0);opacity:0}91%{transform:translate(-3px,1px);opacity:.6}93%{transform:translate(3px,-1px);opacity:.4}95%{transform:translate(0);opacity:0}}
+@keyframes gl2{0%,88%,100%{transform:translate(0);opacity:0}89%{transform:translate(3px,1px);opacity:.5}91%{transform:translate(-3px,-1px);opacity:.3}93%{transform:translate(0);opacity:0}}
+</style>
+</head>
+<body>
+
+<!-- LOADER -->
+<div id="ldr">
+  <div class="llogo glitch" data-text="VITALIS">VITALIS</div>
+  <div class="lstat" id="lst">INITIALIZING HEALTH MATRIX...</div>
+  <div class="ltrk"><div class="lfil" id="lfil"></div></div>
+  <div class="lpct" id="lpct">0%</div>
+</div>
+
+<!-- BG LAYERS -->
+<canvas id="pc"></canvas>
+<div id="gb"></div>
+<div id="sl"></div>
+<div id="noise"></div>
+<div id="vig"></div>
+<div class="orb" id="o1"></div>
+<div class="orb" id="o2"></div>
+<div class="orb" id="o3"></div>
+<div class="orb" id="o4"></div>
+<div class="orb" id="o5"></div>
+
+<!-- HUD TL -->
+<div id="hud-tl">
+  <div class="hl">System Status</div>
+  <div class="hv"><span class="sdot"></span>VITALIS OS v3.0</div>
+</div>
+
+<!-- HUD TR -->
+<div id="hud-tr">
+  <div id="clk">00:00:00</div>
+  <div id="dtl">SDG3 — GOOD HEALTH &amp; WELL-BEING</div>
+</div>
+
+<!-- HUD BL -->
+<div id="hud-bl">
+  <div class="hs">
+    <div class="hs-lb">Cardiac</div>
+    <div class="hs-tr"><div class="hs-fl" id="hcf" style="width:72%;background:var(--g);box-shadow:0 0 6px var(--g)"></div></div>
+    <div class="hs-vl" id="hcv">72bpm</div>
+  </div>
+  <div class="hs">
+    <div class="hs-lb">Oxygen</div>
+    <div class="hs-tr"><div class="hs-fl" style="width:98%;background:var(--c);box-shadow:0 0 6px var(--c)"></div></div>
+    <div class="hs-vl">98%</div>
+  </div>
+  <div class="hs">
+    <div class="hs-lb">Vitality</div>
+    <div class="hs-tr"><div class="hs-fl" style="width:85%;background:var(--l);box-shadow:0 0 6px var(--l)"></div></div>
+    <div class="hs-vl">8.5</div>
+  </div>
+  <div class="hs">
+    <div class="hs-lb">Stress</div>
+    <div class="hs-tr"><div class="hs-fl" style="width:22%;background:var(--o);box-shadow:0 0 6px var(--o)"></div></div>
+    <div class="hs-vl">Low</div>
+  </div>
+</div>
+
+<!-- HUD BR -->
+<div id="hud-br">
+  <div style="font-family:var(--f3);font-size:7px;letter-spacing:2px;color:rgba(0,255,136,.28);margin-bottom:5px">ACTIVE USERS</div>
+  <div style="font-family:var(--f1);font-size:19px;color:rgba(0,255,136,.48)" id="ucnt">12,847</div>
+  <div style="font-family:var(--f3);font-size:7px;letter-spacing:2px;color:rgba(0,229,255,.28);margin-top:3px">WORLDWIDE</div>
+</div>
+
+<!-- CORNER DECO -->
+<svg class="cdeco" id="cdtl" width="110" height="110" viewBox="0 0 110 110" fill="none">
+  <path d="M0 38L0 10Q0 0 10 0L38 0" stroke="rgba(0,255,136,.22)" stroke-width="1"/>
+  <path d="M0 18L0 4Q0 0 4 0L18 0" stroke="rgba(0,255,136,.45)" stroke-width="1"/>
+  <circle cx="3" cy="3" r="2" fill="rgba(0,255,136,.5)"/>
+  <path d="M14 0L14 7M0 14L7 14" stroke="rgba(0,255,136,.18)" stroke-width=".5"/>
+</svg>
+<svg class="cdeco" id="cdtr" width="110" height="110" viewBox="0 0 110 110" fill="none">
+  <path d="M0 38L0 10Q0 0 10 0L38 0" stroke="rgba(0,229,255,.22)" stroke-width="1"/>
+  <path d="M0 18L0 4Q0 0 4 0L18 0" stroke="rgba(0,229,255,.45)" stroke-width="1"/>
+  <circle cx="3" cy="3" r="2" fill="rgba(0,229,255,.5)"/>
+</svg>
+<svg class="cdeco" id="cdbl" width="110" height="110" viewBox="0 0 110 110" fill="none">
+  <path d="M0 38L0 10Q0 0 10 0L38 0" stroke="rgba(0,229,255,.22)" stroke-width="1"/>
+  <path d="M0 18L0 4Q0 0 4 0L18 0" stroke="rgba(0,229,255,.45)" stroke-width="1"/>
+  <circle cx="3" cy="3" r="2" fill="rgba(0,229,255,.5)"/>
+</svg>
+<svg class="cdeco" id="cdbr" width="110" height="110" viewBox="0 0 110 110" fill="none">
+  <path d="M0 38L0 10Q0 0 10 0L38 0" stroke="rgba(0,255,136,.22)" stroke-width="1"/>
+  <path d="M0 18L0 4Q0 0 4 0L18 0" stroke="rgba(0,255,136,.45)" stroke-width="1"/>
+  <circle cx="3" cy="3" r="2" fill="rgba(0,255,136,.5)"/>
+</svg>
+
+<!-- HEARTBEAT -->
+<div id="hb-wrap">
+  <svg id="hb-svg" viewBox="0 0 2400 80" preserveAspectRatio="none">
+    <path class="hbp" d="M0,40L60,40L80,40L90,10L100,70L115,5L125,75L135,40L150,40 L210,40L230,40L240,10L250,70L265,5L275,75L285,40L300,40 L360,40L380,40L390,10L400,70L415,5L425,75L435,40L450,40 L510,40L530,40L540,10L550,70L565,5L575,75L585,40L600,40 L660,40L680,40L690,10L700,70L715,5L725,75L735,40L750,40 L810,40L830,40L840,10L850,70L865,5L875,75L885,40L900,40 L960,40L980,40L990,10L1000,70L1015,5L1025,75L1035,40L1050,40 L1110,40L1130,40L1140,10L1150,70L1165,5L1175,75L1185,40L1200,40 L1260,40L1280,40L1290,10L1300,70L1315,5L1325,75L1335,40L1350,40 L1410,40L1430,40L1440,10L1450,70L1465,5L1475,75L1485,40L1500,40 L1560,40L1580,40L1590,10L1600,70L1615,5L1625,75L1635,40L1650,40 L1710,40L1730,40L1740,10L1750,70L1765,5L1775,75L1785,40L1800,40 L1860,40L1880,40L1890,10L1900,70L1915,5L1925,75L1935,40L1950,40 L2010,40L2030,40L2040,10L2050,70L2065,5L2075,75L2085,40L2100,40 L2160,40L2180,40L2190,10L2200,70L2215,5L2225,75L2235,40L2250,40 L2310,40L2330,40L2340,10L2350,70L2365,5L2375,75L2385,40L2400,40"/>
+  </svg>
+</div>
+
+<!-- FLOATING GYM OBJECTS -->
+<!-- Dumbbell 1 -->
+<div class="gobj" id="d1" style="top:14%;left:7%">
+  <svg width="90" height="28" viewBox="0 0 90 28" fill="none">
+    <rect x="0" y="7" width="13" height="14" rx="3" fill="rgba(0,255,136,.55)" stroke="rgba(0,255,136,.9)" stroke-width="1"/>
+    <rect x="3" y="4" width="7" height="20" rx="2" fill="rgba(0,255,136,.35)"/>
+    <rect x="17" y="11" width="56" height="6" rx="3" fill="rgba(0,255,136,.25)" stroke="rgba(0,255,136,.55)" stroke-width=".8"/>
+    <rect x="77" y="7" width="13" height="14" rx="3" fill="rgba(0,255,136,.55)" stroke="rgba(0,255,136,.9)" stroke-width="1"/>
+    <rect x="80" y="4" width="7" height="20" rx="2" fill="rgba(0,255,136,.35)"/>
+  </svg>
+</div>
+<!-- Dumbbell 2 -->
+<div class="gobj" id="d2" style="top:68%;right:8%">
+  <svg width="90" height="28" viewBox="0 0 90 28" fill="none">
+    <rect x="0" y="7" width="13" height="14" rx="3" fill="rgba(0,229,255,.55)" stroke="rgba(0,229,255,.9)" stroke-width="1"/>
+    <rect x="3" y="4" width="7" height="20" rx="2" fill="rgba(0,229,255,.35)"/>
+    <rect x="17" y="11" width="56" height="6" rx="3" fill="rgba(0,229,255,.22)" stroke="rgba(0,229,255,.5)" stroke-width=".8"/>
+    <rect x="77" y="7" width="13" height="14" rx="3" fill="rgba(0,229,255,.55)" stroke="rgba(0,229,255,.9)" stroke-width="1"/>
+    <rect x="80" y="4" width="7" height="20" rx="2" fill="rgba(0,229,255,.35)"/>
+  </svg>
+</div>
+<!-- Dumbbell 3 small -->
+<div class="gobj" id="d3" style="top:44%;left:4%">
+  <svg width="68" height="24" viewBox="0 0 68 24" fill="none">
+    <rect x="0" y="6" width="11" height="12" rx="3" fill="rgba(170,255,0,.55)" stroke="rgba(170,255,0,.85)" stroke-width="1"/>
+    <rect x="2" y="3" width="7" height="18" rx="2" fill="rgba(170,255,0,.3)"/>
+    <rect x="14" y="9" width="40" height="6" rx="3" fill="rgba(170,255,0,.2)" stroke="rgba(170,255,0,.45)" stroke-width=".8"/>
+    <rect x="57" y="6" width="11" height="12" rx="3" fill="rgba(170,255,0,.55)" stroke="rgba(170,255,0,.85)" stroke-width="1"/>
+    <rect x="59" y="3" width="7" height="18" rx="2" fill="rgba(170,255,0,.3)"/>
+  </svg>
+</div>
+<!-- Barbell 1 -->
+<div class="gobj" id="b1" style="top:7%;left:33%">
+  <svg width="155" height="38" viewBox="0 0 155 38" fill="none">
+    <rect x="0" y="5" width="19" height="28" rx="4" fill="rgba(0,229,255,.45)" stroke="rgba(0,229,255,.78)" stroke-width="1.5"/>
+    <rect x="4" y="1" width="11" height="36" rx="3" fill="rgba(0,229,255,.28)"/>
+    <rect x="21" y="9" width="7" height="20" rx="2" fill="rgba(0,229,255,.65)" stroke="rgba(0,229,255,.9)" stroke-width="1"/>
+    <rect x="30" y="16" width="95" height="6" rx="3" fill="rgba(0,229,255,.2)" stroke="rgba(0,229,255,.45)" stroke-width="1"/>
+    <rect x="127" y="9" width="7" height="20" rx="2" fill="rgba(0,229,255,.65)" stroke="rgba(0,229,255,.9)" stroke-width="1"/>
+    <rect x="136" y="5" width="19" height="28" rx="4" fill="rgba(0,229,255,.45)" stroke="rgba(0,229,255,.78)" stroke-width="1.5"/>
+    <rect x="140" y="1" width="11" height="36" rx="3" fill="rgba(0,229,255,.28)"/>
+  </svg>
+</div>
+<!-- Barbell 2 -->
+<div class="gobj" id="b2" style="bottom:17%;left:18%">
+  <svg width="115" height="38" viewBox="0 0 155 38" fill="none">
+    <rect x="0" y="5" width="19" height="28" rx="4" fill="rgba(255,107,0,.45)" stroke="rgba(255,107,0,.78)" stroke-width="1.5"/>
+    <rect x="4" y="1" width="11" height="36" rx="3" fill="rgba(255,107,0,.25)"/>
+    <rect x="21" y="9" width="7" height="20" rx="2" fill="rgba(255,107,0,.62)"/>
+    <rect x="30" y="16" width="95" height="6" rx="3" fill="rgba(255,107,0,.18)" stroke="rgba(255,107,0,.42)" stroke-width="1"/>
+    <rect x="127" y="9" width="7" height="20" rx="2" fill="rgba(255,107,0,.62)"/>
+    <rect x="136" y="5" width="19" height="28" rx="4" fill="rgba(255,107,0,.45)" stroke="rgba(255,107,0,.78)" stroke-width="1.5"/>
+    <rect x="140" y="1" width="11" height="36" rx="3" fill="rgba(255,107,0,.25)"/>
+  </svg>
+</div>
+<!-- Kettlebell 1 -->
+<div class="gobj" id="k1" style="top:24%;right:11%">
+  <svg width="58" height="72" viewBox="0 0 58 72" fill="none">
+    <path d="M21 19Q14 9 17 4Q19 0 29 0Q39 0 41 4Q44 9 37 19" stroke="rgba(255,107,0,.82)" stroke-width="2.5" fill="none"/>
+    <circle cx="29" cy="19" r="4" fill="rgba(255,107,0,.28)" stroke="rgba(255,107,0,.78)" stroke-width="1.5"/>
+    <ellipse cx="29" cy="48" rx="22" ry="22" fill="rgba(255,107,0,.18)" stroke="rgba(255,107,0,.7)" stroke-width="2"/>
+    <ellipse cx="29" cy="48" rx="15" ry="15" fill="rgba(255,107,0,.09)" stroke="rgba(255,107,0,.28)" stroke-width="1"/>
+    <path d="M13 43L17 43M41 43L45 43" stroke="rgba(255,107,0,.45)" stroke-width="1"/>
+  </svg>
+</div>
+<!-- Kettlebell 2 -->
+<div class="gobj" id="k2" style="bottom:24%;right:5%">
+  <svg width="48" height="62" viewBox="0 0 58 72" fill="none">
+    <path d="M21 19Q14 9 17 4Q19 0 29 0Q39 0 41 4Q44 9 37 19" stroke="rgba(191,0,255,.82)" stroke-width="2.5" fill="none"/>
+    <circle cx="29" cy="19" r="4" fill="rgba(191,0,255,.28)" stroke="rgba(191,0,255,.78)" stroke-width="1.5"/>
+    <ellipse cx="29" cy="48" rx="22" ry="22" fill="rgba(191,0,255,.14)" stroke="rgba(191,0,255,.68)" stroke-width="2"/>
+    <ellipse cx="29" cy="48" rx="15" ry="15" fill="rgba(191,0,255,.07)" stroke="rgba(191,0,255,.25)" stroke-width="1"/>
+  </svg>
+</div>
+<!-- Heart 1 -->
+<div class="gobj" id="h1" style="top:19%;right:20%">
+  <svg width="52" height="48" viewBox="0 0 52 48" fill="none">
+    <path d="M26 44C26 44 5 29 5 17C5 10 10 5 17 5C21 5 24 7 26 9C28 7 31 5 35 5C42 5 47 10 47 17C47 29 26 44 26 44Z" fill="rgba(255,45,120,.22)" stroke="rgba(255,45,120,.82)" stroke-width="2"/>
+    <path d="M26 40C26 40 9 27 9 18C9 13 13 9 18 9C21.5 9 24 11 26 13" stroke="rgba(255,45,120,.35)" stroke-width="1" fill="none"/>
+  </svg>
+</div>
+<!-- Heart 2 small -->
+<div class="gobj" id="h2" style="bottom:29%;left:11%">
+  <svg width="38" height="36" viewBox="0 0 52 48" fill="none">
+    <path d="M26 44C26 44 5 29 5 17C5 10 10 5 17 5C21 5 24 7 26 9C28 7 31 5 35 5C42 5 47 10 47 17C47 29 26 44 26 44Z" fill="rgba(255,45,120,.18)" stroke="rgba(255,45,120,.72)" stroke-width="2"/>
+  </svg>
+</div>
+<!-- DNA 1 -->
+<div class="gobj" id="dn1" style="top:54%;right:4%">
+  <svg width="38" height="85" viewBox="0 0 40 88" fill="none">
+    <path d="M10 5Q30 20 10 35Q30 50 10 65Q30 80 10 88" stroke="rgba(191,0,255,.72)" stroke-width="2" fill="none"/>
+    <path d="M30 5Q10 20 30 35Q10 50 30 65Q10 80 30 88" stroke="rgba(0,229,255,.72)" stroke-width="2" fill="none"/>
+    <line x1="10" y1="20" x2="30" y2="20" stroke="rgba(191,0,255,.38)" stroke-width="1.5"/>
+    <line x1="10" y1="35" x2="30" y2="35" stroke="rgba(0,229,255,.38)" stroke-width="1.5"/>
+    <line x1="10" y1="50" x2="30" y2="50" stroke="rgba(191,0,255,.38)" stroke-width="1.5"/>
+    <line x1="10" y1="65" x2="30" y2="65" stroke="rgba(0,229,255,.38)" stroke-width="1.5"/>
+    <circle cx="10" cy="20" r="2" fill="rgba(191,0,255,.62)"/>
+    <circle cx="30" cy="35" r="2" fill="rgba(0,229,255,.62)"/>
+    <circle cx="10" cy="50" r="2" fill="rgba(191,0,255,.62)"/>
+    <circle cx="30" cy="65" r="2" fill="rgba(0,229,255,.62)"/>
+  </svg>
+</div>
+<!-- DNA 2 -->
+<div class="gobj" id="dn2" style="top:11%;left:21%">
+  <svg width="36" height="78" viewBox="0 0 40 88" fill="none" style="opacity:.42">
+    <path d="M10 5Q30 20 10 35Q30 50 10 65Q30 80 10 88" stroke="rgba(0,255,136,.72)" stroke-width="2" fill="none"/>
+    <path d="M30 5Q10 20 30 35Q10 50 30 65Q10 80 30 88" stroke="rgba(170,255,0,.72)" stroke-width="2" fill="none"/>
+    <line x1="10" y1="20" x2="30" y2="20" stroke="rgba(0,255,136,.4)" stroke-width="1.5"/>
+    <line x1="10" y1="35" x2="30" y2="35" stroke="rgba(170,255,0,.4)" stroke-width="1.5"/>
+    <circle cx="10" cy="20" r="2" fill="rgba(0,255,136,.6)"/>
+    <circle cx="30" cy="35" r="2" fill="rgba(170,255,0,.6)"/>
+  </svg>
+</div>
+<!-- Cross 1 -->
+<div class="gobj" id="cr1" style="top:58%;left:17%">
+  <svg width="48" height="48" viewBox="0 0 50 50" fill="none">
+    <rect x="18" y="4" width="14" height="42" rx="3" fill="rgba(255,45,120,.18)" stroke="rgba(255,45,120,.72)" stroke-width="1.5"/>
+    <rect x="4" y="18" width="42" height="14" rx="3" fill="rgba(255,45,120,.18)" stroke="rgba(255,45,120,.72)" stroke-width="1.5"/>
+  </svg>
+</div>
+<!-- Cross 2 -->
+<div class="gobj" id="cr2" style="top:33%;right:17%">
+  <svg width="36" height="36" viewBox="0 0 50 50" fill="none">
+    <rect x="18" y="4" width="14" height="42" rx="3" fill="rgba(0,229,255,.18)" stroke="rgba(0,229,255,.68)" stroke-width="1.5"/>
+    <rect x="4" y="18" width="42" height="14" rx="3" fill="rgba(0,229,255,.18)" stroke="rgba(0,229,255,.68)" stroke-width="1.5"/>
+  </svg>
+</div>
+<!-- Lightning 1 -->
+<div class="gobj" id="lt1" style="top:73%;left:34%">
+  <svg width="33" height="55" viewBox="0 0 35 58" fill="none">
+    <path d="M22 2L8 30L18 30L13 56L28 24L18 24L26 2Z" fill="rgba(255,230,0,.18)" stroke="rgba(255,230,0,.82)" stroke-width="1.5" stroke-linejoin="round"/>
+  </svg>
+</div>
+<!-- Lightning 2 -->
+<div class="gobj" id="lt2" style="top:17%;right:6%">
+  <svg width="28" height="48" viewBox="0 0 35 58" fill="none">
+    <path d="M22 2L8 30L18 30L13 56L28 24L18 24L26 2Z" fill="rgba(255,230,0,.14)" stroke="rgba(255,230,0,.72)" stroke-width="1.5" stroke-linejoin="round"/>
+  </svg>
+</div>
+<!-- Yoga figure -->
+<div class="gobj" id="yg1" style="top:77%;right:21%">
+  <svg width="65" height="68" viewBox="0 0 68 70" fill="none">
+    <circle cx="34" cy="10" r="7" fill="rgba(255,230,0,.14)" stroke="rgba(255,230,0,.72)" stroke-width="1.5"/>
+    <path d="M34 17L34 40M34 40L19 55M34 40L49 55M34 28L17 22M34 28L51 22" stroke="rgba(255,230,0,.7)" stroke-width="2" stroke-linecap="round"/>
+  </svg>
+</div>
+<!-- Shield -->
+<div class="gobj" id="sh1" style="bottom:27%;left:5%">
+  <svg width="52" height="62" viewBox="0 0 55 65" fill="none">
+    <path d="M27.5 3L5 14L5 35C5 48 15 58 27.5 63C40 58 50 48 50 35L50 14Z" fill="rgba(0,229,255,.1)" stroke="rgba(0,229,255,.6)" stroke-width="1.5"/>
+    <path d="M17 32L24 39L38 26" stroke="rgba(0,229,255,.82)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>
+</div>
+<!-- Leaf -->
+<div class="gobj" id="lf1" style="top:34%;left:13%">
+  <svg width="52" height="58" viewBox="0 0 55 60" fill="none">
+    <path d="M27 55C27 55 5 42 5 22C5 10 14 3 27 3C40 3 50 10 50 22C50 42 27 55 27 55Z" fill="rgba(0,255,136,.1)" stroke="rgba(0,255,136,.58)" stroke-width="1.5"/>
+    <path d="M27 55L27 20M27 38L16 28M27 30L38 22" stroke="rgba(0,255,136,.48)" stroke-width="1.2" stroke-linecap="round"/>
+  </svg>
+</div>
+<!-- Medal -->
+<div class="gobj" id="md1" style="top:13%;right:29%">
+  <svg width="52" height="72" viewBox="0 0 55 75" fill="none">
+    <path d="M22 20L15 2L28 10L27.5 2L30 2L29.5 10L42 2L35 20" stroke="rgba(255,230,0,.72)" stroke-width="2" fill="none" stroke-linejoin="round"/>
+    <circle cx="27.5" cy="48" r="22" fill="rgba(255,230,0,.09)" stroke="rgba(255,230,0,.6)" stroke-width="2"/>
+    <circle cx="27.5" cy="48" r="15" fill="rgba(255,230,0,.05)" stroke="rgba(255,230,0,.28)" stroke-width="1"/>
+    <text x="27.5" y="53" text-anchor="middle" font-family="Orbitron" font-size="12" fill="rgba(255,230,0,.7)" font-weight="bold">1</text>
+  </svg>
+</div>
+
+<!-- DATA TAGS -->
+<div class="dtag" id="tg1" style="top:41%;left:1%">VO2 MAX: 52.4</div>
+<div class="dtag" id="tg2" style="top:54%;right:1%;transform:scaleX(-1)">BMI: 22.1 ▲</div>
+<div class="dtag" id="tg3" style="top:21%;right:3%">STEPS: 8,432</div>
+<div class="dtag" id="tg4" style="bottom:21%;left:1%">HRV: 68ms</div>
+
+<!-- METRIC CARDS -->
+<div class="mc" id="mc1" style="top:24%;left:2%">
+  <div class="mc-lb">Heart Rate</div>
+  <div class="mc-vl" id="mchr">74</div>
+  <div class="mc-un">BPM — NORMAL</div>
+  <div class="mc-br"><div class="mc-bf" style="width:68%"></div></div>
+</div>
+<div class="mc" id="mc2" style="top:21%;right:2%">
+  <div class="mc-lb">Blood Oxygen</div>
+  <div class="mc-vl" style="color:var(--c);text-shadow:0 0 20px rgba(0,229,255,.58)">98%</div>
+  <div class="mc-un" style="color:rgba(0,229,255,.3)">SpO2 — OPTIMAL</div>
+  <div class="mc-br"><div class="mc-bf" style="width:98%;background:linear-gradient(90deg,var(--c),var(--l))"></div></div>
+</div>
+<div class="mc" id="mc3" style="bottom:21%;right:2%">
+  <div class="mc-lb">Calories</div>
+  <div class="mc-vl" style="color:var(--o);text-shadow:0 0 20px rgba(255,107,0,.58)">2,340</div>
+  <div class="mc-un" style="color:rgba(255,107,0,.3)">KCAL — TODAY</div>
+  <div class="mc-br"><div class="mc-bf" style="width:78%;background:linear-gradient(90deg,var(--o),var(--y))"></div></div>
+</div>
+<div class="mc" id="mc4" style="bottom:21%;left:2%">
+  <div class="mc-lb">Recovery</div>
+  <div class="mc-vl" style="color:var(--l);text-shadow:0 0 20px rgba(170,255,0,.58)">92%</div>
+  <div class="mc-un" style="color:rgba(170,255,0,.3)">SCORE — PEAK</div>
+  <div class="mc-br"><div class="mc-bf" style="width:92%;background:linear-gradient(90deg,var(--l),var(--g))"></div></div>
+</div>
+
+<!-- MAIN WRAPPER -->
+<div id="mw">
+  <div class="oring" id="r1"></div>
+  <div class="oring" id="r2"></div>
+  <div class="oring" id="r3"></div>
+  <div class="oring" id="r4"></div>
+
+  <div id="cs">
+    <div id="brk">
+      <div class="bk bktl"></div>
+      <div class="bk bktr"></div>
+      <div class="bk bkbl"></div>
+      <div class="bk bkbr"></div>
+    </div>
+    <div id="plat"></div>
+    <div id="brand">
+      <h1 class="glitch" data-text="VITALIS">VITALIS</h1>
+      <p>HEALTH · PERFORMANCE · WELLBEING</p>
+    </div>
+    <div id="sdgb">SDG 3 — GOOD HEALTH &amp; WELL-BEING</div>
+
+    <button id="rb" onclick="openForm()">
+      <div class="rpr"></div>
+      <div class="rpr"></div>
+      <div class="rpr"></div>
+      <svg class="rbi" viewBox="0 0 50 50" fill="none">
+        <circle cx="25" cy="16" r="8" stroke="rgba(0,255,136,.92)" stroke-width="2.5" fill="rgba(0,255,136,.1)"/>
+        <path d="M9 42C9 33 16 27 25 27C34 27 41 33 41 42" stroke="rgba(0,255,136,.92)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+        <path d="M31 23L39 23M35 19L35 27" stroke="rgba(0,229,255,.82)" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      <div class="rbt">JOIN<br>VITALIS</div>
+      <div class="rbs">CLICK TO REGISTER</div>
+    </button>
+
+    <div id="stl">
+      <div class="sdot"></div>
+      SECURE CONNECTION ACTIVE
+    </div>
+  </div>
+</div>
+
+<!-- CURSOR -->
+<div id="cx"></div>
+<div id="ci"></div>
+<div id="ct"></div>
+
+<!-- FORM OVERLAY -->
+<div id="fo">
+  <div id="fc">
+    <div class="fgrid"></div>
+    <div class="fco tl"></div><div class="fco tr"></div>
+    <div class="fco bl"></div><div class="fco br"></div>
+    <button id="fclose" onclick="closeForm()">✕</button>
+    <div class="fhdr">
+      <div class="fey">SDG3 HEALTH PLATFORM — VITALIS</div>
+      <h2>CREATE ACCOUNT</h2>
+      <p>Begin your journey toward optimal health &amp; wellbeing</p>
+    </div>
+    <div class="fdiv"></div>
+    <div class="irow">
+      <div class="ig">
+        <label>First Name</label>
+        <div class="iw">
+          <span class="iico">⬡</span>
+          <input type="text" class="fi" id="fn" placeholder="John">
+          <div class="iln"></div>
+        </div>
+      </div>
+      <div class="ig">
+        <label>Last Name</label>
+        <div class="iw">
+          <span class="iico">⬡</span>
+          <input type="text" class="fi" id="ln" placeholder="Doe">
+          <div class="iln"></div>
+        </div>
+      </div>
+    </div>
+    <div class="ig">
+      <label>Email Address</label>
+      <div class="iw">
+        <span class="iico" style="font-size:13px">✉</span>
+        <input type="email" class="fi" id="em" placeholder="john.doe@vitalis.health">
+        <div class="iln"></div>
+      </div>
+    </div>
+    <div class="ig">
+      <label>Password</label>
+      <div class="iw">
+        <span class="iico">⬡</span>
+        <input type="password" class="fi" id="pw" placeholder="Create a strong password">
+        <div class="iln"></div>
+      </div>
+    </div>
+    <div class="irow">
+      <div class="ig">
+        <label>Health Goal</label>
+        <select class="fsel" id="hg">
+          <option value="">Select goal...</option>
+          <option>Build Fitness</option>
+          <option>Weight Management</option>
+          <option>Mental Wellness</option>
+          <option>Recovery &amp; Rehab</option>
+          <option>Peak Performance</option>
+        </select>
+      </div>
+      <div class="ig">
+        <label>Activity Level</label>
+        <select class="fsel" id="al">
+          <option value="">Select level...</option>
+          <option>Sedentary</option>
+          <option>Lightly Active</option>
+          <option>Moderately Active</option>
+          <option>Very Active</option>
+          <option>Athlete</option>
+        </select>
+      </div>
+    </div>
+    <div class="trow">
+      <label class="cck">
+        <input type="checkbox" id="tc">
+        <div class="cbx"></div>
+      </label>
+      <div class="ttxt">I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>. I support SDG 3: Good Health &amp; Well-Being.</div>
+    </div>
+    <button id="sbt" onclick="submitReg()">
+      <div class="slb" id="slb"></div>
+      <span class="sbtc" id="sbttxt">CREATE MY ACCOUNT</span>
+    </button>
+  </div>
+</div>
+
+<!-- SUCCESS OVERLAY -->
+<div id="so">
+  <div id="sb">
+    <div class="sir">
+      <svg viewBox="0 0 52 52" fill="none">
+        <path d="M14 26L22 34L38 18" stroke="var(--g)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="26" cy="26" r="22" stroke="rgba(0,255,136,.3)" stroke-width="1.5" stroke-dasharray="4 4"/>
+      </svg>
+    </div>
+    <h2>REGISTRATION COMPLETE</h2>
+    <p class="sp">Welcome to the VITALIS Health Platform</p>
+    <div class="seml" id="seml">your@email.com</div>
+    <p style="font-size:11px;margin-bottom:30px;color:rgba(255,255,255,.22);letter-spacing:1px">Check your inbox and activate your account to begin</p>
+    <button id="actbtn" onclick="activateAcc()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+        <polyline points="22 4 12 14.01 9 11.01"/>
+      </svg>
+      <span>ACTIVATE MY ACCOUNT</span>
+    </button>
+    <div id="actsuc">
+      <div class="aico">⚡</div>
+      <h3>ACCOUNT ACTIVATED!</h3>
+      <p>VITALIS HEALTH MATRIX — ACCESS GRANTED</p>
+    </div>
+  </div>
+</div>
+
+<script>
+gsap.registerPlugin(MotionPathPlugin, CustomEase);
+CustomEase.create("ep","M0,0 C0.25,0.46 0.45,0.94 0.6,1.0 0.75,1.06 0.9,1.03 1,1");
+
+// ── PARTICLE CANVAS ──
+const cv = document.getElementById('pc');
+const cx2 = cv.getContext('2d');
+cv.width = window.innerWidth; cv.height = window.innerHeight;
+
+const PCOLS = ['rgba(0,255,136,','rgba(0,229,255,','rgba(170,255,0,','rgba(255,107,0,','rgba(255,45,120,','rgba(191,0,255,'];
+const pts = [];
+for(let i=0;i<190;i++) pts.push(newP(true));
+
+function newP(init){
+  return {
+    x: Math.random()*cv.width,
+    y: init ? Math.random()*cv.height : cv.height+10,
+    vx:(Math.random()-.5)*.45,
+    vy:-(Math.random()*.75+.18),
+    r:Math.random()*1.8+.4,
+    a:Math.random()*.55+.18,
+    col:PCOLS[Math.floor(Math.random()*PCOLS.length)],
+    ph:Math.random()*Math.PI*2,
+    ps:Math.random()*.028+.01,
+    t:Math.random()>.88?'x':'c'
+  };
+}
+
+function drawPts(){
+  cx2.clearRect(0,0,cv.width,cv.height);
+  for(let i=0;i<pts.length;i++){
+    for(let j=i+1;j<pts.length;j++){
+      const dx=pts[i].x-pts[j].x, dy=pts[i].y-pts[j].y;
+      const d=Math.sqrt(dx*dx+dy*dy);
+      if(d<95){
+        cx2.save();cx2.globalAlpha=(1-d/95)*.13;
+        cx2.strokeStyle='rgba(0,255,136,1)';cx2.lineWidth=.5;
+        cx2.beginPath();cx2.moveTo(pts[i].x,pts[i].y);cx2.lineTo(pts[j].x,pts[j].y);cx2.stroke();cx2.restore();
+      }
+    }
+  }
+  pts.forEach(p=>{
+    p.x+=p.vx; p.y+=p.vy; p.ph+=p.ps;
+    const ca=p.a*(0.7+0.3*Math.sin(p.ph));
+    if(p.y<-20||p.x<-20||p.x>cv.width+20) Object.assign(p,newP(false));
+    cx2.save(); cx2.globalAlpha=ca;
+    cx2.fillStyle=p.col+'1)'; cx2.shadowColor=p.col+'.8)'; cx2.shadowBlur=7;
+    if(p.t==='x'){
+      const s=p.r*3;
+      cx2.fillRect(p.x-s/6,p.y-s/2,s/3,s);
+      cx2.fillRect(p.x-s/2,p.y-s/6,s,s/3);
+    } else {
+      cx2.beginPath(); cx2.arc(p.x,p.y,p.r,0,Math.PI*2); cx2.fill();
+    }
+    cx2.restore();
+  });
+  requestAnimationFrame(drawPts);
+}
+drawPts();
+window.addEventListener('resize',()=>{cv.width=window.innerWidth;cv.height=window.innerHeight});
+
+// ── CURSOR ──
+const CX=document.getElementById('cx'), CI=document.getElementById('ci'), CT=document.getElementById('ct');
+let mx=0,my=0;
+document.addEventListener('mousemove',e=>{
+  mx=e.clientX; my=e.clientY;
+  gsap.to(CI,{x:mx,y:my,duration:.05});
+  gsap.to(CX,{x:mx,y:my,duration:.14});
+  gsap.to(CT,{x:mx,y:my,duration:.35});
+});
+document.querySelectorAll('button,a,input,select').forEach(el=>{
+  el.addEventListener('mouseenter',()=>{gsap.to(CX,{scale:1.9,borderColor:'#00e5ff',duration:.2});gsap.to(CI,{scale:.4,duration:.2})});
+  el.addEventListener('mouseleave',()=>{gsap.to(CX,{scale:1,borderColor:'#00ff88',duration:.2});gsap.to(CI,{scale:1,duration:.2})});
+});
+
+// ── CLOCK ──
+function tick(){
+  const n=new Date();
+  document.getElementById('clk').textContent=[n.getHours(),n.getMinutes(),n.getSeconds()].map(v=>String(v).padStart(2,'0')).join(':');
+}
+setInterval(tick,1000); tick();
+
+// ── SCANLINE ──
+gsap.to('#sl',{y:'110vh',duration:6,ease:'none',repeat:-1,repeatDelay:3});
+
+// ── PARALLAX ──
+document.addEventListener('mousemove',e=>{
+  const rx=(e.clientX/window.innerWidth-.5)*2;
+  const ry=(e.clientY/window.innerHeight-.5)*2;
+  gsap.to('#o1',{x:rx*28,y:ry*18,duration:2,ease:'power1.out'});
+  gsap.to('#o2',{x:rx*-22,y:ry*-18,duration:2.5,ease:'power1.out'});
+  gsap.to('#o3',{x:rx*14,y:ry*12,duration:3,ease:'power1.out'});
+  gsap.to('#gb',{x:rx*7,y:ry*5,duration:2,ease:'power1.out'});
+  const objPar=[
+    ['#d1',22,14],['#d2',-16,-18],['#b1',26,10],['#b2',-12,18],
+    ['#h1',-18,-14],['#dn1',10,-18],['#cr1',-14,10],['#md1',18,-12],
+    ['#k1',-12,16],['#sh1',10,-14],['#lf1',14,12]
+  ];
+  objPar.forEach(([id,fx,fy])=>gsap.to(id,{x:rx*fx,y:ry*fy,duration:2,ease:'power1.out'}));
+});
+
+// ── FLOAT ANIMATIONS ──
+function initFloat(){
+  gsap.to('#d1',{y:'+=28',rotation:8,duration:3.2,ease:'sine.inOut',yoyo:true,repeat:-1});
+  gsap.to('#d2',{y:'-=24',rotation:-6,duration:4.1,ease:'sine.inOut',yoyo:true,repeat:-1});
+  gsap.to('#d3',{y:'+=20',rotation:12,duration:2.9,ease:'sine.inOut',yoyo:true,repeat:-1,delay:.5});
+  gsap.to('#b1',{y:'+=16',rotation:-4,duration:5.2,ease:'sine.inOut',yoyo:true,repeat:-1});
+  gsap.to('#b2',{y:'-=20',rotation:5,duration:4.5,ease:'sine.inOut',yoyo:true,repeat:-1,delay:1});
+  gsap.to('#k1',{y:'+=26',rotation:14,duration:3.6,ease:'sine.inOut',yoyo:true,repeat:-1,delay:.3});
+  gsap.to('#k2',{y:'-=20',rotation:-10,duration:3.9,ease:'sine.inOut',yoyo:true,repeat:-1});
+  gsap.to('#h1',{scale:1.14,duration:.72,ease:'power2.inOut',yoyo:true,repeat:-1});
+  gsap.to('#h2',{scale:1.1,duration:.95,ease:'power2.inOut',yoyo:true,repeat:-1,delay:.35});
+  gsap.to('#h1',{y:'+=14',duration:2.6,ease:'sine.inOut',yoyo:true,repeat:-1});
+  gsap.to('#h2',{y:'-=17',duration:3.1,ease:'sine.inOut',yoyo:true,repeat:-1,delay:.7});
+  gsap.to('#dn1',{rotation:360,duration:13,ease:'none',repeat:-1});
+  gsap.to('#dn2',{rotation:-360,duration:17,ease:'none',repeat:-1});
+  gsap.to('#dn1',{y:'+=24',duration:3.6,ease:'sine.inOut',yoyo:true,repeat:-1});
+  gsap.to('#dn2',{y:'-=18',duration:4.1,ease:'sine.inOut',yoyo:true,repeat:-1});
+  gsap.to('#cr1',{y:'+=18',rotation:5,duration:3.1,ease:'sine.inOut',yoyo:true,repeat:-1});
+  gsap.to('#cr2',{y:'-=14',rotation:-5,duration:3.8,ease:'sine.inOut',yoyo:true,repeat:-1});
+  const ltl=gsap.timeline({repeat:-1,repeatDelay:2.5});
+  ltl.to('#lt1',{opacity:1,scale:1.22,duration:.1}).to('#lt1',{opacity:.42,scale:1,duration:.22}).to('#lt1',{opacity:.88,scale:1.1,duration:.1}).to('#lt1',{opacity:.68,duration:1.6});
+  gsap.to('#lt1',{y:'+=20',duration:2.9,ease:'sine.inOut',yoyo:true,repeat:-1});
+  gsap.to('#lt2',{y:'-=17',rotation:10,duration:3.4,ease:'sine.inOut',yoyo:true,repeat:-1});
+  gsap.to('#yg1',{y:'-=23',rotation:5,duration:4.1,ease:'sine.inOut',yoyo:true,repeat:-1});
+  gsap.to('#sh1',{y:'+=18',rotation:-8,duration:3.3,ease:'sine.inOut',yoyo:true,repeat:-1});
+  gsap.to('#lf1',{y:'+=17',rotation:8,duration:4.6,ease:'sine.inOut',yoyo:true,repeat:-1});
+  gsap.to('#md1',{rotation:12,duration:2.6,ease:'sine.inOut',yoyo:true,repeat:-1});
+  gsap.to('#md1',{y:'+=18',duration:3.9,ease:'sine.inOut',yoyo:true,repeat:-1});
+  gsap.to('.dtag',{opacity:.55,stagger:{each:.28,from:'random'},duration:1.6,yoyo:true,repeat:-1,ease:'sine.inOut'});
+  gsap.to('#r1',{rotation:360,duration:28,ease:'none',repeat:-1,transformOrigin:'50% 50%'});
+  gsap.to('#r2',{rotation:-360,duration:40,ease:'none',repeat:-1,transformOrigin:'50% 50%'});
+  gsap.to('#r3',{rotation:360,duration:55,ease:'none',repeat:-1,transformOrigin:'50% 50%'});
+  gsap.to('#r4',{rotation:-360,duration:70,ease:'none',repeat:-1,transformOrigin:'50% 50%'});
+  gsap.to(['.mc'],{y:'+=6',duration:2.8,ease:'sine.inOut',yoyo:true,repeat:-1,stagger:.4});
+  // Orbs slow drift
+  gsap.to('#o1',{scale:1.12,duration:8,ease:'sine.inOut',yoyo:true,repeat:-1});
+  gsap.to('#o2',{scale:1.08,duration:10,ease:'sine.inOut',yoyo:true,repeat:-1,delay:2});
+  gsap.to('#o3',{scale:1.15,duration:7,ease:'sine.inOut',yoyo:true,repeat:-1,delay:1});
+  gsap.to('#o5',{scale:1.2,duration:9,ease:'sine.inOut',yoyo:true,repeat:-1,delay:3});
+}
+
+// ── LIVE METRICS ──
+setInterval(()=>{
+  const hr=Math.floor(68+Math.random()*14);
+  document.getElementById('mchr').textContent=hr;
+  document.getElementById('hcv').textContent=hr+'bpm';
+  gsap.fromTo('#mchr',{scale:1.2,color:'#fff'},{scale:1,color:'var(--g)',duration:.4,ease:'ep'});
+},2800);
+setInterval(()=>{
+  const u=Math.floor(12800+Math.random()*250);
+  document.getElementById('ucnt').textContent=u.toLocaleString();
+},4200);
+
+// ── REGISTER BUTTON HOVER ──
+const rb=document.getElementById('rb');
+rb.addEventListener('mouseenter',()=>{
+  gsap.to(rb,{scale:1.07,duration:.3,ease:'ep'});
+  gsap.to(rb,{boxShadow:'0 0 60px rgba(0,255,136,.5),0 0 130px rgba(0,255,136,.2),inset 0 0 50px rgba(0,255,136,.08)',duration:.3});
+});
+rb.addEventListener('mouseleave',()=>{
+  gsap.to(rb,{scale:1,duration:.4,ease:'ep'});
+  gsap.to(rb,{boxShadow:'0 0 35px rgba(0,255,136,.28),0 0 90px rgba(0,255,136,.12),inset 0 0 35px rgba(0,255,136,.05)',duration:.4});
+});
+
+// ── FORM FUNCTIONS ──
+function openForm(){
+  const fo=document.getElementById('fo');
+  fo.classList.add('active');
+  gsap.timeline()
+    .to(fo,{opacity:1,duration:.4,ease:'power2.out'})
+    .to('#fc',{scale:1,rotateX:0,opacity:1,duration:.65,ease:'ep'},'<.1')
+    .from('.fhdr,.fdiv,.ig,.trow,#sbt',{y:22,opacity:0,stagger:.06,duration:.5,ease:'power2.out'},'-=.3');
+  gsap.to('#rb',{scale:.88,duration:.3,ease:'power2.in'});
+}
+function closeForm(){
+  const fo=document.getElementById('fo');
+  gsap.timeline()
+    .to('#fc',{scale:.85,rotateX(15),opacity:0,duration:.4,ease:'power2.in'})
+    .to(fo,{opacity:0,duration:.3,ease:'power2.in'},'-=.15')
+    .call(()=>{fo.classList.remove('active')});
+  gsap.to('#rb',{scale:1,duration:.4,ease:'ep'});
+}
+function submitReg(){
+  const em=document.getElementById('em').value;
+  if(!em){
+    gsap.to('#fc',{x:-8,duration:.08,yoyo:true,repeat:5,ease:'none'});
+    return;
+  }
+  const lbEl=document.getElementById('slb');
+  const txtEl=document.getElementById('sbttxt');
+  txtEl.textContent='PROCESSING...';
+  gsap.to(lbEl,{width:'100%',duration:1.8,ease:'power1.inOut',onComplete:()=>{
+    txtEl.textContent='SUCCESS ✓';
+    gsap.to('#sbt',{background:'linear-gradient(135deg,rgba(0,255,136,.3),rgba(0,255,136,.2))',duration:.3});
+    setTimeout(()=>showSuccess(em),500);
+  }});
+}
+function showSuccess(em){
+  closeForm();
+  document.getElementById('seml').textContent=em||'your@email.com';
+  const so=document.getElementById('so');
+  so.classList.add('active');
+  gsap.timeline()
+    .to(so,{opacity:1,duration:.5})
+    .to('#sb',{scale:1,opacity:1,duration:.6,ease:'ep'},'<.1')
+    .from('.sir',{scale:0,rotation:-180,duration:.7,ease:'ep'},'-=.4')
+    .from('#sb h2,#sb .sp,.seml,#sb p,#actbtn',{y:20,opacity:0,stagger:.1,duration:.5,ease:'power2.out'},'-=.3');
+  // Burst particles from center
+  for(let i=0;i<20;i++){
+    const ang=Math.random()*Math.PI*2;
+    const dist=100+Math.random()*200;
+    const el=document.createElement('div');
+    el.style.cssText=`position:fixed;width:6px;height:6px;border-radius:50%;background:${['var(--g)','var(--c)','var(--l)','var(--y)'][Math.floor(Math.random()*4)]};left:50%;top:50%;z-index:200;pointer-events:none`;
+    document.body.appendChild(el);
+    gsap.to(el,{x:Math.cos(ang)*dist,y:Math.sin(ang)*dist,opacity:0,duration:1.2+Math.random()*.8,ease:'power2.out',onComplete:()=>el.remove()});
+  }
+}
+function activateAcc(){
+  const btn=document.getElementById('actbtn');
+  gsap.to(btn,{scale:1.1,duration:.15,yoyo:true,repeat:1,ease:'power2.out',onComplete:()=>{
+    gsap.timeline()
+      .to(btn,{opacity:0,y:-20,duration:.4,ease:'power2.in'})
+      .call(()=>{
+        btn.style.display='none';
+        const as=document.getElementById('actsuc');
+        as.style.display='block';
+        gsap.from('.aico',{scale:0,rotation:-90,duration:.5,ease:'ep'});
+        gsap.from('#actsuc h3,#actsuc p',{y:15,opacity:0,stagger:.12,duration:.45,ease:'power2.out',delay:.2});
+        // Screen flash
+        const fl=document.createElement('div');
+        fl.style.cssText='position:fixed;inset:0;background:rgba(0,255,136,.18);z-index:999;pointer-events:none';
+        document.body.appendChild(fl);
+        gsap.to(fl,{opacity:0,duration:.8,ease:'power2.out',onComplete:()=>fl.remove()});
+        // Ring explosion
+        for(let i=0;i<4;i++){
+          const rng=document.createElement('div');
+          rng.style.cssText=`position:fixed;width:10px;height:10px;border-radius:50%;border:2px solid var(--g);left:50%;top:50%;transform:translate(-50%,-50%);z-index:200;pointer-events:none`;
+          document.body.appendChild(rng);
+          gsap.to(rng,{width:300+i*80,height:300+i*80,opacity:0,borderColor:'var(--c)',duration:1.5+i*.2,ease:'power2.out',delay:i*.15,onComplete:()=>rng.remove()});
+        }
+      });
+  }});
+}
+
+// ── LOADER ──
+const msgs=['INITIALIZING HEALTH MATRIX...','LOADING GSAP ENGINE...','CALIBRATING VITALS...','ESTABLISHING SECURE LINK...','ALMOST READY...'];
+let lp=0;
+function runLoader(){
+  const bar=document.getElementById('lfil');
+  const pct=document.getElementById('lpct');
+  const stat=document.getElementById('lst');
+  gsap.to(bar,{width:'100%',duration:2.8,ease:'power2.inOut',onUpdate:function(){
+    const v=Math.round(this.progress()*100);
+    pct.textContent=v+'%';
+    const mi=Math.floor(v/25);
+    if(msgs[mi]&&stat.textContent!==msgs[mi]) stat.textContent=msgs[mi];
+  },onComplete:()=>{
+    setTimeout(()=>{
+      gsap.to('#ldr',{opacity:0,duration:.7,ease:'power2.inOut',onComplete:()=>{
+        document.getElementById('ldr').style.display='none';
+        initUI();
+      }});
+    },200);
+  }});
+}
+
+function initUI(){
+  // Stagger all objects in
+  gsap.from(['.gobj'],{opacity:0,scale:0,stagger:{each:.04,from:'random'},duration:.7,ease:'ep'});
+  gsap.from(['.mc'],{opacity:0,x:el=>el.getBoundingClientRect().left<window.innerWidth/2?-30:30,stagger:.12,duration:.8,ease:'power2.out',delay:.2});
+  gsap.from('#hud-tl,#hud-tr,#hud-bl,#hud-br',{opacity:0,y:-10,stagger:.1,duration:.6,ease:'power2.out',delay:.3});
+  gsap.from('#brand',{opacity:0,y:-30,duration:.9,ease:'ep',delay:.4});
+  gsap.from('#sdgb',{opacity:0,duration:.8,delay:.7});
+  gsap.from('#rb',{scale:0,rotation:180,duration:1.1,ease:'ep',delay:.5});
+  gsap.from('#stl',{opacity:0,duration:.7,delay:1.2});
+  gsap.from(['.oring'],{opacity:0,scale:0,stagger:.1,duration:.8,ease:'power2.out',delay:.6});
+  gsap.from('#hb-wrap',{opacity:0,y:20,duration:.8,delay:1});
+  gsap.from('.cdeco',{opacity:0,stagger:.08,duration:.6,delay:.5});
+  gsap.from('.dtag',{opacity:0,x:-20,stagger:.15,duration:.6,delay:.8});
+  initFloat();
+  animHUD();
+}
+
+function animHUD(){
+  // HUD scan line bands
+  const b1=document.createElement('div');
+  b1.style.cssText='position:fixed;left:0;right:0;height:2px;background:rgba(0,255,136,.06);pointer-events:none;z-index:2';
+  document.body.appendChild(b1);
+  gsap.fromTo(b1,{top:0},{top:'100vh',duration:5,ease:'none',repeat:-1,repeatDelay:3});
+}
+
+runLoader();
+</script>
+</body>
+</html>

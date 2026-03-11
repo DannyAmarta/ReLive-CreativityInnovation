@@ -9,12 +9,8 @@ type AuthPayload {
   accessToken: String
 }
 
-type User {
-  id: Int!
-  name: String!
-  email: String!
-  bio: String
-  avatar: String
+type RegisterResponse {
+  message: String!
 }
 
 type Query {
@@ -23,7 +19,7 @@ type Query {
 
 type Mutation {
   signIn(signInInput: SignInInput!): AuthPayload!
-  createUser(createUserInput: CreateUserInput!): User!
+  register(createUserInput: CreateUserInput!): RegisterResponse!
 }
 
 input SignInInput {

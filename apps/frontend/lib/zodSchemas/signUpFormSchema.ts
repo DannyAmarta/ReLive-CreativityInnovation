@@ -28,3 +28,13 @@ export const SignInFormSchema = z.object({
         .regex(/[^a-zA-Z0-9]/, { message: "Contain at least one special letter."})
         .trim(),
 })
+
+export const ResetPasswordSchema = z.object({
+    password: z
+        .string()
+        .min(8)
+        .regex(/[a-zA-Z]/, { message: "Contain at least one letter."})
+        .regex(/[0-9]/, { message: "Contain at least one number."})
+        .regex(/[^a-zA-Z0-9]/, { message: "Contain at least one special letter."})
+        .trim(),
+})

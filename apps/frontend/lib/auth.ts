@@ -7,6 +7,8 @@ import { SignInFormState, SignUpFormState } from './types/formState';
 import { SignInFormSchema, SignUpFormSchema } from "./zodSchemas/signUpFormSchema";
 import { print } from "graphql";
 import { revalidatePath } from "next/cache";
+import { createSession } from "./session.server";
+import ResetPassword from '../app/auth/reset-password/page';
 
 export async function Register(
     state: SignUpFormState | undefined,
@@ -49,9 +51,9 @@ export async function Register(
             message: e.message
         }
     }
-
-    redirect('/auth/login')
-
+    
+    // redirect('/auth/login')
+    redirect('/api/auth/activate/')
 }
 
 export async function Login(
@@ -74,11 +76,13 @@ export async function Login(
         }
     }
 
+    let data;
+
     try{
-        const data = await fetchGraphql(print(SIGN_IN_MUTATION), {
+        data = await fetchGraphql(print(SIGN_IN_MUTATION), {
             input:  validatedFields.data
         })
-     } catch (e:any){
+    } catch (e:any){
         console.error('Login error', e);
 
         return{
@@ -86,6 +90,36 @@ export async function Login(
             message: e.message
         }
     }
+
+    // bedanya di sini kita pake session kalo login
+    await createSession({
+        user:{
+            id: data.signIn.id,
+            name: data.signIn.name,
+            avatar: data.signIn.avatar
+        },
+        accessToken: data.signIn.accessToken
+    })
     revalidatePath('/')
     redirect('/')
 }
+
+// const async function ResetPassword(
+//     formData: FormData
+// ): Promise<{
+//      async function submit() {
+//         await fetch("http://localhost:8000/auth/forgot-password", {
+//             method: "POST",
+
+//             headers: { "Content-Type": "application/json" },
+
+//             body: JSON.stringify({
+//                 token,
+
+//                 newPassword: password,
+//             }),
+//         });
+
+//         alert("Reset email sent");
+//     }
+// }

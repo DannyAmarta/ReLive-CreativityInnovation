@@ -5,6 +5,8 @@ import { JwtModule, JwtService } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { StringValue } from 'ms';
 import { AuthResolver } from './auth.resolver';
+import { GoogleStrategy } from './startegies/google.stratey';
+import { AuthController } from './auth.controller';
 
 @Module({
   imports: [
@@ -12,9 +14,9 @@ import { AuthResolver } from './auth.resolver';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: async (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET'),
+        secret: configService.getOrThrow<string>('JWT_SECRET'),
         signOptions: {
-          expiresIn: configService.get<string>('JWT_EXPRIES_IN') as StringValue,
+          expiresIn: configService.getOrThrow<string>('JWT_EXPIRES_IN') as any,
         },
       }),
     }),
@@ -23,7 +25,9 @@ import { AuthResolver } from './auth.resolver';
     AuthResolver,
     AuthService,
     PrismaService,
-    JwtService
+    // JwtService,
+    GoogleStrategy,
   ],
+  controllers: [AuthController]
 })
 export class AuthModule {}

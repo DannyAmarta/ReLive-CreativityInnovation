@@ -9,7 +9,6 @@ import Face, { Expression } from '@/components/DoksliFaceAlias2'
 import { Register } from "@/lib/auth"
 
 type FocusField = "none" | "email" | "password"
-type FormState = "idle" | "error"
 
 const RegisterForm = () => {
   // authentication
@@ -411,6 +410,7 @@ const RegisterForm = () => {
                 }}
               />
               <button
+                type="button"
                 onClick={() => setShowPassword(v => !v)}
                 className="absolute right-0 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 transition-colors"
                 tabIndex={-1}
@@ -474,7 +474,7 @@ const RegisterForm = () => {
 
           <p className="text-center text-sm text-gray-500">
             Already have an account?{" "}
-            <a href="/auth/login"className="font-semibold text-gray-900 underline underline-offset-2 hover:text-purple-600 transition-colors">
+            <a href="/auth/login/" className="font-semibold text-gray-900 underline underline-offset-2 hover:text-purple-600 transition-colors">
               Sign In
             </a>
           </p>
