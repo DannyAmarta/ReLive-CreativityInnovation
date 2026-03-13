@@ -2,9 +2,9 @@
 
 import { redirect } from "next/navigation";
 import { fetchGraphql } from "./fetchGraphQL";
-import { CREATE_USER_MUTATION, SIGN_IN_MUTATION } from "./gqlQueries";
-import { SignInFormState, SignUpFormState } from './types/formState';
-import { SignInFormSchema, SignUpFormSchema } from "./zodSchemas/signUpFormSchema";
+import { CREATE_USER_MUTATION, FORGOT_PASSWORD, RESET_PASSWORD, SIGN_IN_MUTATION } from "./gqlQueries";
+import { ForgotPasswordFormState, ResetPasswordFormState, SignInFormState, SignUpFormState } from './types/formState';
+import { ForgotPasswordSchema, ResetPasswordSchema, SignInFormSchema, SignUpFormSchema } from "./zodSchemas/signUpFormSchema";
 import { print } from "graphql";
 import { revalidatePath } from "next/cache";
 import { createSession } from "./session.server";
@@ -100,26 +100,76 @@ export async function Login(
         },
         accessToken: data.signIn.accessToken
     })
-    revalidatePath('/')
-    redirect('/')
+    revalidatePath('/home/')
+    redirect('/home/')
 }
 
-// const async function ResetPassword(
-//     formData: FormData
-// ): Promise<{
-//      async function submit() {
-//         await fetch("http://localhost:8000/auth/forgot-password", {
-//             method: "POST",
+export async function ForgotPasswordQuery(
+    state: ForgotPasswordFormState | undefined,
+    formData: FormData
+): Promise<ForgotPasswordFormState> {
+    const rawData = {
+        email: formData.get('email')?.toString() || ''
+    }
+    console.log('Forgot password raw data:', rawData)
 
-//             headers: { "Content-Type": "application/json" },
+    const validatedFields = ForgotPasswordSchema.safeParse(rawData)
+    console.log("VALIDATED RESULT:", validatedFields)
+    if(!validatedFields.success){
+        return{
+            errors: validatedFields?.error?.flatten().fieldErrors
+        }
+    }
 
-//             body: JSON.stringify({
-//                 token,
+    try{
+        const data = await fetchGraphql(print(FORGOT_PASSWORD),{
+            input: validatedFields.data
+        })
+    } catch (e: any){
+        console.error('Forgot password error', e);
+        
+        return{
+            message: e.message
+        }
+    }
+    return {
+        message: "Please check your email now."
+    }
+}
 
-//                 newPassword: password,
-//             }),
-//         });
+export async function ResetPasswordQuery(
+    state: ResetPasswordFormState | undefined,
+    formData: FormData
+): Promise<ResetPasswordFormState> {
+    
+    const rawData = {
+        token: formData.get('token')?.toString() || '',
+        newPassword: formData.get('newPassword')?.toString() || '',
+    }
+    console.log("Reset password data raw", rawData)
 
-//         alert("Reset email sent");
-//     }
-// }
+    const validationFields = ResetPasswordSchema.safeParse(rawData)
+    console.log("VALIDATION RESULT:", validationFields)
+
+    if(!validationFields.success){
+        return{
+            errors: validationFields?.error?.flatten().fieldErrors
+        }
+    }
+
+    try{
+        const data = await fetchGraphql(print(RESET_PASSWORD), {
+            input: validationFields.data
+        })
+    } catch (e: any) {
+        console.error("Reset password error:", e);
+        
+        return{
+            message: e.message
+        }
+    }
+
+    return {
+        message: "Password successfully reset."
+    }
+}

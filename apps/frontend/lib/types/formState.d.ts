@@ -28,3 +28,18 @@ export type SignInFormState = {
     message?: string;
 }| undefined;
 
+// kita jangan return password kak
+export type ForgotPasswordFormState = {
+    errors?: {
+        email?: string[]
+    }
+    message?: string
+}| undefined;
+
+export type ResetPasswordFormState = {
+    errors?: {
+        newPassword?: string[]
+    }
+    message?: string
+}| undefined;
+

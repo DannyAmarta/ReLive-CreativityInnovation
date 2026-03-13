@@ -44,14 +44,14 @@ export class AuthController {
         return res.redirect("http://localhost:3000/auth/login")
     }
 
-    @Post('forgot-password')
-    forgotPassword(@Body() dto: ForgotPasswordDto) {
-        return this.authService.forgotPassword(dto.email);
-    }
+    // @Post('forgot-password')
+    // forgotPassword(@Body() dto: ForgotPasswordDto) {
+    //     return this.authService.forgotPassword(dto.email);
+    // }
 
-    @Post('reset-password')
-    resetPassword(@Body() dto: ResetPasswordDto) {
-        return this.authService.resetPassword(dto.token, dto.newPassword);
-    }
+    // @Post('reset-password')
+    // resetPassword(@Body() dto: ResetPasswordDto) {
+    //     return this.authService.resetPassword(dto.token, dto.newPassword);
+    // }
 
 }

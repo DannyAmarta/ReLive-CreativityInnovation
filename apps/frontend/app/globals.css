@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Sora:wght@300;400;600;700&display=swap');
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
@@ -5,7 +6,7 @@
 @custom-variant dark (&:is(.dark *));
 @tailwind utilities;
 
-@layer component{
+@layer components{
   .btn{
     @apply px-4 py-2 rounded-3xl font-medium inline-flex items-center justify-center tracking-tight
   }
@@ -15,6 +16,298 @@
   /* .h1{
     @apply text-5xl font-bold tracking-tight bg-gradient-to-r from-
   } */
+
+}
+
+@keyframes aurora {
+  0%   { transform: translateX(-6%) scale(1);    opacity: 0.6; }
+  50%  { transform: translateX(6%)  scale(1.06); opacity: 0.9; }
+  100% { transform: translateX(-6%) scale(1);    opacity: 0.6; }
+}
+@keyframes floatUp {
+  0%, 100% { transform: translateY(0)     scale(1);    opacity: 0.5; }
+  50%       { transform: translateY(-10px) scale(1.12); opacity: 0.85; }
+}
+@keyframes spinSlow {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+@keyframes shimmer {
+  0%   { background-position: -220% center; }
+  100% { background-position:  220% center; }
+}
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 20px rgba(123,167,255,0.28), 0 10px 40px rgba(82,37,232,0.16); }
+  50%       { box-shadow: 0 0 40px rgba(123,167,255,0.52), 0 14px 55px rgba(82,37,232,0.28); }
+}
+
+/* ─── Layout ─── */
+.rform-root {
+  display: flex;
+  min-height: 100svh;
+  font-family: 'Nunito', sans-serif;
+  background: #080e1f;
+
+  position: relative;
+}
+.char-panel {
+  width: 50%;
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  overflow: visible;
+  flex-shrink: 0;
+
+  z-index: 10;
+}
+.form-panel {
+  width: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
+
+  z-index:5;
+}
+.character-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 5;
+}
+
+/* ─── Tablet ─── */
+@media (max-width: 900px) {
+  .rform-root  { flex-direction: column; }
+  .char-panel  { width: 100%; height: 370px; }
+  .form-panel  { width: 100%; padding: 28px 20px 44px; }
+}
+@media (max-width: 480px) {
+  .char-panel  { height: 265px; }
+  .form-panel  { padding: 18px 14px 36px; }
+}
+
+/* ─── Character stage ─── */
+.char-stage {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 8px;
+  height: 440px;
+  z-index: 10;
+  margin-bottom: 60px; /* lift above ground drift */
+}
+@media (max-width: 900px) {
+  .char-stage { height: 300px; transform: scale(0.68); transform-origin: bottom center; margin-bottom: 30px; }
+}
+@media (max-width: 480px) {
+  .char-stage { height: 220px; transform: scale(0.49); transform-origin: bottom center; margin-bottom: 10px; }
+}
+
+/* ─── Frosted card ─── */
+.form-card {
+  width: 100%;
+  max-width: 400px;
+  background: rgba(255,255,255,0.78);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+  border: 1px solid rgba(255,255,255,0.6);
+  border-radius: 26px;
+  padding: 42px 38px 38px;
+  position: relative;
+  overflow: hidden;
+  animation: pulseGlow 5s ease-in-out infinite;
+}
+.form-card::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(115deg, transparent 25%, rgba(255,255,255,0.28) 50%, transparent 75%);
+  background-size: 220% 100%;
+  animation: shimmer 7s linear infinite;
+  pointer-events: none;
+  border-radius: inherit;
+}
+@media (max-width: 480px) {
+  .form-card { padding: 24px 18px 22px; border-radius: 18px; max-width: 360px; }
+}
+
+/* ─── Labels / inputs ─── */
+.wlabel {
+  display: block;
+  font-size: 0.70rem;
+  font-weight: 800;
+  color: #4a6fa5;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.winput {
+  width: 100%;
+  outline: none;
+  padding: 9px 0;
+  background: transparent;
+  color: #1e293b;
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.92rem;
+  font-weight: 600;
+  transition: border-color 0.25s;
+  border: none;
+}
+.winput::placeholder { color: #94a3b8; font-weight: 400; }
+
+/* ─── Ice button ─── */
+.ice-btn {
+  width: 100%;
+  padding: 14px;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  font-family: 'Sora', sans-serif;
+  font-weight: 700;
+  font-size: 0.94rem;
+  letter-spacing: 0.03em;
+  color: white;
+  background: linear-gradient(135deg, #60a5fa 0%, #7BA7FF 28%, #A78BFA 62%, #7B3FFF 100%);
+  background-size: 200% 200%;
+  position: relative;
+  overflow: hidden;
+  transition: opacity 0.2s;
+  box-shadow: 0 4px 22px rgba(123,167,255,0.45), inset 0 1px 0 rgba(255,255,255,0.2);
+}
+.ice-btn:hover:not(:disabled) {
+  opacity: 0.91;
+  box-shadow: 0 8px 32px rgba(123,167,255,0.62), 0 0 60px rgba(167,139,250,0.3), inset 0 1px 0 rgba(255,255,255,0.3);
+}
+.ice-btn:disabled { opacity: 0.6; cursor: default; }
+.ice-btn::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.36) 50%, transparent 70%);
+  background-size: 200% 100%;
+  animation: shimmer 3.5s linear infinite;
+  pointer-events: none;
+}
+
+/* ─── Floating deco snowflake positions ─── */
+.fl-tl { position: absolute; top: 10%; left:  8%; animation: floatUp 5.5s ease-in-out infinite; }
+.fl-tr { position: absolute; top: 18%; right: 7%; animation: floatUp 7.0s ease-in-out infinite 1.4s; }
+.fl-bl { position: absolute; bottom: 30%; left: 4%; animation: floatUp 6.5s ease-in-out infinite 2.8s; }
+.fl-br { position: absolute; bottom: 24%; right:5%; animation: floatUp 8.5s ease-in-out infinite 0.7s; }
+.fl-cx { position: absolute; top: 40%; left: 46%; animation: spinSlow 24s linear infinite; }
+
+
+/* ─── Auth row (remember + forgot) ─── */
+.auth-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  font-size:0.82rem;
+  margin-bottom:22px;
+}
+
+.auth-forgot{
+  font-weight:700;
+  color:#7BA7FF;
+  text-decoration:none;
+  transition:all .2s;
+}
+
+.auth-forgot:hover{
+  color:#A78BFA;
+  text-shadow:0 0 10px rgba(123,167,255,0.4);
+}
+/* ─── Google auth button ─── */
+.google-auth-btn{
+  width:100%;
+  padding:13px 16px;
+  border-radius:999px;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+
+  font-family:'Sora',sans-serif;
+  font-weight:600;
+  font-size:0.92rem;
+
+  color:#334155;
+
+  background:rgba(255,255,255,0.65);
+  backdrop-filter:blur(16px);
+
+  border:1px solid rgba(255,255,255,0.7);
+
+  box-shadow:
+    0 6px 22px rgba(15,23,42,0.12),
+    inset 0 1px 0 rgba(255,255,255,0.8);
+
+  transition:all .25s ease;
+  margin-bottom:22px;
+
+  position:relative;
+  overflow:hidden;
+}
+
+/* shimmer like ice button */
+.google-auth-btn::after{
+  content:'';
+  position:absolute;
+  inset:0;
+
+  background:
+    linear-gradient(
+      120deg,
+      transparent 30%,
+      rgba(255,255,255,0.55) 50%,
+      transparent 70%
+    );
+
+  background-size:200% 100%;
+  animation:shimmer 4s linear infinite;
+
+  pointer-events:none;
+}
+
+.google-auth-btn:hover{
+  transform:translateY(-1px);
+
+  box-shadow:
+    0 10px 32px rgba(123,167,255,0.35),
+    0 0 50px rgba(167,139,250,0.25),
+    inset 0 1px 0 rgba(255,255,255,0.9);
+
+  background:rgba(255,255,255,0.85);
+}
+
+.google-auth-btn:active{
+  transform:scale(.97);
+}
+
+/* ─── OAuth divider ─── */
+.auth-divider{
+  display:flex;
+  align-items:center;
+  gap:14px;
+  margin:16px 0 18px;
+}
+
+.auth-divider-line{
+  flex:1;
+  height:1px;
+  background:rgba(148,163,184,0.35);
+}
+
+.auth-divider-text{
+  font-size:0.7rem;
+  font-weight:700;
+  letter-spacing:.12em;
+  color:#64748b;
 }
 
 @theme inline {

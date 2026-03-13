@@ -42,3 +42,19 @@ export const SIGN_IN_MUTATION = gql`
         }
     }
 `
+
+export const FORGOT_PASSWORD = gql`
+    mutation ForgotPassword($input: ForgotPasswordDto!){
+        forgotPassword(forgotInput: $input){
+            message
+        }
+    }
+`
+
+export const RESET_PASSWORD = gql`
+    mutation resetPassword($input: ResetPasswordDto!) {
+        resetPassword(resetInput: $input) {
+            message
+        }
+    }
+`

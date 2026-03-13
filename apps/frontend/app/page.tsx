@@ -1,23 +1,28 @@
-import FallingLeaves from "../components/FallingLeaves"
-import Header from "../components/Header"
-import Hero from "../components/Hero"
-import AboutUs from "../components/AboutUs"
-import LoremC from "../components/AboutUsDesignWhite"
-import Lorem2 from "../components/Lorem2"
-import Lorem3 from "../components/Lorem3"
- 
+import FallingLeaves from "../components/FallingLeaves";
+import Header from "../components/landing/Header";
+import Hero from "../components/landing/Hero";
+// import dynamic from "next/dynamic"
+
+// const SkyScene = dynamic(() => import("@/components/Sky"), {
+//   ssr: false,
+// })
+import LoremC from "../components/prev/AboutUsDesignWhite";
+import Lorem2 from "../components/prev/Lorem2";
+import Lorem3 from "../components/prev/Lorem3";
+import SkyComponent from "@/components/landing/Sky";
+import AboutUs from "../components/landing/AboutUs";
+
 export default function Home() {
-  return (
-    <>
-      <FallingLeaves/>
-      <main className="relative">
-        <Header/>
-        <Hero/>
-        <AboutUs/>
-        {/* <LoremC/> */}
-        {/* <Lorem2/> */}
-        {/* <Lorem3/> */}
-      </main>
-    </>
-  );
+    return (
+        <>
+            {/* <FallingLeaves/> */}
+            <Header />
+            <Hero />
+            <SkyComponent />
+            <AboutUs />
+            {/* <LoremC/> */}
+            {/* <Lorem2/> */}
+            {/* <Lorem3/> */}
+        </>
+    );
 }

@@ -98,7 +98,7 @@ export class AuthService {
       }
     })
     if(!user){
-      return { message: "If that email exists, a reset link was sent." };
+      return { message: "User email did not found please register first!" };
     }
     const token = await this.jwtService.signAsync(
       {sub: user.id},
@@ -143,7 +143,9 @@ export class AuthService {
       }
     })
 
-    return {message: 'Password updated successfully'}
+    return {
+      message: 'Password updated successfully'
+    }
   }
 
 }

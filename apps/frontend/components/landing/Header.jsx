@@ -2,6 +2,7 @@ import Image from 'next/image'
 import Tree from "@/public/assets/wallpaper/tree.png"
 import Logo from "@/public/assets/wallpaper/logo.png"
 import { getSession } from '@/lib/session.server';
+import Link from 'next/link';
 
 export default async function Header(){
   const session = await getSession();
@@ -35,21 +36,21 @@ export default async function Header(){
         </div>
       </div>
 
-      <div className='w-full px-10 x-20'>
+      <div className='w-full px-10'>
         <div className='py-5'>
-            <div className='flex flex-wrap mx-auto items-center justify-between px-5'>
+            <div className='flex items-center justify-between px-5'>
               <Image src={Logo} alt="Logo" height={40} width={40}/>
               {/* <MenuIcon className="h-5 w-5 md:hidden"/> mobile */}
               <nav className='hidden md:flex gap-6 items-center'>
-                <a className="text-white" href="#">About</a>
-                <a className="text-white" href="#">Features</a>
-                <a className="text-white" href="#">Costumer</a>
-                <a className="text-white" href="#">Update</a>
-                <a className="text-white" href="#">Help</a>
+                <Link className="text-white" href="#">About</Link>
+                <Link className="text-white" href="#">Features</Link>
+                <Link className="text-white" href="#">Costumer</Link>
+                <Link className="text-white" href="#">Update</Link>
+                <Link className="text-white" href="#">Help</Link>
                 {session? (
-                  <a className='text-white' href="/auth/logout/">Logout as {session.user?.name}</a>
+                  <Link className='text-white' href="/auth/logout/">Logout as {session.user?.name}</Link>
                 ) : (
-                 <a className="text-white" href="/auth/login/">Login</a>
+                 <Link className="text-white" href="/auth/login/">Login</Link>
                 )}
               </nav>
             </div>

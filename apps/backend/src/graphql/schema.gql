@@ -9,6 +9,10 @@ type AuthPayload {
   accessToken: String
 }
 
+type ForgotResetPassword {
+  message: String!
+}
+
 type RegisterResponse {
   message: String!
 }
@@ -19,12 +23,23 @@ type Query {
 
 type Mutation {
   signIn(signInInput: SignInInput!): AuthPayload!
+  forgotPassword(forgotInput: ForgotPasswordDto!): ForgotResetPassword!
+  resetPassword(resetInput: ResetPasswordDto!): ForgotResetPassword!
   register(createUserInput: CreateUserInput!): RegisterResponse!
 }
 
 input SignInInput {
   email: String!
   password: String!
+}
+
+input ForgotPasswordDto {
+  email: String!
+}
+
+input ResetPasswordDto {
+  token: String!
+  newPassword: String!
 }
 
 input CreateUserInput {

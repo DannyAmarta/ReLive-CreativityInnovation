@@ -29,8 +29,13 @@ export const SignInFormSchema = z.object({
         .trim(),
 })
 
+export const ForgotPasswordSchema = z.object({
+    email: z.string().email()
+})
+
 export const ResetPasswordSchema = z.object({
-    password: z
+    token: z.string().min(1, "Invalid reset token"),
+    newPassword: z
         .string()
         .min(8)
         .regex(/[a-zA-Z]/, { message: "Contain at least one letter."})
