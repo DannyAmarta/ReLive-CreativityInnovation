@@ -8,6 +8,12 @@ importers:
 
   .:
     dependencies:
+      '@babylonjs/core':
+        specifier: ^8.55.1
+        version: 8.55.1
+      '@babylonjs/loaders':
+        specifier: ^8.55.1
+        version: 8.55.1(@babylonjs/core@8.55.1)(babylonjs-gltf2interface@8.55.1)
       '@react-three/drei':
         specifier: ^10.7.7
         version: 10.7.7(@react-three/fiber@9.5.0(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(three@0.183.2))(@types/react@19.2.14)(@types/three@0.183.1)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(three@0.183.2)
@@ -260,6 +266,15 @@ packages:
   '@babel/types@7.29.0':
     resolution: {integrity: sha512-LwdZHpScM4Qz8Xw2iKSzS+cfglZzJGvofQICy7W7v4caru4EaAmyUuO6BGrbyQ2mYV11W0U8j5mBhd14dd3B0A==}
     engines: {node: '>=6.9.0'}
+
+  '@babylonjs/core@8.55.1':
+    resolution: {integrity: sha512-C4vLcglBdM5B6vsDFZSIsW0Kn+8KbXMqiyLUifKW2S4kr//i3SPPucw98IYKvO1H3F0yk+f9rkrTRb7oLBSUOw==}
+
+  '@babylonjs/loaders@8.55.1':
+    resolution: {integrity: sha512-k8Q7xFHWMEs3ZIzem6SCP+po39jNwehkjJapi62tLtgPcyetOPSMyiHpikdJEyjTIpogXbYspCgNI83XbyS5GQ==}
+    peerDependencies:
+      '@babylonjs/core': ^8.0.0
+      babylonjs-gltf2interface: ^8.0.0
 
   '@dimforge/rapier3d-compat@0.12.0':
     resolution: {integrity: sha512-uekIGetywIgopfD97oDL5PfeezkFpNhwlzlaEYNOA0N6ghdsOvh/HYjSMek5Q2O1PYvRSDFcqFVJl4r4ZBwOow==}
@@ -2181,6 +2196,9 @@ packages:
   axobject-query@4.1.0:
     resolution: {integrity: sha512-qIj0G9wZbMGNLjLmg1PT6v2mE9AH2zlnADJD/2tC6E00hgmhUOfEB6greHPAfLRSufHqROIUTkw6E+M3lH0PTQ==}
     engines: {node: '>= 0.4'}
+
+  babylonjs-gltf2interface@8.55.1:
+    resolution: {integrity: sha512-kYGxNfQ/boYzDYTSd7QEv0WrueMmr/14SxndP4N0Fv8QKHCcJaY1Pl9FbZOkl259mVZ1awPFnKI9ZenM6xHWug==}
 
   balanced-match@1.0.2:
     resolution: {integrity: sha512-3oSeUO0TMV67hN1AmbXsK4yaqU7tjiHlbxRDZOpH0KW9+CeX4bRAaX0Anxt0tx2MrpRpWwQaPwIlISEJhYU5Pw==}
@@ -4656,6 +4674,13 @@ snapshots:
       '@babel/helper-string-parser': 7.27.1
       '@babel/helper-validator-identifier': 7.28.5
 
+  '@babylonjs/core@8.55.1': {}
+
+  '@babylonjs/loaders@8.55.1(@babylonjs/core@8.55.1)(babylonjs-gltf2interface@8.55.1)':
+    dependencies:
+      '@babylonjs/core': 8.55.1
+      babylonjs-gltf2interface: 8.55.1
+
   '@dimforge/rapier3d-compat@0.12.0': {}
 
   '@dotenvx/dotenvx@1.53.0':
@@ -6756,6 +6781,8 @@ snapshots:
   axe-core@4.11.1: {}
 
   axobject-query@4.1.0: {}
+
+  babylonjs-gltf2interface@8.55.1: {}
 
   balanced-match@1.0.2: {}
 
