@@ -1,4 +1,4 @@
-import Hero from '@/components/Hero'
+import Hero from '@/components/world/Hero'
 import React from 'react'
 
 const Home = () => {
