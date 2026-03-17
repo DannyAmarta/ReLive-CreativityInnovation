@@ -17,8 +17,46 @@ type RegisterResponse {
   message: String!
 }
 
+type FoodNutrients {
+  calories: Float
+  proteinGrams: Float
+  carbsGrams: Float
+  fatGrams: Float
+  fiberGrams: Float
+  sugarGrams: Float
+  sodiumMilligrams: Float
+}
+
+type Food {
+  id: String!
+  source: String!
+  sourceId: String!
+  name: String!
+  description: String
+  brand: String
+  referenceServingSize: Float
+  referenceServingUnit: String
+  servingSize: Float!
+  servingUnit: String!
+  per100gNutrients: FoodNutrients!
+  nutrients: FoodNutrients!
+}
+
+type FoodSearchResponse {
+  query: String!
+  sourceUsed: String!
+  cacheHit: Boolean!
+  fallbackUsed: Boolean!
+  page: Int!
+  pageSize: Int!
+  servingSize: Int!
+  totalReturned: Int!
+  items: [Food!]!
+}
+
 type Query {
   hello: String!
+  searchFoods(query: String!, page: Int! = 1, pageSize: Int! = 10, servingSize: Int! = 100): FoodSearchResponse!
 }
 
 type Mutation {

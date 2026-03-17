@@ -58,3 +58,48 @@ export const RESET_PASSWORD = gql`
         }
     }
 `
+
+export const SEARCH_FOODS_QUERY = gql`
+    query SearchFoods($query: String!, $page: Int!, $pageSize: Int!, $servingSize: Int!) {
+        searchFoods(query: $query, page: $page, pageSize: $pageSize, servingSize: $servingSize) {
+            query
+            sourceUsed
+            cacheHit
+            fallbackUsed
+            page
+            pageSize
+            servingSize
+            totalReturned
+            items {
+                id
+                source
+                sourceId
+                name
+                description
+                brand
+                referenceServingSize
+                referenceServingUnit
+                servingSize
+                servingUnit
+                per100gNutrients {
+                    calories
+                    proteinGrams
+                    carbsGrams
+                    fatGrams
+                    fiberGrams
+                    sugarGrams
+                    sodiumMilligrams
+                }
+                nutrients {
+                    calories
+                    proteinGrams
+                    carbsGrams
+                    fatGrams
+                    fiberGrams
+                    sugarGrams
+                    sodiumMilligrams
+                }
+            }
+        }
+    }
+`

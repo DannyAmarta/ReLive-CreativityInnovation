@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useState, useActionState } from "react";
+import { useState, useActionState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Canvas } from "@react-three/fiber";
 import { ResetPasswordQuery } from "@/lib/auth";
@@ -22,17 +22,24 @@ export default function ResetPassword() {
     const [state, action] = useActionState(ResetPasswordQuery, undefined);
 
     const token = useSearchParams().get("token");
-    if (!token) {
-        return <Backup />;
-    }
-
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
 
     const [focusField, setFocusField] = useState<FocusField>("none");
 
     const isError = !!state?.errors;
+    const isSuccess = state?.status === "success";
     const isPasswordActive = focusField === "password";
+
+    useEffect(() => {
+        if (isSuccess) {
+            setPassword("");
+        }
+    }, [isSuccess]);
+
+    if (!token) {
+        return <Backup />;
+    }
 
     // async function submit() {
     //     await fetch("http://localhost:8000/auth/forgot-password", {
@@ -87,7 +94,13 @@ export default function ResetPassword() {
                                 exit={{ opacity: 0, height: 0 }}
                                 className="overflow-hidden mb-4"
                             >
-                                <div className="px-4 py-2.5 rounded-lg bg-red-50 border border-red-200 text-red-600 text-sm text-center">
+                                <div
+                                    className={`px-4 py-2.5 rounded-lg text-sm text-center ${
+                                        isSuccess
+                                            ? "bg-green-50 border border-green-200 text-green-700"
+                                            : "bg-red-50 border border-red-200 text-red-600"
+                                    }`}
+                                >
                                     {state.message}
                                 </div>
                             </motion.div>

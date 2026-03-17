@@ -1,5 +1,4 @@
 import { BACKEND_URL } from "./constants";
-import { getSession } from "./session.server";
 
 export const fetchGraphql = async (query: string, variables?: {}) => {
 
@@ -24,6 +23,10 @@ export const fetchGraphql = async (query: string, variables?: {}) => {
 }
 
 export const authFetchGraphql = async (query: string, variables?: {}) => {
+    // The authenticated helper is server-only because it depends on cookies.
+    // We import the session helper lazily so plain client-side GraphQL fetches
+    // can still bundle safely.
+    const { getSession } = await import("./session.server");
     const session = await getSession()
     const response = await fetch(`${BACKEND_URL}/graphql`, {
         method: 'POST',
