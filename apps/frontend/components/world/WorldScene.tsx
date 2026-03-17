@@ -1,17 +1,17 @@
-  "use client";
+"use client";
 
-  import { useState, useCallback, useRef, useEffect } from 'react';
-  import { Camera } from "./Camera";
-  import { motion, AnimatePresence } from "framer-motion";
-  import { CookBook } from "./CookBook";
-  import Script from "next/script";
-  import Image from "next/image";
-  import dynamic from "next/dynamic";
+import { useState, useCallback, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Camera } from "./Camera";
+import { motion, AnimatePresence } from "framer-motion";
+import Script from "next/script";
+import Image from "next/image";
+import dynamic from "next/dynamic";
 
-  const AstrolabeProfile = dynamic(
-    () => import("./AstrolabeProfile").then((m) => ({ default: m.AstrolabeProfile })),
-    { ssr: false }
-  );
+const AstrolabeProfile = dynamic(
+  () => import("./AstrolabeProfile").then((m) => ({ default: m.AstrolabeProfile })),
+  { ssr: false }
+);
 
   /* ─── Intro cloud data ─── */
   const INTRO_CLOUDS = [
@@ -161,13 +161,12 @@
   /* ═══════════════════════════════════════════════════════════
     MAIN WORLD SCENE
     ═══════════════════════════════════════════════════════════ */
-  export function WorldScene() {
-    const [camera, setCamera] = useState({ x: 0, y: 0, zoom: 1 });
-    const [phase, setPhase] = useState<"intro" | "revealing" | "village">("intro");
-    const [activeSpot, setActiveSpot] = useState<number | null>(null);
-    const [showCookbook, setShowCookbook] = useState(false);
-    const [showProfile, setShowProfile] = useState(false);
-    const [showBird, setShowBird] = useState(true);
+export function WorldScene() {
+  const router = useRouter();
+  const [camera, setCamera] = useState({ x: 0, y: 0, zoom: 1 });
+  const [phase, setPhase] = useState<"intro" | "revealing" | "village">("intro");
+  const [activeSpot, setActiveSpot] = useState<number | null>(null);
+  const [showProfile, setShowProfile] = useState(false);
 
     /* User clicks Start → clouds part and reveal village */
     const handleStart = () => {
@@ -180,8 +179,7 @@
 
       // Special actions that open full-screen modals rather than zooming
       if (spot.action === "cookbook") {
-        setShowCookbook(true);
-        setShowBird(false);
+        router.push("/cookbook");
         return;
       }
       if (spot.action === "profile") {
@@ -197,7 +195,7 @@
         y: -yPct * window.innerHeight * 0.8 + window.innerHeight * 0.15,
         zoom: 1.8,
       });
-    }, []);
+    }, [router]);
 
     const resetCamera = useCallback(() => {
       setActiveSpot(null);
@@ -211,7 +209,7 @@
         <VantaClouds visible={phase !== "village"} />
 
         {/* ═══ VANTA BIRDS — always visible ═══ */}
-        {showBird ? <VantaBirds/> : <></>}
+        <VantaBirds />
         
 
         {/* ═══ INTRO OVERLAY (text + button + CSS clouds on top of Vanta) ═══ */}
@@ -383,7 +381,7 @@
 
         {/* ═══ BOTTOM UI ═══ */}
         <AnimatePresence>
-          {phase === "village" && !showCookbook && (
+          {phase === "village" && (
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
@@ -403,7 +401,7 @@
 
         {/* ═══ TOP-RIGHT INFO ═══ */}
         <AnimatePresence>
-          {phase === "village" && !showCookbook && (
+          {phase === "village" && (
             <motion.div
               initial={{ opacity: 0, x: 30 }}
               animate={{ opacity: 1, x: 0 }}
@@ -423,7 +421,7 @@
 
         {/* ═══ ACTIVE SPOT PANEL ═══ */}
         <AnimatePresence>
-          {activeSpot !== null && !showCookbook && !showProfile && (
+          {activeSpot !== null && !showProfile && (
             <motion.div
               initial={{ opacity: 0, x: -40 }}
               animate={{ opacity: 1, x: 0 }}
@@ -445,15 +443,6 @@
             </motion.div>
           )}
         </AnimatePresence>
-
-        {/* ═══ COOKBOOK MODAL ═══ */}
-        {showCookbook && 
-          <CookBook onClose={() => {
-            setShowCookbook(false)
-            setShowBird(true)
-          }
-        }
-        />}
 
         {/* ═══ ASTROLABE PROFILE MODAL ═══ */}
         <AnimatePresence>

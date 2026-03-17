@@ -11,6 +11,7 @@ export type SignUpFormState = {
         password?: string[];
         password2?: string[];
     };
+    status?: "success" | "error";
     message?: string;
 }| undefined;
 
@@ -25,6 +26,7 @@ export type SignInFormState = {
         email?: string[];
         password?: string[];
     };
+    status?: "success" | "error";
     message?: string;
 }| undefined;
 
@@ -33,6 +35,7 @@ export type ForgotPasswordFormState = {
     errors?: {
         email?: string[]
     }
+    status?: "success" | "error";
     message?: string
 }| undefined;
 
@@ -40,6 +43,7 @@ export type ResetPasswordFormState = {
     errors?: {
         newPassword?: string[]
     }
+    status?: "success" | "error";
     message?: string
 }| undefined;
 

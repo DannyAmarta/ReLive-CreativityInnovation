@@ -2,174 +2,193 @@
 
 import { redirect } from "next/navigation";
 import { fetchGraphql } from "./fetchGraphQL";
-import { CREATE_USER_MUTATION, FORGOT_PASSWORD, RESET_PASSWORD, SIGN_IN_MUTATION } from "./gqlQueries";
-import { ForgotPasswordFormState, ResetPasswordFormState, SignInFormState, SignUpFormState } from './types/formState';
-import { ForgotPasswordSchema, ResetPasswordSchema, SignInFormSchema, SignUpFormSchema } from "./zodSchemas/signUpFormSchema";
+import {
+    CREATE_USER_MUTATION,
+    FORGOT_PASSWORD,
+    RESET_PASSWORD,
+    SIGN_IN_MUTATION,
+} from "./gqlQueries";
+import {
+    ForgotPasswordFormState,
+    ResetPasswordFormState,
+    SignInFormState,
+    SignUpFormState,
+} from "./types/formState";
+import {
+    ForgotPasswordSchema,
+    ResetPasswordSchema,
+    SignInFormSchema,
+    SignUpFormSchema,
+} from "./zodSchemas/signUpFormSchema";
 import { print } from "graphql";
 import { revalidatePath } from "next/cache";
 import { createSession } from "./session.server";
-import ResetPassword from '../app/auth/reset-password/page';
 
+// This server action validates registration input and asks the backend to send an activation email.
+// It is used only by the register page so the frontend never stores passwords outside the submitted request.
 export async function Register(
     state: SignUpFormState | undefined,
-    formData: FormData
+    formData: FormData,
 ): Promise<SignUpFormState> {
-    
-    // cara lama kurang safety dari zod
-    // const rawData = Object.fromEntries(formData.entries())
     const rawData = {
         name: formData.get("name")?.toString() || "",
         email: formData.get("email")?.toString() || "",
         password: formData.get("password")?.toString() || "",
         password2: formData.get("password2")?.toString() || "",
-    }
-    console.log("FORM DATA:", rawData)
+    };
 
-    const validatedFields = SignUpFormSchema.safeParse(rawData)
+    const validatedFields = SignUpFormSchema.safeParse(rawData);
 
-    console.log("VALIDATION RESULT:", validatedFields)
-
-    if(!validatedFields.success){
+    if (!validatedFields.success) {
         return {
             data: rawData,
-            errors: validatedFields?.error?.flatten().fieldErrors
-        }
+            errors: validatedFields.error.flatten().fieldErrors,
+            status: "error",
+        };
     }
-    
-    const {password2, ...userInput} = validatedFields.data
 
-    try{
+    const { password2, ...userInput } = validatedFields.data;
+
+    try {
         const data = await fetchGraphql(print(CREATE_USER_MUTATION), {
-            input: userInput
-        })
+            input: userInput,
+        });
 
-    } catch (e: any){
-        console.error("Register error", e);
-        
-        return{
+        return {
+            data: {
+                name: "",
+                email: validatedFields.data.email,
+            },
+            message:
+                data?.register?.message ??
+                "Check your email to activate your account.",
+            status: "success",
+        };
+    } catch (e: any) {
+        return {
             data: rawData,
-            message: e.message
-        }
+            message: e.message,
+            status: "error",
+        };
     }
-    
-    // redirect('/auth/login')
-    redirect('/api/auth/activate/')
 }
 
+// This server action validates local login and creates the encrypted Next.js session cookie.
+// It is used only by the login form after the backend returns a valid auth payload.
 export async function Login(
     state: SignInFormState | undefined,
-    formData: FormData
+    formData: FormData,
 ): Promise<SignInFormState> {
-
     const rawData = {
-        email: formData.get('email')?.toString() || '',
-        password: formData.get('password')?.toString() || ''
-    }
-    console.log("Login data raw", rawData)
+        email: formData.get("email")?.toString() || "",
+        password: formData.get("password")?.toString() || "",
+    };
 
-    const validatedFields = SignInFormSchema.safeParse(rawData)
-    console.log("VALIDATION RESULT:", validatedFields)
-    if(!validatedFields.success){
-        return{
+    const validatedFields = SignInFormSchema.safeParse(rawData);
+    if (!validatedFields.success) {
+        return {
             data: rawData,
-            errors: validatedFields?.error?.flatten().fieldErrors
-        }
+            errors: validatedFields.error.flatten().fieldErrors,
+            status: "error",
+        };
     }
 
     let data;
 
-    try{
+    try {
         data = await fetchGraphql(print(SIGN_IN_MUTATION), {
-            input:  validatedFields.data
-        })
-    } catch (e:any){
-        console.error('Login error', e);
-
-        return{
+            input: validatedFields.data,
+        });
+    } catch (e: any) {
+        return {
             data: rawData,
-            message: e.message
-        }
+            message: e.message,
+            status: "error",
+        };
     }
 
-    // bedanya di sini kita pake session kalo login
     await createSession({
-        user:{
-            id: data.signIn.id,
+        user: {
+            id: String(data.signIn.id),
             name: data.signIn.name,
-            avatar: data.signIn.avatar
+            avatar: data.signIn.avatar,
         },
-        accessToken: data.signIn.accessToken
-    })
-    revalidatePath('/home/')
-    redirect('/home/')
+        accessToken: data.signIn.accessToken,
+    });
+
+    revalidatePath("/home/");
+    redirect("/home/");
 }
 
+// This server action starts the reset-password email flow.
+// It is used by the forgot-password page and always returns a privacy-safe message to the UI.
 export async function ForgotPasswordQuery(
     state: ForgotPasswordFormState | undefined,
-    formData: FormData
+    formData: FormData,
 ): Promise<ForgotPasswordFormState> {
     const rawData = {
-        email: formData.get('email')?.toString() || ''
-    }
-    console.log('Forgot password raw data:', rawData)
+        email: formData.get("email")?.toString() || "",
+    };
 
-    const validatedFields = ForgotPasswordSchema.safeParse(rawData)
-    console.log("VALIDATED RESULT:", validatedFields)
-    if(!validatedFields.success){
-        return{
-            errors: validatedFields?.error?.flatten().fieldErrors
-        }
+    const validatedFields = ForgotPasswordSchema.safeParse(rawData);
+    if (!validatedFields.success) {
+        return {
+            errors: validatedFields.error.flatten().fieldErrors,
+            status: "error",
+        };
     }
 
-    try{
-        const data = await fetchGraphql(print(FORGOT_PASSWORD),{
-            input: validatedFields.data
-        })
-    } catch (e: any){
-        console.error('Forgot password error', e);
-        
-        return{
-            message: e.message
-        }
+    try {
+        await fetchGraphql(print(FORGOT_PASSWORD), {
+            input: validatedFields.data,
+        });
+    } catch {
+        return {
+            message: "We could not send the reset email right now. Please try again.",
+            status: "error",
+        };
     }
+
     return {
-        message: "Please check your email now."
-    }
+        message: "If the email exists, a reset link has been sent.",
+        status: "success",
+    };
 }
 
+// This server action validates the reset form and sends the token/new password to the backend.
+// It is used by the reset-password page after the user opens the reset link from email.
 export async function ResetPasswordQuery(
     state: ResetPasswordFormState | undefined,
-    formData: FormData
+    formData: FormData,
 ): Promise<ResetPasswordFormState> {
-    
     const rawData = {
-        token: formData.get('token')?.toString() || '',
-        newPassword: formData.get('newPassword')?.toString() || '',
+        token: formData.get("token")?.toString() || "",
+        newPassword: formData.get("newPassword")?.toString() || "",
+    };
+
+    const validationFields = ResetPasswordSchema.safeParse(rawData);
+
+    if (!validationFields.success) {
+        return {
+            errors: validationFields.error.flatten().fieldErrors,
+            status: "error",
+        };
     }
-    console.log("Reset password data raw", rawData)
 
-    const validationFields = ResetPasswordSchema.safeParse(rawData)
-    console.log("VALIDATION RESULT:", validationFields)
-
-    if(!validationFields.success){
-        return{
-            errors: validationFields?.error?.flatten().fieldErrors
-        }
-    }
-
-    try{
-        const data = await fetchGraphql(print(RESET_PASSWORD), {
-            input: validationFields.data
-        })
-    } catch (e: any) {
-        console.error("Reset password error:", e);
-        
-        return{
-            message: e.message
-        }
+    try {
+        await fetchGraphql(print(RESET_PASSWORD), {
+            input: validationFields.data,
+        });
+    } catch {
+        return {
+            message:
+                "We could not reset the password. Please request a new reset link.",
+            status: "error",
+        };
     }
 
     return {
-        message: "Password successfully reset."
-    }
+        message: "Password successfully reset.",
+        status: "success",
+    };
 }

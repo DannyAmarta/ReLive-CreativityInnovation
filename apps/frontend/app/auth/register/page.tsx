@@ -34,11 +34,25 @@ const RegisterForm = () => {
     const [yellowYawning, setYellowYawning] = useState(false);
 
     const [uiError, setUiError] = useState(false);
+    const isSuccess = state?.status === "success";
     useEffect(() => {
-        if (state?.errors || state?.message) {
+        if (state?.errors || state?.status === "error") {
             setUiError(true);
+            return;
         }
+
+        setUiError(false);
     }, [state]);
+
+    useEffect(() => {
+        if (state?.status === "success") {
+            setName("");
+            setEmail("");
+            setPassword("");
+            setPassword2("");
+            setIsTypingPassword(false);
+        }
+    }, [state?.status]);
     const isError = uiError;
 
     const isPasswordActive = focusField === "password";
@@ -623,7 +637,7 @@ const RegisterForm = () => {
                         {/* Error banner */}
                         {!!state?.message && (
                             <AnimatePresence>
-                                {isError && (
+                                {(isError || isSuccess) && (
                                     <motion.div
                                         initial={{
                                             opacity: 0,
@@ -646,9 +660,15 @@ const RegisterForm = () => {
                                                 padding: "10px 14px",
                                                 borderRadius: 10,
                                                 background:
-                                                    "rgba(254,202,202,0.65)",
-                                                border: "1px solid rgba(248,113,113,0.45)",
-                                                color: "#b91c1c",
+                                                    isSuccess
+                                                        ? "rgba(220,252,231,0.8)"
+                                                        : "rgba(254,202,202,0.65)",
+                                                border: isSuccess
+                                                    ? "1px solid rgba(74,222,128,0.5)"
+                                                    : "1px solid rgba(248,113,113,0.45)",
+                                                color: isSuccess
+                                                    ? "#166534"
+                                                    : "#b91c1c",
                                                 fontSize: "0.83rem",
                                                 textAlign: "center",
                                                 backdropFilter: "blur(8px)",

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useActionState } from "react";
+import { useState, useActionState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Canvas } from "@react-three/fiber";
 import { ForgotPasswordQuery } from "@/lib/auth";
@@ -24,7 +24,14 @@ export default function ForgotPassword() {
     const [focusField, setFocusField] = useState<FocusField>("none");
 
     const isError = !!state?.errors;
+    const isSuccess = state?.status === "success";
     const isEmailActive = focusField === "email";
+
+    useEffect(() => {
+        if (isSuccess) {
+            setEmail("");
+        }
+    }, [isSuccess]);
 
     return (
         <div className="relative w-full h-screen overflow-hidden text-white bg-[#020617]">
@@ -63,7 +70,13 @@ export default function ForgotPassword() {
                                 exit={{ opacity: 0, height: 0 }}
                                 className="overflow-hidden mb-4"
                             >
-                                <div className="px-4 py-2.5 rounded-lg bg-red-50 border border-red-200 text-red-600 text-sm text-center">
+                                <div
+                                    className={`px-4 py-2.5 rounded-lg text-sm text-center ${
+                                        isSuccess
+                                            ? "bg-green-50 border border-green-200 text-green-700"
+                                            : "bg-red-50 border border-red-200 text-red-600"
+                                    }`}
+                                >
                                     {state.message}
                                 </div>
                             </motion.div>

@@ -1,6 +1,8 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
+// C:\Users\Jovan\.codex\worktrees\875d\ReLive-CreativityInnovation>
+
 // Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
@@ -22,4 +24,49 @@ model User{
   avatar String?
   createdAt DateTime @default(now())
   updatedAt DateTime?
+}
+
+model FoodCache{
+  id Int @id @default(autoincrement())
+  source String
+  sourceId String
+  name String
+  normalizedName String
+  description String?
+  brand String?
+  referenceServingSize Float?
+  referenceServingUnit String?
+  caloriesPer100g Float?
+  proteinGramsPer100g Float?
+  carbsGramsPer100g Float?
+  fatGramsPer100g Float?
+  fiberGramsPer100g Float?
+  sugarGramsPer100g Float?
+  sodiumMilligramsPer100g Float?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([source, sourceId])
+  @@index([normalizedName])
+}
+
+model RecipeCache{
+  id Int @id @default(autoincrement())
+  source String
+  sourceId String
+  title String
+  normalizedTitle String
+  image String
+  calories Float?
+  protein Float?
+  cookTime Int?
+  ingredients String[]
+  instructions String
+  sourceUrl String?
+  dietTags String[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([source, sourceId])
+  @@index([normalizedTitle])
 }
