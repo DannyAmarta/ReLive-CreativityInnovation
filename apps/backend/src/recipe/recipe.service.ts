@@ -1,6 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { Recipe, RecipeSearchResponse, SearchRecipesArgs } from './recipe.types';
+import {
+  Recipe,
+  RecipeSearchResponse,
+  SearchRecipesArgs,
+} from './types/recipe.types';
 import {
   SpoonacularConnector,
   SpoonacularQuotaExceededError,
@@ -275,7 +279,9 @@ export class RecipeService {
 
       const message =
         error instanceof Error ? error.message : 'Unknown Spoonacular error';
-      this.logger.warn(`Spoonacular search failed for "${args.query}": ${message}`);
+      this.logger.warn(
+        `Spoonacular search failed for "${args.query}": ${message}`,
+      );
       return [];
     }
   }
@@ -289,7 +295,9 @@ export class RecipeService {
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Unknown TheMealDB error';
-      this.logger.warn(`TheMealDB search failed for "${args.query}": ${message}`);
+      this.logger.warn(
+        `TheMealDB search failed for "${args.query}": ${message}`,
+      );
       return [];
     }
   }
@@ -328,9 +336,11 @@ export class RecipeService {
   // This helper centralizes access to Prisma's RecipeCache model.
   // It is used by findCachedRecipes and upsertRecipes so generated Prisma types stay isolated in one place.
   private getRecipeCacheModel(): RecipeCacheModel | undefined {
-    return (this.prisma as PrismaService & {
-      recipeCache?: RecipeCacheModel;
-    }).recipeCache;
+    return (
+      this.prisma as PrismaService & {
+        recipeCache?: RecipeCacheModel;
+      }
+    ).recipeCache;
   }
 
   // This helper maps the unified recipe object into the database cache columns.

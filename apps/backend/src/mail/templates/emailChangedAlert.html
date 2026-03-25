@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Security Alert: Email Changed – ReLive</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 0; background-color: #04040b; font-family: 'Segoe UI', Helvetica, Arial, sans-serif; }
+    .container { max-width: 600px; margin: 0 auto; background: linear-gradient(160deg, #0a0a18 0%, #0e0e24 100%); border-radius: 16px; overflow: hidden; }
+    .header { padding: 40px 40px 24px; text-align: center; background: linear-gradient(135deg, rgba(236,72,153,0.15) 0%, rgba(124,58,237,0.1) 100%); border-bottom: 1px solid rgba(236,72,153,0.2); }
+    .logo { font-size: 28px; font-weight: 800; color: #ffffff; letter-spacing: -0.5px; }
+    .logo span { background: linear-gradient(to right, #8b5cf6, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .badge { display: inline-block; margin-top: 12px; padding: 4px 14px; border-radius: 100px; border: 1px solid rgba(236,72,153,0.5); background: rgba(236,72,153,0.1); color: #f9a8d4; font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
+    .body { padding: 40px; }
+    .title { font-size: 24px; font-weight: 700; color: #ffffff; margin: 0 0 12px; }
+    .subtitle { font-size: 15px; color: rgba(255,255,255,0.55); line-height: 1.6; margin: 0 0 24px; }
+    .detail-box { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 20px; margin-bottom: 24px; }
+    .detail-row { display: flex; justify-content: space-between; margin-bottom: 10px; }
+    .detail-row:last-child { margin-bottom: 0; }
+    .detail-label { font-size: 12px; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 0.06em; }
+    .detail-value { font-size: 14px; color: #ffffff; font-weight: 600; }
+    .detail-value.old { color: rgba(255,255,255,0.4); text-decoration: line-through; }
+    .detail-value.new { color: #67e8f9; }
+    .alert { background: rgba(236,72,153,0.08); border: 1px solid rgba(236,72,153,0.25); border-radius: 10px; padding: 16px 20px; margin-bottom: 24px; }
+    .alert p { margin: 0; font-size: 13px; color: rgba(255,255,255,0.55); line-height: 1.6; }
+    .alert strong { color: #f9a8d4; }
+    .btn-wrapper { text-align: center; }
+    .btn { display: inline-block; padding: 13px 36px; border-radius: 50px; background: linear-gradient(135deg, #ec4899, #7c3aed); color: #ffffff; font-weight: 700; font-size: 14px; text-decoration: none; letter-spacing: 0.04em; }
+    .footer { padding: 24px 40px 32px; text-align: center; border-top: 1px solid rgba(255,255,255,0.06); }
+    .footer p { font-size: 12px; color: rgba(255,255,255,0.2); margin: 0; line-height: 1.6; }
+  </style>
+</head>
+<body>
+  <div style="padding: 32px 16px; background-color: #04040b;">
+    <div class="container">
+      <div class="header">
+        <div class="logo">Re<span>Live</span></div>
+        <div class="badge">⚠ Security Alert</div>
+      </div>
+      <div class="body">
+        <p class="title">Your email address was changed</p>
+        <p class="subtitle">
+          This is a security notification to inform you that the email address associated with your ReLive account has been successfully updated.
+        </p>
+        <div class="detail-box">
+          <div class="detail-row">
+            <span class="detail-label">Previous email</span>
+            <span class="detail-value old">{{oldEmail}}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">New email</span>
+            <span class="detail-value new">{{newEmail}}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Changed at</span>
+            <span class="detail-value">{{changedAt}}</span>
+          </div>
+        </div>
+        <div class="alert">
+          <p><strong>Didn't make this change?</strong> If you did not authorize this change, your account may be compromised. Please reset your password immediately and contact support.</p>
+        </div>
+        <div class="btn-wrapper">
+          <a href="{{resetPasswordLink}}" class="btn" target="_blank">Secure My Account</a>
+        </div>
+      </div>
+      <div class="footer">
+        <p>© {{year}} ReLive &mdash; Your creative fitness journey</p>
+        <p style="margin-top: 6px;">This is an automated security notification. Do not reply.</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verify Your New Email – ReLive</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 0; background-color: #04040b; font-family: 'Segoe UI', Helvetica, Arial, sans-serif; }
+    .container { max-width: 600px; margin: 0 auto; background: linear-gradient(160deg, #0a0a18 0%, #0e0e24 100%); border-radius: 16px; overflow: hidden; }
+    .header { padding: 40px 40px 24px; text-align: center; background: linear-gradient(135deg, rgba(124,58,237,0.2) 0%, rgba(6,182,212,0.1) 100%); border-bottom: 1px solid rgba(139,92,246,0.2); }
+    .logo { font-size: 28px; font-weight: 800; color: #ffffff; letter-spacing: -0.5px; }
+    .logo span { background: linear-gradient(to right, #8b5cf6, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .badge { display: inline-block; margin-top: 12px; padding: 4px 14px; border-radius: 100px; border: 1px solid rgba(139,92,246,0.4); background: rgba(139,92,246,0.1); color: #a78bfa; font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
+    .body { padding: 40px; }
+    .title { font-size: 24px; font-weight: 700; color: #ffffff; margin: 0 0 12px; }
+    .subtitle { font-size: 15px; color: rgba(255,255,255,0.55); line-height: 1.6; margin: 0 0 32px; }
+    .email-chip { display: inline-block; padding: 6px 16px; border-radius: 8px; background: rgba(6,182,212,0.1); border: 1px solid rgba(6,182,212,0.3); color: #67e8f9; font-weight: 600; font-size: 14px; margin-bottom: 32px; }
+    .btn-wrapper { text-align: center; margin-bottom: 32px; }
+    .btn { display: inline-block; padding: 14px 40px; border-radius: 50px; background: linear-gradient(135deg, #7c3aed, #06b6d4); color: #ffffff; font-weight: 700; font-size: 15px; text-decoration: none; letter-spacing: 0.04em; }
+    .warning { background: rgba(236,72,153,0.08); border: 1px solid rgba(236,72,153,0.25); border-radius: 10px; padding: 16px 20px; }
+    .warning p { margin: 0; font-size: 13px; color: rgba(255,255,255,0.45); line-height: 1.6; }
+    .warning strong { color: #f9a8d4; }
+    .footer { padding: 24px 40px 32px; text-align: center; border-top: 1px solid rgba(255,255,255,0.06); }
+    .footer p { font-size: 12px; color: rgba(255,255,255,0.2); margin: 0; line-height: 1.6; }
+    .fallback-link { word-break: break-all; font-size: 12px; color: #7c3aed; margin-top: 28px; padding: 14px; background: rgba(124,58,237,0.07); border-radius: 8px; }
+    .fallback-link p { margin: 0 0 6px; color: rgba(255,255,255,0.3); }
+    .fallback-link a { color: #a78bfa; }
+  </style>
+</head>
+<body>
+  <div style="padding: 32px 16px; background-color: #04040b;">
+    <div class="container">
+      <div class="header">
+        <div class="logo">Re<span>Live</span></div>
+        <div class="badge">Email Verification</div>
+      </div>
+      <div class="body">
+        <p class="title">Verify your new email</p>
+        <p class="subtitle">
+          You requested a change to your ReLive account email. Your new address is:
+        </p>
+        <div style="text-align: center;">
+          <span class="email-chip">{{newEmail}}</span>
+        </div>
+        <p class="subtitle" style="margin-bottom: 24px;">
+          Click the button below to confirm and activate this new email address. This link will expire in <strong style="color: #ffffff;">15 minutes</strong>.
+        </p>
+        <div class="btn-wrapper">
+          <a href="{{verifyLink}}" class="btn" target="_blank">Confirm New Email</a>
+        </div>
+        <div class="warning">
+          <p><strong>Didn't request this?</strong> If you did not initiate this email change, please ignore this message. Your current email remains unchanged. Consider updating your password immediately.</p>
+        </div>
+        <div class="fallback-link">
+          <p>Button not working? Copy and paste this link:</p>
+          <a href="{{verifyLink}}">{{verifyLink}}</a>
+        </div>
+      </div>
+      <div class="footer">
+        <p>© {{year}} ReLive &mdash; Your creative fitness journey</p>
+        <p style="margin-top: 6px;">This is an automated message, please do not reply.</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

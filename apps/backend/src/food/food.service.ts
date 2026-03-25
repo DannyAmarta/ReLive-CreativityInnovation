@@ -56,6 +56,7 @@ export class FoodService {
   async searchFoods(args: SearchFoodsArgs): Promise<FoodSearchResponse> {
     // We normalize once so every layer below works with the same safe values.
     const normalizedArgs = this.normalizeArgs(args);
+    //local storage 60 sec
     const cacheKey = this.createResponseCacheKey(normalizedArgs);
     const inMemoryHit = this.getCachedResponse(cacheKey);
 
@@ -63,6 +64,7 @@ export class FoodService {
       return inMemoryHit;
     }
 
+    //mulai database check
     const cachedFoods = await this.findCachedFoods(normalizedArgs);
     if (this.hasUsefulResults(cachedFoods)) {
       const response = this.buildResponse({

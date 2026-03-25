@@ -1,4 +1,4 @@
-import { Food } from './entities/food.entity';
+import { Food } from '../entities/food.entity';
 
 export type FoodSearchParams = {
   query: string;

@@ -1,6 +1,6 @@
 "use server";
 
-import { jwtVerify, SignJWT } from "jose";
+import { decodeJwt, jwtVerify, SignJWT } from "jose";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
@@ -21,18 +21,20 @@ const encodedKey = new TextEncoder().encode(secretKey);
 // This function creates the encrypted session cookie used by the frontend.
 // It is used after login and Google OAuth completion so the browser never needs to manage the raw JWT itself.
 export async function createSession(payload: Session) {
+    const accessTokenExpiryDate = getAccessTokenExpiryDate(payload.accessToken);
+    const sessionExpiryDate =
+        accessTokenExpiryDate ?? new Date(Date.now() + 24 * 60 * 60 * 1000);
+
     const session = await new SignJWT(payload)
         .setProtectedHeader({ alg: "HS256" })
         .setIssuedAt()
-        .setExpirationTime("7d")
+        .setExpirationTime(sessionExpiryDate)
         .sign(encodedKey);
-
-    const expiredAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
     (await cookies()).set("session", session, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
-        expires: expiredAt,
+        expires: sessionExpiryDate,
         sameSite: "lax",
         path: "/",
     });
@@ -49,8 +51,16 @@ export async function getSession() {
         const { payload } = await jwtVerify(cookie, encodedKey, {
             algorithms: ["HS256"],
         });
-        return payload as Session;
+        const session = payload as Session;
+
+        if (isAccessTokenExpired(session.accessToken)) {
+            await deleteSession();
+            redirect("/auth/login");
+        }
+
+        return session;
     } catch {
+        await deleteSession();
         redirect("/auth/login");
     }
 }
@@ -59,4 +69,28 @@ export async function getSession() {
 // It is used by logout flows and whenever the app needs to clear an invalid session.
 export async function deleteSession() {
     (await cookies()).delete("session");
+}
+
+function getAccessTokenExpiryDate(accessToken: string) {
+    try {
+        const decoded = decodeJwt(accessToken);
+
+        if (typeof decoded.exp !== "number") {
+            return null;
+        }
+
+        return new Date(decoded.exp * 1000);
+    } catch {
+        return null;
+    }
+}
+
+function isAccessTokenExpired(accessToken: string) {
+    const expiryDate = getAccessTokenExpiryDate(accessToken);
+
+    if (!expiryDate) {
+        return true;
+    }
+
+    return expiryDate.getTime() <= Date.now();
 }

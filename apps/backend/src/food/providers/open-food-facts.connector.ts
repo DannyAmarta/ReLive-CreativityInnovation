@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { FoodProviderResult, FoodSearchParams } from '../food.types';
+import { FoodProviderResult, FoodSearchParams } from '../types/food.types';
 import { Food } from '../entities/food.entity';
 import {
   createFoodNutrients,
@@ -63,11 +63,15 @@ export class OpenFoodFactsConnector {
       id: `open-food-facts:${product.code ?? product.product_name ?? 'unknown'}`,
       source: 'OPEN_FOOD_FACTS',
       sourceId: product.code ?? product.product_name ?? 'unknown',
-      name: product.product_name?.trim() || product.generic_name?.trim() || 'Unknown food',
+      name:
+        product.product_name?.trim() ||
+        product.generic_name?.trim() ||
+        'Unknown food',
       description: product.generic_name?.trim() || null,
       brand: product.brands?.trim() || null,
       referenceServingSize: toNullableNumber(product.serving_quantity),
-      referenceServingUnit: product.serving_quantity_unit ?? product.serving_size ?? null,
+      referenceServingUnit:
+        product.serving_quantity_unit ?? product.serving_size ?? null,
       servingSize: 100,
       servingUnit: 'g',
       per100gNutrients,
@@ -80,15 +84,35 @@ export class OpenFoodFactsConnector {
   // model so the UI never needs source-specific rules.
   // Used by mapProduct to build the canonical nutrient payload.
   private mapPer100gNutrients(source: Record<string, unknown>) {
-    const sodiumGrams = this.resolveValue(source, 'sodium_100g', 'sodium', 'sodium_value');
-    const saltGrams = this.resolveValue(source, 'salt_100g', 'salt', 'salt_value');
+    const sodiumGrams = this.resolveValue(
+      source,
+      'sodium_100g',
+      'sodium',
+      'sodium_value',
+    );
+    const saltGrams = this.resolveValue(
+      source,
+      'salt_100g',
+      'salt',
+      'salt_value',
+    );
 
     return createFoodNutrients({
       calories: roundToTwoDecimals(
-        this.resolveValue(source, 'energy-kcal_100g', 'energy-kcal', 'energy-kcal_value'),
+        this.resolveValue(
+          source,
+          'energy-kcal_100g',
+          'energy-kcal',
+          'energy-kcal_value',
+        ),
       ),
       proteinGrams: roundToTwoDecimals(
-        this.resolveValue(source, 'proteins_100g', 'proteins', 'proteins_value'),
+        this.resolveValue(
+          source,
+          'proteins_100g',
+          'proteins',
+          'proteins_value',
+        ),
       ),
       carbsGrams: roundToTwoDecimals(
         this.resolveValue(

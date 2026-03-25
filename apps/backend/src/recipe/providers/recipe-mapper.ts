@@ -1,4 +1,4 @@
-import { Recipe } from '../recipe.types';
+import { Recipe } from '../types/recipe.types';
 
 // This helper normalizes repeated instruction text coming from recipe providers.
 // It is used by both provider connectors so the frontend always receives one readable instruction string.
@@ -7,7 +7,10 @@ export function normalizeInstructions(value: string | null | undefined) {
     return 'Instructions are not available for this recipe yet.';
   }
 
-  return value.replace(/\r\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+  return value
+    .replace(/\r\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
 }
 
 // This helper removes empty ingredient values and trims the final list.

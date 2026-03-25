@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { FoodProviderResult, FoodSearchParams } from '../food.types';
+import { FoodProviderResult, FoodSearchParams } from '../types/food.types';
 import { Food } from '../entities/food.entity';
 import {
   createFoodNutrients,
@@ -97,7 +97,11 @@ export class UsdaFoodConnector {
   private mapPer100gNutrients(nutrients: UsdaFoodNutrient[] | undefined) {
     return createFoodNutrients({
       calories: this.resolveNutrient(nutrients, ['energy'], ['1008', '208']),
-      proteinGrams: this.resolveNutrient(nutrients, ['protein'], ['1003', '203']),
+      proteinGrams: this.resolveNutrient(
+        nutrients,
+        ['protein'],
+        ['1003', '203'],
+      ),
       carbsGrams: this.resolveNutrient(
         nutrients,
         ['carbohydrate', 'carbohydrates'],
@@ -118,7 +122,11 @@ export class UsdaFoodConnector {
         ['sugar', 'sugars'],
         ['2000', '269'],
       ),
-      sodiumMilligrams: this.resolveNutrient(nutrients, ['sodium'], ['1093', '307']),
+      sodiumMilligrams: this.resolveNutrient(
+        nutrients,
+        ['sodium'],
+        ['1093', '307'],
+      ),
     });
   }
 
@@ -144,7 +152,10 @@ export class UsdaFoodConnector {
       return null;
     }
 
-    if ((nutrient?.unitName ?? '').toUpperCase() === 'G' && nameMatches.includes('sodium')) {
+    if (
+      (nutrient?.unitName ?? '').toUpperCase() === 'G' &&
+      nameMatches.includes('sodium')
+    ) {
       return roundToTwoDecimals(value * 1000);
     }
 

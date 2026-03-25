@@ -13,7 +13,30 @@ type ForgotResetPassword {
   message: String!
 }
 
+type User {
+  id: Int!
+  name: String!
+  email: String!
+  bio: String
+  avatar: String
+  createdAt: DateTime
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
 type RegisterResponse {
+  message: String!
+}
+
+type RequestEmailChangeResponse {
+  status: String!
+  message: String
+}
+
+type VerifyEmailChangeResponse {
   message: String!
 }
 
@@ -54,9 +77,147 @@ type FoodSearchResponse {
   items: [Food!]!
 }
 
+type Recipe {
+  id: String!
+  source: String!
+  sourceId: String!
+  title: String!
+  image: String!
+  calories: Float
+  protein: Float
+  cookTime: Float
+  ingredients: [String!]!
+  instructions: String!
+  sourceUrl: String
+  dietTags: [String!]!
+}
+
+type RecipeSearchResponse {
+  query: String!
+  sourceUsed: String!
+  cacheHit: Boolean!
+  fallbackUsed: Boolean!
+  page: Int!
+  pageSize: Int!
+  totalReturned: Int!
+  items: [Recipe!]!
+}
+
+type SetRecommendedLoad {
+  repTarget: Int!
+  weightKg: Float!
+  intensityPercent: Float!
+}
+
+type SetCalculationResult {
+  exerciseId: String!
+  exerciseName: String!
+  category: SetExerciseCategory!
+  formulaUsed: SetFormulaId!
+  actualReps: Int
+  rir: Int
+  effectiveReps: Int
+  boundedEffectiveReps: Int
+  boundedByRepCap: Boolean!
+  repCap: Int
+  weightKg: Float
+  estimatedOneRepMaxKg: Float
+  trainingMaxKg: Float
+  relativeIntensityPercent: Float
+  volumeLoadKg: Float
+  durationMinutes: Float
+  distanceMeters: Float
+  pacePerKilometerMinutes: Float
+  cardioLoadScore: Float
+  estimatedCalories: Float
+  confidenceScore: Float!
+  primaryEnergySystem: String!
+  insightSummary: String!
+  warnings: [String!]!
+  recommendedLoads: [SetRecommendedLoad!]!
+}
+
+enum SetExerciseCategory {
+  LOWER_BODY_COMPOUND
+  UPPER_BODY_TECHNICAL
+  METABOLIC_CARDIO
+}
+
+enum SetFormulaId {
+  BRZYCKI
+  WATHAN
+  CARDIO_LOAD
+}
+
+type LoggedWorkoutSet {
+  id: Int!
+  userId: Int!
+  exerciseId: String!
+  exerciseName: String!
+  formulaUsed: SetFormulaId!
+  weightLifted: Float
+  actualReps: Int
+  rirLogged: Int
+  calculated1Rm: Float
+  isCnsFatigue: Boolean!
+  durationMinutes: Float
+  distanceMeters: Float
+  rpeLogged: Float
+  notes: String
+  createdAt: DateTime!
+}
+
+type SetPerformanceAnalytics {
+  exerciseId: String!
+  exerciseName: String!
+  periodDays: Int!
+  emaOneRepMaxKg: Float
+  baselineAverageOneRepMaxKg: Float
+  latestLoggedOneRepMaxKg: Float
+  latestCleanOneRepMaxKg: Float
+  recentRirTrend: Float
+  latestSessionFlagged: Boolean!
+  performanceDropRatio: Float
+  contextSummary: String!
+  sampleSize: Int!
+  isColdStart: Boolean!
+}
+
+type LoggedWorkoutSetPayload {
+  loggedSet: LoggedWorkoutSet!
+  calculation: SetCalculationResult!
+  analytics: SetPerformanceAnalytics!
+}
+
+type SetExercise {
+  id: String!
+  name: String!
+  category: SetExerciseCategory!
+  formula: SetFormulaId!
+  description: String!
+  repCap: Int
+  requiredMetrics: [String!]!
+}
+
 type Query {
   hello: String!
+  getMe: User!
   searchFoods(query: String!, page: Int! = 1, pageSize: Int! = 10, servingSize: Int! = 100): FoodSearchResponse!
+  searchRecipes(query: String!, page: Int! = 1, pageSize: Int! = 10): RecipeSearchResponse!
+  setExercises: [SetExercise!]!
+  calculateSetEstimate(input: CalculateSetInput!): SetCalculationResult!
+  setPerformanceAnalytics(exerciseId: String!, days: Int = 14): SetPerformanceAnalytics!
+}
+
+input CalculateSetInput {
+  exerciseId: String!
+  weightKg: Float
+  reps: Float
+  rir: Float
+  durationMinutes: Float
+  distanceMeters: Float
+  rpe: Float
+  notes: String
 }
 
 type Mutation {
@@ -64,6 +225,10 @@ type Mutation {
   forgotPassword(forgotInput: ForgotPasswordDto!): ForgotResetPassword!
   resetPassword(resetInput: ResetPasswordDto!): ForgotResetPassword!
   register(createUserInput: CreateUserInput!): RegisterResponse!
+  requestEmailChange(input: RequestEmailChangeInput!): RequestEmailChangeResponse!
+  verifyEmailChange(token: String!): VerifyEmailChangeResponse!
+  updateProfile(input: UpdateProfileInput!): User!
+  logWorkoutSet(input: LogWorkoutSetInput!): LoggedWorkoutSetPayload!
 }
 
 input SignInInput {
@@ -86,4 +251,26 @@ input CreateUserInput {
   password: String!
   bio: String
   avatar: String
+}
+
+input RequestEmailChangeInput {
+  newEmail: String!
+  currentPassword: String
+  overwriteAlternate: Boolean
+}
+
+input UpdateProfileInput {
+  name: String
+  bio: String
+}
+
+input LogWorkoutSetInput {
+  exerciseId: String!
+  weightKg: Float
+  reps: Float
+  rir: Float
+  durationMinutes: Float
+  distanceMeters: Float
+  rpe: Float
+  notes: String
 }

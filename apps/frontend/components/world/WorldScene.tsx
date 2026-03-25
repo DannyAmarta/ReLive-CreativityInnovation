@@ -6,11 +6,21 @@ import { Camera } from "./Camera";
 import { motion, AnimatePresence } from "framer-motion";
 import Script from "next/script";
 import Image from "next/image";
+// import { AstrolabeProfile } from "./AstrolabeProfile";
+import { useWorldStore } from "@/store/worldStore";
+import { RadialMenu } from "./RadialMenu";
 import dynamic from "next/dynamic";
 
-const AstrolabeProfile = dynamic(
-  () => import("./AstrolabeProfile").then((m) => ({ default: m.AstrolabeProfile })),
-  { ssr: false }
+const ArmillaryWidget = dynamic(
+  () => import("./ArmillarySphere").then((m) => ({ default: m.ArmillarySphere })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="absolute inset-0 flex items-center justify-center">
+        <div className="w-8 h-8 rounded-full border border-white/20 border-t-[#ffd700] animate-spin" />
+      </div>
+    ),
+  }
 );
 
   /* ─── Intro cloud data ─── */
@@ -164,9 +174,7 @@ const AstrolabeProfile = dynamic(
 export function WorldScene() {
   const router = useRouter();
   const [camera, setCamera] = useState({ x: 0, y: 0, zoom: 1 });
-  const [phase, setPhase] = useState<"intro" | "revealing" | "village">("intro");
-  const [activeSpot, setActiveSpot] = useState<number | null>(null);
-  const [showProfile, setShowProfile] = useState(false);
+  const { phase, setPhase, activeSpot, setActiveSpot } = useWorldStore();
 
     /* User clicks Start → clouds part and reveal village */
     const handleStart = () => {
@@ -183,7 +191,7 @@ export function WorldScene() {
         return;
       }
       if (spot.action === "profile") {
-        setShowProfile(true);
+        router.push("/profile");
         return;
       }
 
@@ -200,10 +208,13 @@ export function WorldScene() {
     const resetCamera = useCallback(() => {
       setActiveSpot(null);
       setCamera({ x: 0, y: 0, zoom: 1 });
-    }, []);
+    }, [setActiveSpot]);
 
     return (
       <div className="relative w-full h-screen overflow-hidden bg-[#4A90D9]">
+        
+        {/* ═══ RADIAL MENU ═══ */}
+        <RadialMenu />
 
         {/* ═══ VANTA CLOUDS — visible during intro ═══ */}
         <VantaClouds visible={phase !== "village"} />
@@ -421,7 +432,7 @@ export function WorldScene() {
 
         {/* ═══ ACTIVE SPOT PANEL ═══ */}
         <AnimatePresence>
-          {activeSpot !== null && !showProfile && (
+          {activeSpot !== null && (
             <motion.div
               initial={{ opacity: 0, x: -40 }}
               animate={{ opacity: 1, x: 0 }}
@@ -444,12 +455,25 @@ export function WorldScene() {
           )}
         </AnimatePresence>
 
-        {/* ═══ ASTROLABE PROFILE MODAL ═══ */}
+        {/* ═══ WORLD SUMMARY OVERVIEW ═══ */}
         <AnimatePresence>
-          {showProfile && (
-            <AstrolabeProfile onClose={() => setShowProfile(false)} />
+          {phase === "village" && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8, x: -50, y: 50 }}
+              animate={{ opacity: 1, scale: 1, x: 0, y: 0 }}
+              exit={{ opacity: 0, scale: 0.8, x: -50, y: 50 }}
+              transition={{ delay: 1, duration: 1, type: "spring", bounce: 0.3 }}
+              className="absolute bottom-0 left-0 w-[400px] h-[400px] z-30 pointer-events-auto"
+            >
+              <div className="absolute inset-0 overflow-hidden rounded-full pointer-events-none" style={{
+                background: "radial-gradient(circle at center, rgba(0,0,0,0.4) 0%, transparent 60%)"
+              }}></div>
+              <ArmillaryWidget sectionPulse={0} />
+            </motion.div>
           )}
         </AnimatePresence>
+
+      
       </div>
     );
   }

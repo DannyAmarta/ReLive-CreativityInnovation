@@ -1,6 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { SearchRecipesArgs, Recipe, RecipeSearchResponse } from '../recipe.types';
+import {
+  SearchRecipesArgs,
+  Recipe,
+  RecipeSearchResponse,
+} from '../types/recipe.types';
 import {
   createRecipeId,
   normalizeIngredients,
@@ -92,11 +96,15 @@ export class SpoonacularConnector {
         );
       }
 
-      throw new Error(`Spoonacular request failed with status ${response.status}`);
+      throw new Error(
+        `Spoonacular request failed with status ${response.status}`,
+      );
     }
 
     const payload = (await response.json()) as SpoonacularSearchResponse;
-    const items = (payload.results ?? []).map((recipe) => this.mapRecipe(recipe));
+    const items = (payload.results ?? []).map((recipe) =>
+      this.mapRecipe(recipe),
+    );
 
     return {
       query: args.query,
@@ -129,7 +137,9 @@ export class SpoonacularConnector {
         }
 
         return [ingredient.amount, ingredient.unit, ingredient.name]
-          .filter((part) => part !== undefined && part !== null && `${part}`.trim())
+          .filter(
+            (part) => part !== undefined && part !== null && `${part}`.trim(),
+          )
           .join(' ');
       }),
     );
@@ -165,7 +175,11 @@ export class SpoonacularConnector {
 
   // This helper returns a shaped empty response when Spoonacular is disabled.
   // It is used by searchRecipes when no API key is configured.
-  private emptyResponse(query: string, page: number, pageSize: number): RecipeSearchResponse {
+  private emptyResponse(
+    query: string,
+    page: number,
+    pageSize: number,
+  ): RecipeSearchResponse {
     return {
       query,
       sourceUsed: 'NONE',

@@ -28,7 +28,19 @@ const nextConfig = {
     return config;
   },
 
-  // ...other config
+  experimental: {
+    optimizePackageImports: [
+      "framer-motion",
+      "lucide-react",
+      "@tsparticles/engine",
+      "@tsparticles/react",
+      "@tsparticles/slim",
+      "three",
+      "@react-three/fiber",
+      "@react-three/drei",
+      "@babylonjs/core",
+    ],
+  },
 };
 
 export default nextConfig;

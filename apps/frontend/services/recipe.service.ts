@@ -1,5 +1,8 @@
 import { BACKEND_URL } from "@/lib/constants";
+import { fetchGraphql } from "@/lib/fetchGraphQL";
+import { SEARCH_RECIPES_QUERY } from "@/lib/gqlQueries";
 import type { RecipeSearchResponse, SearchRecipesParams } from "@/types/recipe";
+import { print } from "graphql";
 
 const RECIPE_SEARCH_CACHE_TTL_MS = 60_000;
 const responseCache = new Map<
@@ -21,7 +24,7 @@ export async function searchRecipes({
     return cachedEntry.value;
   }
 
-  const nextValue = searchRecipesViaRest({
+  const nextValue = searchRecipesViaGraphql({
     query: normalizedQuery,
     page,
     limit,
@@ -41,6 +44,31 @@ export async function searchRecipes({
   }
 }
 
+async function searchRecipesViaGraphql({
+  query,
+  page,
+  limit,
+  signal,
+}: Required<Pick<SearchRecipesParams, "query" | "page" | "limit">> & {
+  signal?: AbortSignal;
+}) {
+  try {
+    const data = (await fetchGraphql(print(SEARCH_RECIPES_QUERY), {
+      query,
+      page,
+      pageSize: limit,
+    })) as { searchRecipes?: RecipeSearchResponse };
+
+    if (!data?.searchRecipes) {
+      throw new Error("Recipe search returned no data.");
+    }
+
+    return data.searchRecipes;
+  } catch {
+    return searchRecipesViaRest({ query, page, limit, signal });
+  }
+}
+
 async function searchRecipesViaRest({
   query,
   page,
@@ -55,13 +83,20 @@ async function searchRecipesViaRest({
     limit: String(limit),
   });
 
-  const response = await fetch(`${BACKEND_URL}/api/recipes?${searchParams.toString()}`, {
-    method: "GET",
-    signal,
-    headers: {
-      Accept: "application/json",
-    },
-  });
+  let response: Response;
+
+  try {
+    response = await fetch(`${BACKEND_URL}/api/recipes?${searchParams.toString()}`, {
+      method: "GET",
+      signal,
+      cache: "no-store",
+      headers: {
+        Accept: "application/json",
+      },
+    });
+  } catch (error) {
+    throw new Error(getNetworkErrorMessage(error));
+  }
 
   if (!response.ok) {
     let message = "Failed to search recipes.";
@@ -78,5 +113,17 @@ async function searchRecipesViaRest({
     throw new Error(message);
   }
 
-  return (await response.json()) as RecipeSearchResponse;
+  try {
+    return (await response.json()) as RecipeSearchResponse;
+  } catch {
+    throw new Error("The recipe API returned an invalid response.");
+  }
+}
+
+function getNetworkErrorMessage(error: unknown) {
+  if (error instanceof Error && error.message) {
+    return `Unable to reach the recipe backend at ${BACKEND_URL}. ${error.message}`;
+  }
+
+  return `Unable to reach the recipe backend at ${BACKEND_URL}.`;
 }

@@ -126,6 +126,32 @@ export function ArmillarySphere({ sectionPulse }: ArmillarySphereProps) {
             rimLight.intensity = 0.5;
             rimLight.diffuse = new BABYLON.Color3(0.8, 0.75, 1.0);
 
+            /* ── Environment Lighting (HDRI) ── */
+            // Using a high-quality studio HDR for realistic golden reflections
+            scene.environmentTexture = BABYLON.CubeTexture.CreateFromPrefilteredData(
+                "https://playground.babylonjs.com/textures/environment.dds",
+                scene
+            );
+            scene.environmentIntensity = 1.2;
+
+            /* ── Post-Processing Pipeline (Bloom & Depth of Field) ── */
+            const pipeline = new BABYLON.DefaultRenderingPipeline(
+                "defaultPipeline", 
+                true, // High Dynamic Range (HDR)
+                scene, 
+                [camera]
+            );
+
+            // Bloom settings (make the gold actually glow)
+            pipeline.bloomEnabled = true;
+            pipeline.bloomThreshold = 0.8;
+            pipeline.bloomWeight = 0.6;
+            pipeline.bloomKernel = 64;
+
+            // Depth of Field is disabled because dynamic mesh scaling across different
+            // responsive screen sizes causes the exact focal point to miss the subject.
+            pipeline.depthOfFieldEnabled = false;
+
             /* ── Load model (with global blob cache for instant reopen) ── */
             if (!cachedBlobUrl) {
                 //if not found fetch
@@ -243,6 +269,8 @@ export function ArmillarySphere({ sectionPulse }: ArmillarySphereProps) {
                             0.5,
                         );
                     }
+                    // Amplify the environment reflection for realism
+                    mat.environmentIntensity = 1.5;
                 }
                 // Standard materials fallback
                 if (

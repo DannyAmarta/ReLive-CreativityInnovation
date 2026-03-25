@@ -1,5 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { SearchRecipesArgs, Recipe, RecipeSearchResponse } from '../recipe.types';
+import {
+  SearchRecipesArgs,
+  Recipe,
+  RecipeSearchResponse,
+} from '../types/recipe.types';
 import {
   createRecipeId,
   normalizeIngredients,
@@ -37,7 +41,9 @@ export class TheMealDbConnector {
     );
 
     if (!response.ok) {
-      throw new Error(`TheMealDB request failed with status ${response.status}`);
+      throw new Error(
+        `TheMealDB request failed with status ${response.status}`,
+      );
     }
 
     const payload = (await response.json()) as MealDbSearchResponse;

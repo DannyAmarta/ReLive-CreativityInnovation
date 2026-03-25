@@ -32,6 +32,7 @@ export async function searchFoods({
         query: normalizedQuery,
         page,
         limit,
+        signal,
       })
     : searchFoodsViaRest({
         query: normalizedQuery,
@@ -68,13 +69,20 @@ async function searchFoodsViaRest({
     servingSize: "100",
   });
 
-  const response = await fetch(`${BACKEND_URL}/api/foods?${searchParams.toString()}`, {
-    method: "GET",
-    signal,
-    headers: {
-      Accept: "application/json",
-    },
-  });
+  let response: Response;
+
+  try {
+    response = await fetch(`${BACKEND_URL}/api/foods?${searchParams.toString()}`, {
+      method: "GET",
+      signal,
+      cache: "no-store",
+      headers: {
+        Accept: "application/json",
+      },
+    });
+  } catch (error) {
+    throw new Error(getNetworkErrorMessage(error));
+  }
 
   if (!response.ok) {
     let message = "Failed to search foods.";
@@ -91,22 +99,37 @@ async function searchFoodsViaRest({
     throw new Error(message);
   }
 
-  return (await response.json()) as FoodSearchResponse;
+  try {
+    return (await response.json()) as FoodSearchResponse;
+  } catch {
+    throw new Error("The food API returned an invalid response.");
+  }
 }
 
 async function searchFoodsViaGraphql({
   query,
   page,
   limit,
-}: Required<Pick<SearchFoodsParams, "query" | "page" | "limit">>) {
-  const data = (await fetchGraphql(getDocumentBody(SEARCH_FOODS_QUERY), {
-    query,
-    page,
-    pageSize: limit,
-    servingSize: 100,
-  })) as { searchFoods: FoodSearchResponse };
+  signal,
+}: Required<Pick<SearchFoodsParams, "query" | "page" | "limit">> & {
+  signal?: AbortSignal;
+}) {
+  try {
+    const data = (await fetchGraphql(getDocumentBody(SEARCH_FOODS_QUERY), {
+      query,
+      page,
+      pageSize: limit,
+      servingSize: 100,
+    })) as { searchFoods?: FoodSearchResponse };
 
-  return data.searchFoods;
+    if (!data?.searchFoods) {
+      throw new Error("Food search returned no data.");
+    }
+
+    return data.searchFoods;
+  } catch {
+    return searchFoodsViaRest({ query, page, limit, signal });
+  }
 }
 
 function getDocumentBody(document: { loc?: { source: { body: string } } }) {
@@ -120,4 +143,12 @@ function getDocumentBody(document: { loc?: { source: { body: string } } }) {
 
 function shouldUseGraphql() {
   return process.env.NEXT_PUBLIC_FOOD_SEARCH_TRANSPORT === "graphql";
+}
+
+function getNetworkErrorMessage(error: unknown) {
+  if (error instanceof Error && error.message) {
+    return `Unable to reach the food backend at ${BACKEND_URL}. ${error.message}`;
+  }
+
+  return `Unable to reach the food backend at ${BACKEND_URL}.`;
 }

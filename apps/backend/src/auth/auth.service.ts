@@ -12,8 +12,8 @@ import { JwtService } from '@nestjs/jwt';
 import { CreateUserInput } from 'src/user/dto/create-user.input';
 import path from 'path';
 import * as fs from 'fs';
-import { MailerService } from '@nestjs-modules/mailer';
 import { ConfigService } from '@nestjs/config';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { randomBytes } from 'crypto';
 
 type SafeAuthUser = {
@@ -43,7 +43,7 @@ export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
-    private mailerService: MailerService,
+    private eventEmitter: EventEmitter2,
     private configService: ConfigService,
   ) {}
 
@@ -211,9 +211,8 @@ export class AuthService {
     html = html.replace('{{resetLink}}', resetLink);
     html = html.replace('{{email}}', email);
 
-    await this.mailerService.sendMail({
-      to: email,
-      subject: 'Password Reset',
+    this.eventEmitter.emit('user.forgot-password', {
+      email,
       html,
     });
 

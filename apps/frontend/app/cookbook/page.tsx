@@ -1,5 +1,10 @@
-import { CookbookExperience } from "@/components/cookbook/CookbookExperience";
-import { NewCookBook2 } from "@/components/cookbook/NewCookBook2";
+import { CookbookPageClient } from "@/components/cookbook/CookbookPageClient";
+
+export const metadata = {
+  title: "Cookbook | ReLive",
+  description:
+    "Discover healthy recipes, ingredients, and macros in a focused single-column cookbook experience.",
+};
 
 export default async function CookbookPage({
   searchParams,
@@ -8,24 +13,12 @@ export default async function CookbookPage({
 }) {
   const resolvedSearchParams = await searchParams;
   return (
-    <>
-      
-      <CookbookExperience
+    <div className="relative min-h-screen overflow-x-hidden bg-[#fffaf4]">
+      <CookbookPageClient
         initialQuery={resolvedSearchParams?.query}
         initialRecipeId={resolvedSearchParams?.recipe}
       />
-
-      {/*
-      <NewCookbookExperience
-        initialQuery={resolvedSearchParams?.query}
-        initialRecipeId={resolvedSearchParams?.recipe}
-      />
-      */}
-
-      {/* <NewCookBook2
-        initialQuery={resolvedSearchParams?.query}
-        initialRecipeId={resolvedSearchParams?.recipe}
-      /> */}
-    </>
+    </div>
   );
 }
+

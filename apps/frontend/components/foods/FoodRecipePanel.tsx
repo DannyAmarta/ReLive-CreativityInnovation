@@ -108,18 +108,13 @@ export function FoodRecipePanel({
             >
               How to make it
             </h2>
-            <p className="mt-2 text-sm text-stone-600">
-              Recipe ideas are fetched from the shared recipe backend and stored locally, so
-              this panel can show cooking instructions without forcing an external redirect.
-            </p>
           </div>
 
           <Link
             href={
               searchTerm
-                ? `/cookbook?query=${encodeURIComponent(searchTerm)}${
-                    selectedRecipe ? `&recipe=${encodeURIComponent(selectedRecipe.id)}` : ""
-                  }`
+                ? `/cookbook?query=${encodeURIComponent(searchTerm)}${selectedRecipe ? `&recipe=${encodeURIComponent(selectedRecipe.id)}` : ""
+                }`
                 : "/cookbook"
             }
             className="inline-flex items-center gap-2 rounded-full border border-stone-300 bg-white/80 px-4 py-2 text-sm font-semibold text-stone-800 transition hover:border-stone-400 hover:bg-white"
@@ -139,15 +134,13 @@ export function FoodRecipePanel({
         ) : null}
 
         {state.isLoading ? (
-          <div className="mt-6 grid gap-4 lg:grid-cols-[0.92fr_1.08fr]">
-            <div className="space-y-3">
-              {Array.from({ length: 3 }, (_, index) => (
-                <div
-                  key={index}
-                  className="h-28 animate-pulse rounded-[1.4rem] border border-stone-200 bg-stone-100/80"
-                />
-              ))}
-            </div>
+          <div className="mt-6 space-y-4">
+            {Array.from({ length: 3 }, (_, index) => (
+              <div
+                key={index}
+                className="h-28 animate-pulse rounded-[1.4rem] border border-stone-200 bg-stone-100/80"
+              />
+            ))}
             <div className="h-[32rem] animate-pulse rounded-[1.8rem] border border-stone-200 bg-stone-100/80" />
           </div>
         ) : null}
@@ -168,18 +161,17 @@ export function FoodRecipePanel({
         ) : null}
 
         {!state.isLoading && !state.error && state.items.length > 0 && selectedRecipe ? (
-          <div className="mt-6 grid gap-4 lg:grid-cols-[0.92fr_1.08fr]">
+          <div className="mt-6 space-y-4">
             <div className="max-h-[32rem] space-y-3 overflow-y-auto pr-1">
               {state.items.map((recipe) => (
                 <button
                   key={recipe.id}
                   type="button"
                   onClick={() => setSelectedRecipeId(recipe.id)}
-                  className={`w-full rounded-[1.5rem] border p-3 text-left transition ${
-                    recipe.id === selectedRecipe.id
+                  className={`w-full rounded-[1.5rem] border p-3 text-left transition ${recipe.id === selectedRecipe.id
                       ? "border-emerald-400 bg-emerald-50/80 shadow-[0_16px_45px_rgba(52,131,103,0.12)]"
                       : "border-stone-200 bg-white/75 hover:border-stone-300"
-                  }`}
+                    }`}
                 >
                   <div className="flex gap-3">
                     <div className="h-20 w-24 overflow-hidden rounded-[1rem] bg-stone-200">

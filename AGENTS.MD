@@ -1,5 +1,59 @@
-<<<<<<< HEAD
 # ReLive-CreativityInnovation: Project State & Progress
+
+
+**Design rule**
+# UI Generation Rules
+
+## Layout constraints
+- NEVER generate side-by-side "explanation" panels
+- NEVER add developer-facing UI such as:
+  - "Why this version is cleaner"
+  - "One source of truth"
+  - "Debounced backend preview"
+  - "Architecture notes"
+  - "Implementation notes"
+- NEVER create two-column layouts unless explicitly requested
+- Default layout must be single-column centered UI
+
+## Audience
+- The UI is for END USERS, not developers
+- Do not include:
+  - reasoning panels
+  - educational descriptions
+  - internal architecture explanations
+  - debugging or validation notes
+
+## Allowed UI
+- Only interactive controls
+- Only user-facing labels
+- Only result output
+
+## Layout rule (strict)
+Always prefer:
+
+centered single card layout
+
+NOT:
+
+[ main UI | explanation panel ]
+
+## If unsure
+When uncertain, DO NOT add informational panels.
+Keep UI minimal.
+
+**Design note**
+use white color as base. 
+PROMPT TEMPLATE: "I need a Next.js 15 React component for a [DESCRIBE PAGE PURPOSE] page. I want it to look incredibly premium, dynamic, and immersive, following a [INSERT THEME NAME] aesthetic.
+
+Please stick strictly to the following 3 Design Pillars:
+
+Tailwind CSS (Lighting & Glass): Use heavy glassmorphism cards (backdrop-blur-xl, bg-white/10 or dark equivalent), ambient radial-gradient 'glow blobs' absolutely positioned in the background, and vibrant gradient text for the main headings. Ensure border colors are extremely subtle (e.g., border-white/20).
+
+Framer Motion (Physics & Flow): All page entrances must be staggered using AnimatePresence and motion.div. Modals and drawers must use object physics type: "spring" with custom stiffness/damping instead of linear easing. The main interactive element should elegantly shift position using the layout prop when state changes.
+
+tsParticles & Depth Framing: Include an absolute, fixed background component that uses tsParticles with custom SVG shapes tailored to the [INSERT THEME NAME] (e.g., glowing embers, floating binary code, or autumn leaves). Pin a few static PNG decorative assets to the absolute corners/edges of the screen with low opacity to 'frame' the viewport and create a foreground depth-of-field effect behind the UI.
+
+Do not use generic solid colors for the background. Rely on carefully curated aesthetic hex codes. Make it Next-Level Pro-Max."
 
 **Project Aim & Description:**
 ReLive-CreativityInnovation is an immersive, full-stack web application designed to blend modern web technologies with rich, interactive 3D experiences. Its primary aim appears to be providing a creative, visually engaging environment (such as a virtual world, interactive portfolio, or storytelling platform) where users can register, log in, and explore dynamic 3D scenes. Do not abuse this since its very lag, ask the promptere before using this thing and wait the to approeThe heavy reliance on 3D rendering libraries like React Three Fiber and BabylonJS, coupled with a robust NestJS backend, indicates a strong focus on high-performance visual innovation and interactive user experiences.
@@ -1350,4 +1404,487 @@ For future features, especially `/foods`, `/cookbook`, and other core wellness p
 2. Reuse the crafted, emotionally expressive interaction style from auth
 3. Create each feature as a themed environment, not just a data screen
 4. Keep usability clear, but do not flatten the experience into generic UI
->>>>>>> codex/implement-food
+
+---
+
+# Update Notes (2026-03-21)
+
+This section supersedes older food/cookbook notes when they disagree with the current implementation in this worktree.
+
+## Current `/foods` Frontend Pattern
+
+The `/foods` route now follows the authentication-style frontend pattern more closely:
+
+1. Input validation is handled with Zod in [foodSearchSchema.ts](/C:/Users/Jovan/.codex/worktrees/3b23/ReLive-CreativityInnovation/apps/frontend/lib/zodSchemas/foodSearchSchema.ts).
+2. Search submission uses a server action in [foodSearch.ts](/C:/Users/Jovan/.codex/worktrees/3b23/ReLive-CreativityInnovation/apps/frontend/lib/foodSearch.ts).
+3. UI state is driven through form-state-like result objects defined in [formState.d.ts](/C:/Users/Jovan/.codex/worktrees/3b23/ReLive-CreativityInnovation/apps/frontend/lib/types/formState.d.ts).
+4. The main route component is still [FoodSearchExperience.tsx](/C:/Users/Jovan/.codex/worktrees/3b23/ReLive-CreativityInnovation/apps/frontend/components/foods/FoodSearchExperience.tsx), but its active search flow is no longer centered on the older custom hook.
+5. The old hooks/services are intentionally still kept in the repo for now and should not be deleted unless the team explicitly chooses to retire them.
+6. The visible `/foods` layout should stay single-column and user-facing rather than adding a side-by-side explanation panel.
+
+Important note:
+
+- `/foods` still recalculates serving-size nutrition locally in the frontend.
+- The backend query is still kept on canonical per-100g values.
+- The related recipe panel on `/foods` still uses the shared frontend recipe service so it can load suggestions without waiting for a page navigation.
+
+## Current `/cookbook` Frontend Pattern
+
+The current `/cookbook` route behavior is:
+
+1. [page.tsx](/C:/Users/Jovan/.codex/worktrees/3b23/ReLive-CreativityInnovation/apps/frontend/app/cookbook/page.tsx) renders [CookbookPageClient.tsx](/C:/Users/Jovan/.codex/worktrees/3b23/ReLive-CreativityInnovation/apps/frontend/components/cookbook/CookbookPageClient.tsx).
+2. `CookbookPageClient` delays rendering the full animated page until mount to reduce hydration mismatch risk.
+3. After mount, it renders [CookbookExperience.tsx](/C:/Users/Jovan/.codex/worktrees/3b23/ReLive-CreativityInnovation/apps/frontend/components/cookbook/CookbookExperience.tsx).
+4. Recipe search input is validated by Zod in [foodSearchSchema.ts](/C:/Users/Jovan/.codex/worktrees/3b23/ReLive-CreativityInnovation/apps/frontend/lib/zodSchemas/foodSearchSchema.ts).
+5. Search submission uses the server action in [recipeSearch.ts](/C:/Users/Jovan/.codex/worktrees/3b23/ReLive-CreativityInnovation/apps/frontend/lib/recipeSearch.ts).
+6. Programmatic `useActionState` submissions are wrapped in transitions to match the stabilized `/foods` pattern.
+7. The active `/cookbook` page should keep a centered single-column content flow instead of a split results/details layout.
+
+Important note:
+
+- Older cookbook notes that say the current route renders `NewCookbookExperience` are outdated for this worktree.
+- If future edits switch back to `NewCookbookExperience`, update this file again so route documentation stays truthful.
+
+## Current Backend Recipe GraphQL State
+
+The backend now exposes recipe search through GraphQL as well as REST:
+
+1. GraphQL args live in [search-recipes.args.ts](/C:/Users/Jovan/.codex/worktrees/3b23/ReLive-CreativityInnovation/apps/backend/src/recipe/dto/search-recipes.args.ts).
+2. GraphQL response types live in [recipe.entity.ts](/C:/Users/Jovan/.codex/worktrees/3b23/ReLive-CreativityInnovation/apps/backend/src/recipe/entities/recipe.entity.ts) and [recipe-search-response.entity.ts](/C:/Users/Jovan/.codex/worktrees/3b23/ReLive-CreativityInnovation/apps/backend/src/recipe/entities/recipe-search-response.entity.ts).
+3. The GraphQL resolver is [recipe.resolver.ts](/C:/Users/Jovan/.codex/worktrees/3b23/ReLive-CreativityInnovation/apps/backend/src/recipe/recipe.resolver.ts).
+4. Both GraphQL `searchRecipes` and REST `/api/recipes` intentionally reuse the same `RecipeService.searchRecipes()` workflow.
+
+This means:
+
+- `searchFoods` and `searchRecipes` now both exist in the backend GraphQL schema.
+- Frontend query examples for food, recipe, forgot-password, and reset-password testing live in [gqlQueries.ts](/C:/Users/Jovan/.codex/worktrees/3b23/ReLive-CreativityInnovation/apps/frontend/lib/gqlQueries.ts).
+
+## Transport And Reliability Notes
+
+The frontend transport layer was hardened after hydration/fetch failures were observed.
+
+Current rules:
+
+1. Backend URL resolution now prefers private server envs first:
+   - `BACKEND_INTERNAL_URL`
+   - `BACKEND_URL`
+   - `NEXT_PUBLIC_BACKEND_URL`
+2. GraphQL fetches are handled through [fetchGraphQL.ts](/C:/Users/Jovan/.codex/worktrees/3b23/ReLive-CreativityInnovation/apps/frontend/lib/fetchGraphQL.ts), which now:
+   - uses `cache: "no-store"`
+   - catches network failures
+   - handles empty and non-JSON backend responses
+   - surfaces clearer error messages
+3. The legacy frontend recipe and food services in [recipe.service.ts](/C:/Users/Jovan/.codex/worktrees/3b23/ReLive-CreativityInnovation/apps/frontend/services/recipe.service.ts) and [food.service.ts](/C:/Users/Jovan/.codex/worktrees/3b23/ReLive-CreativityInnovation/apps/frontend/services/food.service.ts) were also hardened so older hook-based flows do not silently break while still kept in the repo.
+
+## Rule For Future Food/Cookbook Edits
+
+When editing `/foods` or `/cookbook` from this point forward:
+
+1. Prefer the auth-like pattern of `Zod schema -> server action -> form state` for the active route behavior.
+2. Keep GraphQL query definitions documented in [gqlQueries.ts](/C:/Users/Jovan/.codex/worktrees/3b23/ReLive-CreativityInnovation/apps/frontend/lib/gqlQueries.ts) with short playground-style examples when helpful.
+3. Do not remove the older hooks/services unless the team explicitly decides to retire them.
+4. If a page uses heavy motion/background libraries, prefer a mount-safe client wrapper when hydration becomes fragile.
+5. Keep REST and GraphQL recipe/food flows sharing the same backend service layer instead of duplicating business logic.
+6. Keep the visible page layout centered and single-column by default. Do not add side-by-side explanation panels unless the team explicitly asks for them.
+
+---
+
+# Update Notes (2026-03-23)
+
+This section documents the first `/set` implementation added in this worktree.
+
+## Current `/set` Goal
+
+The `/set` route is now a category-aware per-set fitness calculator.
+
+It is designed to:
+
+1. Estimate 1RM and training max for strength lifts.
+2. Apply formula selection based on movement category instead of one universal equation.
+3. Adjust estimates using `RIR` so the calculation reflects effective reps rather than naive raw reps only.
+4. Bound high-rep inputs so the system does not pretend endurance work is a statistically clean max-strength test.
+5. Support metabolic/cardio sessions with a separate conditioning load model instead of forcing cardio into a fake 1RM flow.
+
+## Current Frontend `/set` Flow
+
+The active frontend route is:
+
+1. [page.tsx](/C:/Users/Jovan/.codex/worktrees/3b23/ReLive-CreativityInnovation/apps/frontend/app/set/page.tsx)
+2. It tries to fetch exercise definitions from GraphQL `setExercises`.
+3. If the backend is unavailable, it falls back to the local catalog in [setCatalog.ts](/C:/Users/Jovan/.codex/worktrees/3b23/ReLive-CreativityInnovation/apps/frontend/lib/setCatalog.ts).
+4. The route renders [SetCalculatorPageClient.tsx](/C:/Users/Jovan/.codex/worktrees/3b23/ReLive-CreativityInnovation/apps/frontend/components/set/SetCalculatorPageClient.tsx).
+
+Important frontend rules:
+
+1. Validation is handled with a Zod discriminated union in [setCalculatorSchema.ts](/C:/Users/Jovan/.codex/worktrees/3b23/ReLive-CreativityInnovation/apps/frontend/lib/zodSchemas/setCalculatorSchema.ts).
+2. Submission uses the auth-style server action in [setCalculator.ts](/C:/Users/Jovan/.codex/worktrees/3b23/ReLive-CreativityInnovation/apps/frontend/lib/setCalculator.ts).
+3. Form result state is tracked through `SetCalculatorFormState` in [formState.d.ts](/C:/Users/Jovan/.codex/worktrees/3b23/ReLive-CreativityInnovation/apps/frontend/lib/types/formState.d.ts).
+4. [SetCalculatorPageClient.tsx](/C:/Users/Jovan/.codex/worktrees/3b23/ReLive-CreativityInnovation/apps/frontend/components/set/SetCalculatorPageClient.tsx) validates input on the client, then debounces valid input and requests the backend estimate directly through the server action.
+5. The active UI intentionally does not duplicate Brzycki, Wathan, or cardio load math in the browser anymore.
+6. The active `/set` page should remain a centered single-card flow instead of a calculator-plus-explanation split layout.
+7. The main result panel is athlete-facing first:
+   - strength emphasizes estimated 1RM, training max, and suggested working loads
+   - cardio emphasizes conditioning load, calories, pace, and coaching insight
+   - deeper diagnostic fields stay inside an advanced-details disclosure instead of the main screen
+8. The current `/set` visual direction is a bright white / pearl theme rather than the earlier dark navy prototype.
+
+## Current Backend `/set` Flow
+
+The backend now has a dedicated stateless calculator module:
+
+1. [set.module.ts](/C:/Users/Jovan/.codex/worktrees/3b23/ReLive-CreativityInnovation/apps/backend/src/set/set.module.ts)
+2. [set.service.ts](/C:/Users/Jovan/.codex/worktrees/3b23/ReLive-CreativityInnovation/apps/backend/src/set/set.service.ts)
+3. [set.controller.ts](/C:/Users/Jovan/.codex/worktrees/3b23/ReLive-CreativityInnovation/apps/backend/src/set/set.controller.ts)
+4. [set.resolver.ts](/C:/Users/Jovan/.codex/worktrees/3b23/ReLive-CreativityInnovation/apps/backend/src/set/set.resolver.ts)
+
+Current endpoints:
+
+1. REST `GET /api/sets/exercises`
+2. REST `POST /api/sets/calculate`
+3. GraphQL `setExercises`
+4. GraphQL `calculateSetEstimate`
+
+Important backend rule:
+
+- This first `/set` pass is intentionally stateless. It does not persist workout-set rows in Prisma yet.
+- The current focus is the calculation engine, routing, and clean frontend/backend contract.
+
+## Strategy Pattern Implementation
+
+The backend math layer uses a strategy/factory design instead of giant `if/else` formula blocks.
+
+Current strategy files:
+
+1. [brzycki.strategy.ts](/C:/Users/Jovan/.codex/worktrees/3b23/ReLive-CreativityInnovation/apps/backend/src/set/strategies/brzycki.strategy.ts)
+2. [wathan.strategy.ts](/C:/Users/Jovan/.codex/worktrees/3b23/ReLive-CreativityInnovation/apps/backend/src/set/strategies/wathan.strategy.ts)
+3. [cardio-load.strategy.ts](/C:/Users/Jovan/.codex/worktrees/3b23/ReLive-CreativityInnovation/apps/backend/src/set/strategies/cardio-load.strategy.ts)
+4. [set-strategy.factory.ts](/C:/Users/Jovan/.codex/worktrees/3b23/ReLive-CreativityInnovation/apps/backend/src/set/strategies/set-strategy.factory.ts)
+
+Current category mapping:
+
+1. `LOWER_BODY_COMPOUND` -> `BRZYCKI`
+2. `UPPER_BODY_TECHNICAL` -> `WATHAN`
+3. `METABOLIC_CARDIO` -> `CARDIO_LOAD`
+
+This means:
+
+- squats and deadlifts use the steadier linear-style strength estimate
+- bench/press/technical lifts use the exponential fatigue curve
+- cardio-style sessions use duration/RPE/density scoring instead of fake 1RM logic
+
+## Exercise Router Pattern
+
+The `/set` page now uses a data-driven exercise router rather than one component per exercise.
+
+How it works:
+
+1. The backend sends exercise definitions that include `category`, `formula`, and `requiredMetrics`.
+2. The frontend groups exercises by category.
+3. The page swaps between a strength-input form and a cardio-input form depending on the selected exercise bucket.
+
+This is the first step toward the larger bucket/router architecture requested for future workout logging.
+
+## GraphQL Notes
+
+The frontend GraphQL definitions for the calculator are now in [gqlQueries.ts](/C:/Users/Jovan/.codex/worktrees/3b23/ReLive-CreativityInnovation/apps/frontend/lib/gqlQueries.ts).
+
+Current additions:
+
+1. `GET_SET_EXERCISES_QUERY`
+2. `CALCULATE_SET_ESTIMATE_QUERY`
+
+Short playground-style examples were also added there so backend GraphQL testing is easier.
+
+## Rule For Future `/set` Edits
+
+When editing `/set` from this point forward:
+
+1. Keep the calculator stateless unless the team explicitly decides to add workout persistence and Prisma models.
+2. Keep formula logic inside backend strategies, not inside React components.
+3. Prefer extending the exercise catalog and router metadata instead of hardcoding one-off exercise UI branches.
+4. Preserve input bounding and `RIR` adjustment unless there is a very strong reason to change the estimation philosophy.
+5. Do not reintroduce duplicated physiology math in the frontend unless the team explicitly chooses an offline-only fallback mode and documents the tradeoff.
+6. If persistence is added later, build it as a separate logging layer around this calculator rather than collapsing the calculation engine into database code.
+7. Keep the visible `/set` UI focused on interactive controls and result output, not architecture or implementation panels.
+
+---
+
+# Update Notes (2026-03-24)
+
+This section supersedes older `/set` notes when they disagree with the current implementation in this worktree.
+
+## Current `/set` Persistence Layer
+
+The `/set` feature is no longer calculator-only. It now includes an append-only workout ledger design:
+
+1. Prisma now includes `Exercise`, `WorkoutSet`, and `DailyPerformanceSnapshot`.
+2. `WorkoutSet` is intended to preserve the raw event:
+   - weight lifted
+   - actual reps
+   - logged RIR
+   - cached calculated 1RM
+   - formula used
+   - CNS fatigue flag
+3. The raw set inputs remain the source of truth. The calculated 1RM is stored as a snapshot for fast loading, not as irreversible truth.
+
+## Current `/set` Analytics Layer
+
+The backend now contains two separate services for the statistical layer:
+
+1. [performance-analytics.service.ts](/C:/Users/Jovan/.codex/worktrees/3b23/ReLive-CreativityInnovation/apps/backend/src/set/performance-analytics.service.ts)
+   - calculates the filtered baseline
+   - flags anomalous bad-day drops as `isCnsFatigue`
+   - builds the physiological context string
+2. [statistical-aggregator.service.ts](/C:/Users/Jovan/.codex/worktrees/3b23/ReLive-CreativityInnovation/apps/backend/src/set/statistical-aggregator.service.ts)
+   - calculates EMA across clean daily 1RM values
+   - writes daily snapshots
+   - runs a midnight cron to precompute snapshots
+
+Important rule:
+
+- clean baseline and EMA queries must exclude rows already marked `isCnsFatigue`
+- the latest bad day is still stored in the ledger, but it should not poison the long-term baseline
+
+## Current `/set` API Surface
+
+The feature now exposes both calculator and persistence endpoints:
+
+1. Existing calculator:
+   - REST `GET /api/sets/exercises`
+   - REST `POST /api/sets/calculate`
+   - GraphQL `setExercises`
+   - GraphQL `calculateSetEstimate`
+2. New authenticated logging / analytics:
+   - REST `POST /workouts/log-set`
+   - REST `GET /workouts/analytics/:exerciseId`
+   - GraphQL `logWorkoutSet`
+   - GraphQL `setPerformanceAnalytics`
+
+## Current `/set` Frontend Behavior
+
+The frontend `/set` page now has two main user actions:
+
+1. Estimate a set live through the existing calculator flow.
+2. Save that set through the authenticated log action in [logWorkoutSet.ts](/C:/Users/Jovan/.codex/worktrees/3b23/ReLive-CreativityInnovation/apps/frontend/lib/logWorkoutSet.ts).
+
+After a successful save, the page shows:
+
+1. the saved ledger entry state
+2. the current EMA / baseline snapshot
+3. the generated physiological context summary
+
+## Rule For Future `/set` Persistence Work
+
+When extending this new layer:
+
+1. Keep `WorkoutSet` append-only except for controlled fatigue-flag updates.
+2. Never replace raw set inputs with only derived 1RM values.
+3. Keep anomaly detection and EMA math in dedicated services, not controllers or React components.
+4. Prefer precomputed daily snapshots for heavier trend reads.
+
+---
+
+# Update Notes (2026-03-24 Recommendation Layer)
+
+The backend now also includes the first AI recommendation layer on top of the `/set` analytics system.
+
+## Current Recommendation Module
+
+Files:
+
+1. [generate-plan.dto.ts](/C:/Users/Jovan/.codex/worktrees/3b23/ReLive-CreativityInnovation/apps/backend/src/recommendation/dto/generate-plan.dto.ts)
+2. [recommendation.service.ts](/C:/Users/Jovan/.codex/worktrees/3b23/ReLive-CreativityInnovation/apps/backend/src/recommendation/recommendation.service.ts)
+3. [recommendation.controller.ts](/C:/Users/Jovan/.codex/worktrees/3b23/ReLive-CreativityInnovation/apps/backend/src/recommendation/recommendation.controller.ts)
+4. [recommendation.module.ts](/C:/Users/Jovan/.codex/worktrees/3b23/ReLive-CreativityInnovation/apps/backend/src/recommendation/recommendation.module.ts)
+
+Current route:
+
+1. REST `POST /recommendations`
+
+## Current Recommendation Safety Rules
+
+The recommendation layer must stay subordinate to backend math and filtering:
+
+1. The model never receives raw noisy arrays directly from the frontend.
+2. The server first builds the physiological context from the filtered baseline and EMA snapshot.
+3. The server computes the allowed weight, set, and rep window before prompting the model.
+4. The model response is sanitized again before returning to the client.
+
+Important rule:
+
+- the LLM is allowed to help with strategy and wording
+- the backend remains responsible for safe numeric boundaries
+
+## Provider Notes
+
+The current service is designed for the OpenAI-compatible DashScope/Qwen path:
+
+1. package dependency: `openai`
+2. model target: `qwen-plus`
+3. base URL: DashScope OpenAI-compatible endpoint
+4. response format: JSON-only object output
+
+## Rule For Future Recommendation Edits
+
+When extending the recommendation layer:
+
+1. Keep temperature very low for deterministic output.
+2. Keep strict DTO validation at the controller boundary.
+3. Never trust model-returned weights without server-side clamping.
+4. Reuse the `/set` analytics services instead of rebuilding trend math inside the recommendation service.
+
+---
+
+# Update Notes (2026-03-24 Set Frontend Recommendation Flow)
+
+The active `/set` frontend now has a stronger client-side form layer on top of the existing backend recommendation system.
+
+## Current `/set` Frontend Form Pattern
+
+The route now uses a container/presenter split:
+
+1. Container: [SetCalculatorPageClient.tsx](/C:/Users/Jovan/.codex/worktrees/3b23/ReLive-CreativityInnovation/apps/frontend/components/set/SetCalculatorPageClient.tsx)
+2. Presenter: [WorkoutForm.tsx](/C:/Users/Jovan/.codex/worktrees/3b23/ReLive-CreativityInnovation/apps/frontend/components/set/WorkoutForm.tsx)
+
+Important frontend rules:
+
+1. The form now uses React Hook Form with Zod resolver.
+2. Combined page-level validation lives in [setExperienceSchema.ts](/C:/Users/Jovan/.codex/worktrees/3b23/ReLive-CreativityInnovation/apps/frontend/lib/zodSchemas/setExperienceSchema.ts).
+3. Recommendation request validation lives in [setRecommendationSchema.ts](/C:/Users/Jovan/.codex/worktrees/3b23/ReLive-CreativityInnovation/apps/frontend/lib/zodSchemas/setRecommendationSchema.ts).
+4. The strength rep ceiling on the client is now `15`, with the explicit high-rep warning message.
+5. The `/set` page stays single-column and centered. Do not add side-by-side explanation panels.
+
+## Current `/set` Live Preview Rule
+
+The strength form now shows a fast local preview:
+
+1. Preview math lives in [setCalculations.ts](/C:/Users/Jovan/.codex/worktrees/3b23/ReLive-CreativityInnovation/apps/frontend/lib/setCalculations.ts).
+2. The preview uses effective reps (`actual reps + RIR`) and a Brzycki-based estimate for immediate UX feedback.
+3. This preview is only a client convenience.
+
+Important rule:
+
+- final calculations, saved ledger data, and recommendation safety bounds still belong to the backend
+
+## Current `/set` Recommendation Request Flow
+
+The frontend can now generate the next routine from the `/set` page:
+
+1. Authenticated recommendation action: [generateWorkoutRecommendation.ts](/C:/Users/Jovan/.codex/worktrees/3b23/ReLive-CreativityInnovation/apps/frontend/lib/generateWorkoutRecommendation.ts)
+2. Backend route target: `POST /recommendations`
+3. The page shows a dedicated loading state while recommendation generation is running.
+4. Save/recommendation success and failure states are surfaced through a lightweight toast-style notice instead of crashing the page.
+
+## Current `/set` Stability Notes
+
+Hydration and validation handling for the active `/set` route now follow these rules:
+
+1. [SetPageClient.tsx](/C:/Users/Jovan/.codex/worktrees/3b23/ReLive-CreativityInnovation/apps/frontend/components/set/SetPageClient.tsx) delays the fully interactive `/set` UI until mount to reduce hydration mismatch risk.
+2. [layout.tsx](/C:/Users/Jovan/.codex/worktrees/3b23/ReLive-CreativityInnovation/apps/frontend/app/layout.tsx) keeps hydration suppression at the app shell level for extension-driven attribute drift.
+3. [setExperienceSchema.ts](/C:/Users/Jovan/.codex/worktrees/3b23/ReLive-CreativityInnovation/apps/frontend/lib/zodSchemas/setExperienceSchema.ts) and [setRecommendationSchema.ts](/C:/Users/Jovan/.codex/worktrees/3b23/ReLive-CreativityInnovation/apps/frontend/lib/zodSchemas/setRecommendationSchema.ts) now coerce numeric form values defensively so React Hook Form string inputs do not trip avoidable Zod errors.
+
+## Current Session Expiry Rule
+
+Frontend session behavior now has to follow the backend token lifetime:
+
+1. [session.server.ts](/C:/Users/Jovan/.codex/worktrees/3b23/ReLive-CreativityInnovation/apps/frontend/lib/session.server.ts) derives the encrypted frontend session expiry from the backend access token `exp` claim instead of using a separate fixed 7-day lifetime.
+2. [middleware.ts](/C:/Users/Jovan/.codex/worktrees/3b23/ReLive-CreativityInnovation/apps/frontend/middleware.ts) checks both the outer session cookie and the inner backend access token expiry.
+3. If the access token is expired, the session cookie must be cleared and the user must be redirected to `/auth/login`.
+
+Important rule:
+
+- do not let the frontend session outlive the backend JWT
+- if those two durations drift apart, the app will appear logged in while protected calls are already dead
+
+## Rule For Future `/set` Frontend Edits
+
+When extending this active `/set` UI:
+
+1. Keep React Hook Form plus Zod as the main client validation path.
+2. Keep the local preview limited to safe preview math only.
+3. Do not let React invent final recommendation weights or boundaries.
+4. Keep the visible UI user-facing and minimal rather than exposing implementation notes.
+
+---
+
+# Update Notes (2026-03-24 Recommendation Prompt Hardening)
+
+This section documents the stronger prompt-contract pass for the recommendation system.
+
+## Current Recommendation Prompt Rules
+
+The workout recommendation flow is now more defensive against LLM math drift:
+
+1. [recommendation.service.ts](/C:/Users/Jovan/.codex/worktrees/3b23/ReLive-CreativityInnovation/apps/backend/src/recommendation/recommendation.service.ts) now uses a denser system prompt that explicitly forbids the model from recalculating safety-critical math.
+2. The server passes a machine-readable safety envelope containing the approved weight, set, and rep boundaries.
+3. The prompt explicitly tells the model that the backend has already done the math and that any conflicting instruction must lose to the server envelope.
+4. The model is still sanitized after generation, so prompt hardening and output clamping now work together rather than relying on one layer only.
+5. The shared Qwen client path now uses low temperature, JSON-object response mode, timeout protection, and centralized error handling.
+
+Important rule:
+
+- the LLM may assist with workout strategy and rationale
+- the backend must remain the sole authority for numeric safety boundaries
+- if the backend has no approved weight window, the model must keep `prescribedWeightKg` as `null`
+
+## Current Feature Analysis Route
+
+The recommendation module now also exposes a separate architecture-analysis endpoint for internal use:
+
+1. REST `POST /recommendations/feature-analysis`
+2. DTO: [feature-analysis.dto.ts](/C:/Users/Jovan/.codex/worktrees/3b23/ReLive-CreativityInnovation/apps/backend/src/recommendation/dto/feature-analysis.dto.ts)
+3. Shared service: [recommendation.service.ts](/C:/Users/Jovan/.codex/worktrees/3b23/ReLive-CreativityInnovation/apps/backend/src/recommendation/recommendation.service.ts)
+
+This route is intended to:
+
+1. accept a feature or system request
+2. ask Qwen for a strict JSON blueprint
+3. return implementation steps and dangerous problems with concrete fixes
+
+Important rule:
+
+- this route is for structured architectural analysis, not end-user UI copy
+- responses must stay JSON-only and follow the locked schema
+
+---
+
+# Update Notes (2026-03-24 Set Frontend Stability Pass)
+
+This note overrides older `/set` frontend notes where they conflict with the current code.
+
+## Current `/set` Frontend Validation Pattern
+
+The active `/set` page is now stabilized around a controlled-state form again:
+
+1. Active page client: [SetCalculatorPageClient.tsx](/C:/Users/Jovan/.codex/worktrees/3b23/ReLive-CreativityInnovation/apps/frontend/components/set/SetCalculatorPageClient.tsx)
+2. Mount-safe wrapper: [SetPageClient.tsx](/C:/Users/Jovan/.codex/worktrees/3b23/ReLive-CreativityInnovation/apps/frontend/components/set/SetPageClient.tsx)
+3. Main schemas:
+   - [setCalculatorSchema.ts](/C:/Users/Jovan/.codex/worktrees/3b23/ReLive-CreativityInnovation/apps/frontend/lib/zodSchemas/setCalculatorSchema.ts)
+   - [setRecommendationSchema.ts](/C:/Users/Jovan/.codex/worktrees/3b23/ReLive-CreativityInnovation/apps/frontend/lib/zodSchemas/setRecommendationSchema.ts)
+
+Important rules:
+
+1. `/set` no longer depends on the earlier `WorkoutForm.tsx` presenter split.
+2. `/set` no longer depends on `react-hook-form` as the active runtime path.
+3. Client validation happens through explicit `safeParse(...)` calls before estimate/save/recommendation actions are dispatched.
+4. The page should stay single-column, centered, and user-facing.
+
+## Current `/set` Action Parsing Rule
+
+The active server-action parsing rules for `/set` are:
+
+1. [setCalculator.ts](/C:/Users/Jovan/.codex/worktrees/3b23/ReLive-CreativityInnovation/apps/frontend/lib/setCalculator.ts)
+2. [logWorkoutSet.ts](/C:/Users/Jovan/.codex/worktrees/3b23/ReLive-CreativityInnovation/apps/frontend/lib/logWorkoutSet.ts)
+3. [generateWorkoutRecommendation.ts](/C:/Users/Jovan/.codex/worktrees/3b23/ReLive-CreativityInnovation/apps/frontend/lib/generateWorkoutRecommendation.ts)
+
+Important rule:
+
+- empty numeric form fields must stay `undefined` instead of being silently converted into fake `0` values, because that creates noisy Zod failures and stale request matching.
+
+## Current Hydration Safety Rule
+
+Hydration safety for the active frontend now follows:
+
+1. [layout.tsx](/C:/Users/Jovan/.codex/worktrees/3b23/ReLive-CreativityInnovation/apps/frontend/app/layout.tsx) keeps `suppressHydrationWarning` on the app shell.
+2. `/set`, `/foods`, and `/cookbook` should keep mount-safe wrappers when their interactive client trees become fragile.
+3. If a route starts showing browser-extension-driven hydration drift again, prefer isolating that route behind a mount-safe client wrapper rather than adding developer-facing fallback UI.

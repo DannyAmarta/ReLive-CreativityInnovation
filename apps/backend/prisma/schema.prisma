@@ -24,6 +24,68 @@ model User{
   avatar String?
   createdAt DateTime @default(now())
   updatedAt DateTime?
+  workoutSets WorkoutSet[]
+  dailyPerformanceSnapshots DailyPerformanceSnapshot[]
+}
+
+model Exercise{
+  id String @id
+  name String
+  category String
+  formula String
+  description String
+  repCap Int?
+  requiredMetrics String[]
+  isActive Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  workoutSets WorkoutSet[]
+  dailyPerformanceSnapshots DailyPerformanceSnapshot[]
+}
+
+model WorkoutSet{
+  id Int @id @default(autoincrement())
+  userId Int
+  exerciseId String
+  weightLifted Float?
+  actualReps Int?
+  rirLogged Int?
+  calculated1Rm Float?
+  formulaUsed String
+  isCnsFatigue Boolean @default(false)
+  durationMinutes Float?
+  distanceMeters Float?
+  rpeLogged Float?
+  notes String?
+  createdAt DateTime @default(now())
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exercise Exercise @relation(fields: [exerciseId], references: [id], onDelete: Restrict)
+
+  @@index([userId, exerciseId, createdAt(sort: Desc)])
+  @@index([userId, createdAt(sort: Desc)])
+}
+
+model DailyPerformanceSnapshot{
+  id Int @id @default(autoincrement())
+  userId Int
+  exerciseId String
+  periodDays Int @default(14)
+  snapshotDate DateTime
+  emaOneRepMax Float?
+  baselineAverage1Rm Float?
+  latestLogged1Rm Float?
+  latestClean1Rm Float?
+  latestRirTrend Float?
+  latestSessionFlagged Boolean @default(false)
+  contextSummary String
+  sampleSize Int @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exercise Exercise @relation(fields: [exerciseId], references: [id], onDelete: Restrict)
+
+  @@unique([userId, exerciseId, periodDays, snapshotDate])
+  @@index([userId, exerciseId, snapshotDate(sort: Desc)])
 }
 
 model FoodCache{
