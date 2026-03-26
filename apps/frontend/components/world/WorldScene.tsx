@@ -10,6 +10,7 @@ import Image from "next/image";
 import { useWorldStore } from "@/store/worldStore";
 import { RadialMenu } from "./RadialMenu";
 import dynamic from "next/dynamic";
+import villageBg from "../../public/assets/home/wallpaper.png"; // 1. Use a static import
 
 const ArmillaryWidget = dynamic(
   () => import("./ArmillarySphere").then((m) => ({ default: m.ArmillarySphere })),
@@ -317,17 +318,24 @@ export function WorldScene() {
         </AnimatePresence>
 
         {/* ═══ MAIN CAMERA & VILLAGE ═══ */}
-        <Camera camera={camera}>
-          <div className="relative w-full h-full">
-            <Image
-              src="/assets/home/wallpaper.png"
-              alt="Health World Village"
-              fill
-              priority
-              className="object-cover"
-              sizes="100vw"
-            />
-
+        {(phase === "village" || phase === "revealing") && (
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 2 }}
+          className="absolute inset-0 z-10" // Ensures it's behind the UI (z-40) but above clouds (z-0)
+        >
+          <Camera camera={camera}>
+            {/* Ensure this div truly fills the screen so the 'fill' Image works */}
+            <div className="relative w-screen h-screen">
+              <Image
+                src={villageBg} // 3. Pass the imported object, not a string path
+                alt="Health World Village"
+                fill // 4. Now 'fill' knows exactly how big to be
+                priority // 5. Tells Next.js to load this immediately, bypassing lazy-loading
+                placeholder="blur" // Bonus: Gives a nice blurry loading effect automatically!
+                className="object-cover"
+              />
             {/* Sunlight shimmer */}
             <motion.div
               className="absolute inset-0 z-10 pointer-events-none"
@@ -389,6 +397,8 @@ export function WorldScene() {
             </AnimatePresence>
           </div>
         </Camera>
+      </motion.div>
+    )}
 
         {/* ═══ BOTTOM UI ═══ */}
         <AnimatePresence>

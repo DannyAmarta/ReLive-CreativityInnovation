@@ -17,9 +17,9 @@ import {
 import { SetService } from '../set/set.service';
 import { SetExerciseCategory, SetExerciseDefinition } from '../set/set.types';
 
-const QWEN_MODEL = 'qwen-plus';
-const QWEN_BASE_URL = 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1';
-const QWEN_TIMEOUT_MS = 20_000;
+const QWEN_MODEL = 'openai/gpt-oss-120b:free';
+const QWEN_BASE_URL = 'https://openrouter.ai/api/v1';
+const QWEN_TIMEOUT_MS = 40_000;
 
 const WORKOUT_RECOMMENDATION_SYSTEM_PROMPT = `
 You are a deterministic physiological workout planner operating under a hard safety envelope calculated by the server.
@@ -82,12 +82,23 @@ export class RecommendationService {
     private readonly configService: ConfigService,
     private readonly setService: SetService,
   ) {
+    // this.client = new OpenAI({
+    //   apiKey: this.configService.get<string>('QWEN_API_KEY') ?? '',
+    //   baseURL: QWEN_BASE_URL,
+    //   timeout: QWEN_TIMEOUT_MS,
+    //   maxRetries: 1,
+    // });
     this.client = new OpenAI({
       apiKey: this.configService.get<string>('QWEN_API_KEY') ?? '',
       baseURL: QWEN_BASE_URL,
-      timeout: QWEN_TIMEOUT_MS,
-      maxRetries: 1,
+      timeout: 40000,
+      maxRetries: 2,
+      defaultHeaders: {
+        'HTTP-Referer': 'http://localhost:3000',
+        'X-Title': 'relive-ai'
+      }
     });
+
   }
 
   async generateWorkoutPlan(
