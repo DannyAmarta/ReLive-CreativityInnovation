@@ -30,17 +30,17 @@ export declare class AuthService {
     constructor(prisma: PrismaService, jwtService: JwtService, eventEmitter: EventEmitter2, configService: ConfigService);
     validateLocalUser({ email, password }: SignInInput): Promise<{
         id: number;
+        name: string | null;
+        createdAt: Date;
+        updatedAt: Date | null;
         email: string;
         password: string;
-        name: string | null;
         bio: string | null;
         avatar: string | null;
         openRouterApiKeyEncrypted: string | null;
         openRouterKeyLabel: string | null;
         openRouterUserId: string | null;
         openRouterConnectedAt: Date | null;
-        createdAt: Date;
-        updatedAt: Date | null;
     }>;
     generateToken(userId: number): Promise<{
         accessToken: string;
@@ -56,17 +56,17 @@ export declare class AuthService {
     }>;
     validateGoogleUser(googleUser: GoogleProfileInput): Promise<{
         id: number;
+        name: string | null;
+        createdAt: Date;
+        updatedAt: Date | null;
         email: string;
         password: string;
-        name: string | null;
         bio: string | null;
         avatar: string | null;
         openRouterApiKeyEncrypted: string | null;
         openRouterKeyLabel: string | null;
         openRouterUserId: string | null;
         openRouterConnectedAt: Date | null;
-        createdAt: Date;
-        updatedAt: Date | null;
     }>;
     createGoogleAuthHandoff(user: Pick<User, 'id' | 'name' | 'avatar'>): Promise<string>;
     exchangeGoogleAuthHandoff(code: string): Promise<SafeAuthUser>;
