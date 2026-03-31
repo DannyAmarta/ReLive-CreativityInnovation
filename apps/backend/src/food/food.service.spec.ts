@@ -212,4 +212,28 @@ describe('FoodService', () => {
     expect(result.items[0].nutrients.calories).toBe(95);
     expect(openFoodFactsConnector.searchFoods).toHaveBeenCalled();
   });
+
+  it('returns embedded staple foods when cache and providers cannot serve a common query', async () => {
+    prismaService.foodCache.findMany.mockResolvedValue([]);
+    usdaConnector.searchFoods.mockResolvedValue({ items: [] });
+    openFoodFactsConnector.searchFoods.mockRejectedValue(
+      new Error('Open Food Facts request failed with 503'),
+    );
+
+    const result = await service.searchFoods({
+      query: 'Chicken breast',
+      page: 1,
+      pageSize: 10,
+      servingSize: 150,
+    });
+
+    expect(result.sourceUsed).toBe('SEED');
+    expect(result.cacheHit).toBe(false);
+    expect(result.fallbackUsed).toBe(true);
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0].source).toBe('SEED');
+    expect(result.items[0].name).toBe('Chicken Breast');
+    expect(result.items[0].nutrients.calories).toBe(247.5);
+    expect(result.items[0].nutrients.proteinGrams).toBe(46.5);
+  });
 });

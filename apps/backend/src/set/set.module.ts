@@ -2,10 +2,8 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { PrismaModule } from '../prisma/prisma.module';
-import { SetController } from './set.controller';
 import { SetResolver } from './set.resolver';
 import { SetService } from './set.service';
-import { WorkoutController } from './workout.controller';
 import { PerformanceAnalyticsService } from './performance-analytics.service';
 import { StatisticalAggregatorService } from './statistical-aggregator.service';
 import { BrzyckiStrategy } from './strategies/brzycki.strategy';
@@ -28,7 +26,7 @@ import { SetStrategyFactory } from './strategies/set-strategy.factory';
       }),
     }),
   ],
-  controllers: [SetController, WorkoutController],
+  controllers: [],
   providers: [
     SetService,
     SetResolver,

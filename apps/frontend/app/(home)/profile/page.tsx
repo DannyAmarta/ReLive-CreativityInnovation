@@ -18,6 +18,9 @@ type GetMeResult = {
     email: string;
     bio?: string;
     avatar?: string;
+    hasOpenRouterConnection: boolean;
+    openRouterKeyLabel?: string | null;
+    openRouterConnectedAt?: string | null;
     createdAt?: string;
   };
 };
@@ -46,6 +49,11 @@ export default async function ProfilePage() {
         email: user.email,
         bio: user.bio,
         avatar: user.avatar ?? null,
+        hasOpenRouterConnection: user.hasOpenRouterConnection,
+        openRouterKeyLabel: user.openRouterKeyLabel ?? null,
+        openRouterConnectedAt: user.openRouterConnectedAt
+          ? new Date(user.openRouterConnectedAt)
+          : null,
         createdAt: user.createdAt ? new Date(user.createdAt) : new Date(),
       }}
     />

@@ -1,5 +1,26 @@
 import { BACKEND_URL } from "./constants";
 
+type GraphqlErrorPayload = {
+    message?: string;
+    extensions?: Record<string, unknown>;
+};
+
+export class GraphqlRequestError extends Error {
+    responseStatus: number;
+    graphqlErrors: GraphqlErrorPayload[];
+
+    constructor(message: string, responseStatus: number, graphqlErrors: GraphqlErrorPayload[]) {
+        super(message);
+        this.name = "GraphqlRequestError";
+        this.responseStatus = responseStatus;
+        this.graphqlErrors = graphqlErrors;
+    }
+}
+
+export function isGraphqlRequestError(error: unknown): error is GraphqlRequestError {
+    return error instanceof GraphqlRequestError;
+}
+
 export const fetchGraphql = async <T = any>(query: string, variables?: {}): Promise<T> => {
     let response: Response;
 
@@ -21,13 +42,14 @@ export const fetchGraphql = async <T = any>(query: string, variables?: {}): Prom
 
     const result = await readGraphqlResponse(response);
 
-    if (!response.ok) {
-        throw new Error(result.errorMessage ?? `GraphQL request failed with status ${response.status}.`);
-    }
-
-    if (result.payload?.errors?.length) {
-        console.error('Graphql Error:', result.payload.errors);
-        throw new Error(result.payload.errors[0]?.message ?? 'GraphQL request failed.');
+    if (!response.ok || result.payload?.errors?.length) {
+        const graphqlErrors = result.payload?.errors ?? [];
+        console.error('Graphql Error:', graphqlErrors);
+        throw new GraphqlRequestError(
+            result.errorMessage ?? `GraphQL request failed with status ${response.status}.`,
+            response.status,
+            graphqlErrors,
+        );
     }
 
     return result.payload?.data as T;
@@ -60,13 +82,14 @@ export const authFetchGraphql = async <T = any>(query: string, variables?: {}): 
 
     const result = await readGraphqlResponse(response);
 
-    if (!response.ok) {
-        throw new Error(result.errorMessage ?? `GraphQL request failed with status ${response.status}.`);
-    }
-
-    if (result.payload?.errors?.length) {
-        console.error('Graphql Error:', result.payload.errors);
-        throw new Error(result.payload.errors[0]?.message ?? 'Failed to fetch the data from graphql');
+    if (!response.ok || result.payload?.errors?.length) {
+        const graphqlErrors = result.payload?.errors ?? [];
+        console.error('Graphql Error:', graphqlErrors);
+        throw new GraphqlRequestError(
+            result.errorMessage ?? `GraphQL request failed with status ${response.status}.`,
+            response.status,
+            graphqlErrors,
+        );
     }
 
      return result.payload?.data as T;
@@ -74,7 +97,7 @@ export const authFetchGraphql = async <T = any>(query: string, variables?: {}): 
 
 type GraphqlResponsePayload = {
     data?: unknown;
-    errors?: Array<{ message?: string }>;
+    errors?: GraphqlErrorPayload[];
     message?: string;
 };
 

@@ -17,6 +17,15 @@ export class User {
     @Field({nullable: true})
     avatar?: string;
 
+    @Field()
+    hasOpenRouterConnection!: boolean;
+
+    @Field({nullable: true})
+    openRouterKeyLabel?: string;
+
+    @Field({nullable: true})
+    openRouterConnectedAt?: Date;
+
     @Field({nullable: true})
     createdAt?: Date;
 }

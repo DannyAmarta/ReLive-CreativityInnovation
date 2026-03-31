@@ -1,14 +1,21 @@
-import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
+import { Args, Context, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { AuthPayload } from './entities/auth.entity';
 import { SignInInput } from './dto/signInInput';
 import { AuthService } from './auth.service';
 import { ForgotPasswordDto } from './dto/forgot-password';
 import { ResetPasswordDto } from './dto/reset-password';
 import { ForgotResetPassword } from './entities/forgot-reset-password.entity';
+import { UnauthorizedException } from '@nestjs/common';
+import { ExchangeOpenRouterCodeInput } from './dto/exchange-openrouter-code.input';
+import { OpenRouterConnectionPayload } from './entities/openrouter-connection.entity';
+import { JwtService } from '@nestjs/jwt';
 
 @Resolver()
 export class AuthResolver {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly jwtService: JwtService,
+  ) {}
 
   // This mutation is the GraphQL login entry point for email/password authentication.
   // It is used by the frontend server action before the Next.js session cookie is created.
@@ -32,8 +39,45 @@ export class AuthResolver {
     return this.authService.resetPassword(dto.token, dto.newPassword);
   }
 
+  @Mutation(() => OpenRouterConnectionPayload)
+  async exchangeOpenRouterCode(
+    @Args('input') input: ExchangeOpenRouterCodeInput,
+    @Context() ctx: { req: { headers: Record<string, string> } },
+  ) {
+    const userId = this.extractUserIdFromContext(ctx);
+    return this.authService.exchangeOpenRouterCode(userId, input);
+  }
+
+  @Mutation(() => OpenRouterConnectionPayload)
+  async disconnectOpenRouter(
+    @Context() ctx: { req: { headers: Record<string, string> } },
+  ) {
+    const userId = this.extractUserIdFromContext(ctx);
+    return this.authService.disconnectOpenRouterConnection(userId);
+  }
+
   @Query(() => String)
   hello() {
     return 'Hello World';
+  }
+
+  private extractUserIdFromContext(ctx: {
+    req: { headers: Record<string, string> };
+  }): number {
+    const authHeader = ctx.req?.headers?.authorization ?? '';
+    const token = authHeader.startsWith('Bearer ')
+      ? authHeader.slice(7)
+      : authHeader;
+
+    if (!token) {
+      throw new UnauthorizedException('Not authenticated');
+    }
+
+    try {
+      const payload = this.jwtService.verify<{ sub: number }>(token);
+      return payload.sub;
+    } catch {
+      throw new UnauthorizedException('Invalid or expired token');
+    }
   }
 }

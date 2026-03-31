@@ -10,6 +10,7 @@ import {
   useMotionTemplate,
 } from "framer-motion";
 import Link from "next/link";
+import { OpenRouterConnectionCard } from "@/components/profile/OpenRouterConnectionCard";
 import {
   User,
   Mail,
@@ -37,6 +38,9 @@ type ProfileUser = {
   email: string;
   bio?: string;
   avatar: string | null;
+  hasOpenRouterConnection: boolean;
+  openRouterKeyLabel: string | null;
+  openRouterConnectedAt: Date | null;
   createdAt: Date;
 };
 type ProfilePageClientProps = { user: ProfileUser };
@@ -1041,11 +1045,8 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 /* ── Main export ── */
 export function ProfilePageClient({ user: initialUser }: ProfilePageClientProps) {
   const [user, setUser] = useState(initialUser);
-  const [mounted, setMounted] = useState(false);
+  const [renderedAt] = useState(() => Date.now());
   const [toast, setToast] = useState<{ msg: string; kind: "success" | "error" | "info" } | null>(null);
-
-  useEffect(() => { setMounted(true); }, []);
-  if (!mounted) return null;
 
   function handleSave(field: "name" | "bio") {
     return async (value: string) => {
@@ -1059,7 +1060,8 @@ export function ProfilePageClient({ user: initialUser }: ProfilePageClientProps)
     };
   }
 
-  const memberDays = Math.floor((Date.now() - user.createdAt.getTime()) / (1000 * 60 * 60 * 24));
+  const memberDays = Math.floor((renderedAt - user.createdAt.getTime()) / (1000 * 60 * 60 * 24));
+  const currentYear = new Date(renderedAt).getFullYear();
 
   return (
     <div
@@ -1234,6 +1236,14 @@ export function ProfilePageClient({ user: initialUser }: ProfilePageClientProps)
               <p className="mb-4 text-xs text-white/30 leading-relaxed">
                 Manage your account security settings. Changing your password will send you to a password reset flow.
               </p>
+              <div className="mb-4">
+                <OpenRouterConnectionCard
+                  isConnected={user.hasOpenRouterConnection}
+                  connectedAt={user.openRouterConnectedAt}
+                  keyLabel={user.openRouterKeyLabel}
+                  onToast={(msg, kind) => setToast({ msg, kind })}
+                />
+              </div>
               <ChangePasswordButton />
             </SpotlightCard>
           </motion.div>
@@ -1243,7 +1253,7 @@ export function ProfilePageClient({ user: initialUser }: ProfilePageClientProps)
             variants={itemVariants}
             className="mt-10 text-center text-xs text-white/20"
           >
-            ReLive · Your creative fitness journey · {new Date().getFullYear()}
+            ReLive · Your creative fitness journey · {currentYear}
           </motion.p>
         </main>
       </motion.div>

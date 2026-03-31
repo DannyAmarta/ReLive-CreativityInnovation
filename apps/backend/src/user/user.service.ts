@@ -41,7 +41,12 @@ export class UserService {
   async getMe(userId: number) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new UnauthorizedException('User not found');
-    return user;
+    return {
+      ...user,
+      hasOpenRouterConnection: Boolean(user.openRouterApiKeyEncrypted),
+      openRouterKeyLabel: user.openRouterKeyLabel,
+      openRouterConnectedAt: user.openRouterConnectedAt,
+    };
   }
 
   // This function updates the display name and/or bio for the currently authenticated user.
@@ -58,7 +63,25 @@ export class UserService {
     return this.prisma.user.update({
       where: { id: userId },
       data,
-    });
+      select: {
+        id: true,
+        email: true,
+        password: true,
+        name: true,
+        bio: true,
+        avatar: true,
+        createdAt: true,
+        updatedAt: true,
+        openRouterApiKeyEncrypted: true,
+        openRouterKeyLabel: true,
+        openRouterConnectedAt: true,
+      },
+    }).then((user) => ({
+      ...user,
+      hasOpenRouterConnection: Boolean(user.openRouterApiKeyEncrypted),
+      openRouterKeyLabel: user.openRouterKeyLabel,
+      openRouterConnectedAt: user.openRouterConnectedAt,
+    }));
   }
 
   // This function signs the short-lived token that carries pending registration data.

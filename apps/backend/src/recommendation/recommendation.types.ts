@@ -1,5 +1,15 @@
 import { RecommendationPhaseGoal } from './dto/generate-plan.dto';
 
+export enum RecommendationPlanSource {
+  CLOUD_AI = 'CLOUD_AI',
+  USER_OPENROUTER = 'USER_OPENROUTER',
+  RULE_FALLBACK = 'RULE_FALLBACK',
+}
+
+export enum RecommendationFallbackReason {
+  RATE_LIMITED = 'RATE_LIMITED',
+}
+
 export type RecommendationSafetyWindow = {
   minWeightKg: number | null;
   maxWeightKg: number | null;
@@ -19,10 +29,24 @@ export type GeneratedRoutineEntry = {
 
 export type GeneratedWorkoutPlan = {
   phaseGoal: RecommendationPhaseGoal;
+  source: RecommendationPlanSource;
   rationale: string;
   contextSummary: string;
+  providerNotice?: string | null;
   safetyWindow: RecommendationSafetyWindow;
   routine: GeneratedRoutineEntry[];
+};
+
+export type RecommendationFallbackContext = {
+  exerciseId: string;
+  exercise: string;
+  phaseGoal: RecommendationPhaseGoal;
+  contextSummary: string;
+  safetyWindow: RecommendationSafetyWindow;
+  trainingDaysPerWeek: number;
+  targetSets: number | null;
+  targetReps: number | null;
+  notes: string | null;
 };
 
 export type FeatureImplementationStep = {

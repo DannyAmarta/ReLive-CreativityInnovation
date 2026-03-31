@@ -1,13 +1,15 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
-import { RecommendationController } from './recommendation.controller';
+import { RecommendationResolver } from './recommendation.resolver';
 import { RecommendationService } from './recommendation.service';
 import { SetModule } from '../set/set.module';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [
     ConfigModule,
+    AuthModule,
     SetModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -20,8 +22,8 @@ import { SetModule } from '../set/set.module';
       }),
     }),
   ],
-  controllers: [RecommendationController],
-  providers: [RecommendationService],
+  controllers: [],
+  providers: [RecommendationService, RecommendationResolver],
   exports: [RecommendationService],
 })
 export class RecommendationModule {}

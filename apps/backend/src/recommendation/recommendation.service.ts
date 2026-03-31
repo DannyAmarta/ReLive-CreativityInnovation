@@ -6,18 +6,23 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
+import {
+  AuthService,
+  ConnectedOpenRouterAccess,
+} from '../auth/auth.service';
 import { FeatureAnalysisDto } from './dto/feature-analysis.dto';
 import { GeneratePlanDto, RecommendationPhaseGoal } from './dto/generate-plan.dto';
 import {
   FeatureThreatAnalysis,
   GeneratedRoutineEntry,
   GeneratedWorkoutPlan,
+  RecommendationPlanSource,
   RecommendationSafetyWindow,
 } from './recommendation.types';
 import { SetService } from '../set/set.service';
 import { SetExerciseCategory, SetExerciseDefinition } from '../set/set.types';
 
-const QWEN_MODEL = 'openai/gpt-oss-120b:free';
+const QWEN_MODEL = 'openrouter/free';
 const QWEN_BASE_URL = 'https://openrouter.ai/api/v1';
 const QWEN_TIMEOUT_MS = 40_000;
 
@@ -81,32 +86,17 @@ export class RecommendationService {
   constructor(
     private readonly configService: ConfigService,
     private readonly setService: SetService,
+    private readonly authService: AuthService,
   ) {
-    // this.client = new OpenAI({
-    //   apiKey: this.configService.get<string>('QWEN_API_KEY') ?? '',
-    //   baseURL: QWEN_BASE_URL,
-    //   timeout: QWEN_TIMEOUT_MS,
-    //   maxRetries: 1,
-    // });
-    this.client = new OpenAI({
-      apiKey: this.configService.get<string>('QWEN_API_KEY') ?? '',
-      baseURL: QWEN_BASE_URL,
-      timeout: 40000,
-      maxRetries: 2,
-      defaultHeaders: {
-        'HTTP-Referer': 'http://localhost:3000',
-        'X-Title': 'relive-ai'
-      }
-    });
-
+    this.client = this.createOpenRouterClient(
+      this.configService.get<string>('QWEN_API_KEY') ?? '',
+    );
   }
 
   async generateWorkoutPlan(
     userId: number,
     dto: GeneratePlanDto,
   ): Promise<GeneratedWorkoutPlan> {
-    this.ensureAiConfigured();
-
     const exercise = this.setService
       .getExercises()
       .find((item) => item.id === dto.exerciseId);
@@ -127,20 +117,125 @@ export class RecommendationService {
       dto,
       safetyWindow,
     );
-    const parsed = await this.requestStructuredJson<RawModelPlan>({
-      systemPrompt: WORKOUT_RECOMMENDATION_SYSTEM_PROMPT,
-      userPrompt,
-      logContext: `workout plan generation for user ${userId} and exercise ${dto.exerciseId}`,
-      failureMessage: 'Unable to generate a workout plan right now.',
-    });
+    const connectedOpenRouter =
+      await this.authService.getConnectedOpenRouterAccess(userId);
+    const connectedOpenRouterKey = connectedOpenRouter.apiKey;
 
-    return this.sanitizePlan(
-      parsed,
-      exercise,
-      dto.phaseGoal,
-      analytics.contextSummary,
-      safetyWindow,
-    );
+    if (!this.isAiConfigured()) {
+      if (connectedOpenRouterKey) {
+        try {
+          return await this.generatePlanWithApiKey(
+            connectedOpenRouterKey,
+            RecommendationPlanSource.USER_OPENROUTER,
+            exercise,
+            dto,
+            analytics.contextSummary,
+            safetyWindow,
+            userPrompt,
+            `connected OpenRouter workout plan generation for user ${userId} and exercise ${dto.exerciseId}`,
+          );
+        } catch (connectedKeyError) {
+          this.logger.warn(
+            `Server OpenRouter key is missing and connected OpenRouter fallback failed for user ${userId}. Returning rule fallback.`,
+            connectedKeyError instanceof Error
+              ? connectedKeyError.stack
+              : String(connectedKeyError),
+          );
+        }
+      }
+
+      this.logger.warn(
+        `QWEN_API_KEY is missing and no connected OpenRouter key exists for user ${userId}. Returning rule fallback.`,
+      );
+      return this.buildFallbackPlan(
+        exercise,
+        dto,
+        analytics.contextSummary,
+        safetyWindow,
+        'Cloud recommendation provider is not configured, and no connected OpenRouter fallback is available, so a safe server fallback was used.',
+        this.buildOpenRouterProviderNotice(connectedOpenRouter),
+      );
+    }
+
+    try {
+      return await this.generatePlanWithApiKey(
+        null,
+        RecommendationPlanSource.CLOUD_AI,
+        exercise,
+        dto,
+        analytics.contextSummary,
+        safetyWindow,
+        userPrompt,
+        `workout plan generation for user ${userId} and exercise ${dto.exerciseId}`,
+      );
+    } catch (error) {
+      if (this.isRateLimitError(error)) {
+        if (connectedOpenRouterKey) {
+          this.logger.warn(
+            `Primary OpenRouter key was rate-limited for user ${userId}. Retrying with connected OpenRouter key.`,
+            error instanceof Error ? error.stack : String(error),
+          );
+
+          try {
+            return await this.generatePlanWithApiKey(
+              connectedOpenRouterKey,
+              RecommendationPlanSource.USER_OPENROUTER,
+              exercise,
+              dto,
+              analytics.contextSummary,
+              safetyWindow,
+              userPrompt,
+              `connected OpenRouter workout plan generation for user ${userId} and exercise ${dto.exerciseId}`,
+            );
+          } catch (connectedKeyError) {
+            this.logger.warn(
+              `Connected OpenRouter fallback failed for user ${userId}. Returning rule fallback.`,
+              connectedKeyError instanceof Error
+                ? connectedKeyError.stack
+                : String(connectedKeyError),
+            );
+
+            return this.buildFallbackPlan(
+              exercise,
+              dto,
+              analytics.contextSummary,
+              safetyWindow,
+              'Cloud quota was reached and your connected OpenRouter fallback was unavailable, so a safe server fallback was used.',
+              this.buildOpenRouterProviderNotice(connectedOpenRouter),
+            );
+          }
+        }
+
+        this.logger.warn(
+          `Primary OpenRouter key was rate-limited for user ${userId}, but no usable connected OpenRouter key was available.`,
+        );
+
+        return this.buildFallbackPlan(
+          exercise,
+          dto,
+          analytics.contextSummary,
+          safetyWindow,
+          'Cloud quota was reached, so a safe server fallback was used.',
+          this.buildOpenRouterProviderNotice(connectedOpenRouter),
+        );
+      }
+
+      this.logger.warn(
+        `Cloud workout recommendation failed for user ${userId} and exercise ${dto.exerciseId}. Returning rule fallback.`,
+        error instanceof Error ? error.stack : String(error),
+      );
+
+      return this.buildFallbackPlan(
+        exercise,
+        dto,
+        analytics.contextSummary,
+        safetyWindow,
+        connectedOpenRouterKey
+          ? 'Cloud recommendation and your connected OpenRouter fallback were both unavailable, so a safe server fallback was used.'
+          : 'Cloud recommendation is temporarily unavailable, so a safe server fallback was used.',
+        this.buildOpenRouterProviderNotice(connectedOpenRouter),
+      );
+    }
   }
 
   async analyzeFeatureThreats(
@@ -149,14 +244,23 @@ export class RecommendationService {
   ): Promise<FeatureThreatAnalysis> {
     this.ensureAiConfigured();
 
-    const parsed = await this.requestStructuredJson<RawFeatureThreatAnalysis>({
-      systemPrompt: UNIVERSAL_ARCHITECT_SYSTEM_PROMPT,
-      userPrompt: this.buildFeatureAnalysisPrompt(dto),
-      logContext: `feature analysis for user ${userId}`,
-      failureMessage: 'Unable to analyze the feature right now.',
-    });
+    try {
+      const parsed = await this.requestStructuredJson<RawFeatureThreatAnalysis>({
+        systemPrompt: UNIVERSAL_ARCHITECT_SYSTEM_PROMPT,
+        userPrompt: this.buildFeatureAnalysisPrompt(dto),
+        logContext: `feature analysis for user ${userId}`,
+      });
 
-    return this.sanitizeFeatureThreatAnalysis(parsed, dto);
+      return this.sanitizeFeatureThreatAnalysis(parsed, dto);
+    } catch (error) {
+      this.logger.error(
+        `feature analysis for user ${userId} failed.`,
+        error instanceof Error ? error.stack : String(error),
+      );
+      throw new InternalServerErrorException(
+        'Unable to analyze the feature right now.',
+      );
+    }
   }
 
   private buildRecommendationPrompt(
@@ -233,6 +337,8 @@ export class RecommendationService {
     phaseGoal: RecommendationPhaseGoal,
     contextSummary: string,
     safetyWindow: RecommendationSafetyWindow,
+    source: RecommendationPlanSource,
+    providerNotice?: string | null,
   ): GeneratedWorkoutPlan {
     const rawRoutine = Array.isArray(plan.routine) && plan.routine.length > 0
       ? plan.routine
@@ -287,13 +393,48 @@ export class RecommendationService {
 
     return {
       phaseGoal,
+      source,
       rationale:
         typeof plan.rationale === 'string' && plan.rationale.trim().length > 0
           ? this.cleanText(plan.rationale, contextSummary, 400)
           : contextSummary,
       contextSummary,
+      providerNotice: providerNotice ?? null,
       safetyWindow,
       routine,
+    };
+  }
+
+  private buildFallbackPlan(
+    exercise: SetExerciseDefinition,
+    dto: GeneratePlanDto,
+    contextSummary: string,
+    safetyWindow: RecommendationSafetyWindow,
+    reason: string,
+    providerNotice?: string | null,
+  ): GeneratedWorkoutPlan {
+    const sets = this.selectFallbackSets(dto.phaseGoal, safetyWindow);
+    const reps = this.selectFallbackReps(dto.phaseGoal, safetyWindow);
+
+    return {
+      phaseGoal: dto.phaseGoal,
+      source: RecommendationPlanSource.RULE_FALLBACK,
+      rationale: this.cleanText(reason, contextSummary, 400),
+      contextSummary,
+      providerNotice: providerNotice ?? null,
+      safetyWindow,
+      routine: [
+        {
+          exercise: exercise.name,
+          sets,
+          reps,
+          prescribedWeightKg: this.selectFallbackWeight(
+            dto.phaseGoal,
+            safetyWindow,
+          ),
+          rationale: this.buildFallbackEntryRationale(dto.phaseGoal),
+        },
+      ],
     };
   }
 
@@ -555,8 +696,178 @@ export class RecommendationService {
     return nextWindow;
   }
 
+  private selectFallbackSets(
+    phaseGoal: RecommendationPhaseGoal,
+    safetyWindow: RecommendationSafetyWindow,
+  ) {
+    switch (phaseGoal) {
+      case RecommendationPhaseGoal.STRENGTH:
+      case RecommendationPhaseGoal.HYPERTROPHY:
+        return safetyWindow.maxSets;
+      case RecommendationPhaseGoal.POWER:
+      case RecommendationPhaseGoal.BASELINE_TESTING:
+      case RecommendationPhaseGoal.RECOVERY:
+      default:
+        return safetyWindow.minSets;
+    }
+  }
+
+  private selectFallbackReps(
+    phaseGoal: RecommendationPhaseGoal,
+    safetyWindow: RecommendationSafetyWindow,
+  ) {
+    switch (phaseGoal) {
+      case RecommendationPhaseGoal.STRENGTH:
+      case RecommendationPhaseGoal.POWER:
+        return safetyWindow.minReps;
+      case RecommendationPhaseGoal.HYPERTROPHY:
+      case RecommendationPhaseGoal.RECOVERY:
+        return safetyWindow.maxReps;
+      case RecommendationPhaseGoal.BASELINE_TESTING:
+      default:
+        return this.coerceInt(
+          Math.round((safetyWindow.minReps + safetyWindow.maxReps) / 2),
+          safetyWindow.minReps,
+        );
+    }
+  }
+
+  private selectFallbackWeight(
+    phaseGoal: RecommendationPhaseGoal,
+    safetyWindow: RecommendationSafetyWindow,
+  ) {
+    if (
+      safetyWindow.minWeightKg === null ||
+      safetyWindow.maxWeightKg === null
+    ) {
+      return null;
+    }
+
+    switch (phaseGoal) {
+      case RecommendationPhaseGoal.STRENGTH:
+        return safetyWindow.maxWeightKg;
+      case RecommendationPhaseGoal.POWER:
+      case RecommendationPhaseGoal.BASELINE_TESTING:
+        return this.roundToTenth(
+          (safetyWindow.minWeightKg + safetyWindow.maxWeightKg) / 2,
+        );
+      case RecommendationPhaseGoal.RECOVERY:
+        return safetyWindow.minWeightKg;
+      case RecommendationPhaseGoal.HYPERTROPHY:
+      default:
+        return this.roundToTenth(
+          safetyWindow.minWeightKg +
+            (safetyWindow.maxWeightKg - safetyWindow.minWeightKg) * 0.6,
+        );
+    }
+  }
+
+  private buildFallbackEntryRationale(phaseGoal: RecommendationPhaseGoal) {
+    switch (phaseGoal) {
+      case RecommendationPhaseGoal.STRENGTH:
+        return 'Server fallback keeps the session heavy but inside the approved strength envelope.';
+      case RecommendationPhaseGoal.POWER:
+        return 'Server fallback keeps the session crisp and explosive inside the approved power envelope.';
+      case RecommendationPhaseGoal.RECOVERY:
+        return 'Server fallback keeps the session light and conservative while the cloud model is unavailable.';
+      case RecommendationPhaseGoal.BASELINE_TESTING:
+        return 'Server fallback preserves a neutral baseline session inside the approved range.';
+      case RecommendationPhaseGoal.HYPERTROPHY:
+      default:
+        return 'Server fallback keeps volume productive while staying inside the approved hypertrophy envelope.';
+    }
+  }
+
+  private isRateLimitError(error: unknown) {
+    if (error instanceof OpenAI.APIError) {
+      return error.status === 429;
+    }
+
+    if (
+      error &&
+      typeof error === 'object' &&
+      'status' in error &&
+      Number((error as { status?: unknown }).status) === 429
+    ) {
+      return true;
+    }
+
+    if (error instanceof Error) {
+      return /429|rate limit/i.test(error.message);
+    }
+
+    return false;
+  }
+
+  private buildOpenRouterProviderNotice(
+    connectedOpenRouter: ConnectedOpenRouterAccess,
+  ) {
+    if (connectedOpenRouter.status === 'decrypt_failed') {
+      return 'Your connected OpenRouter key could not be decrypted. Reconnect OpenRouter in Profile to restore the second-layer fallback.';
+    }
+
+    if (connectedOpenRouter.status === 'missing') {
+      return 'Connect OpenRouter in Profile to enable the second-layer fallback when the shared server quota is hit.';
+    }
+
+    return null;
+  }
+
+  private createOpenRouterClient(apiKey: string) {
+    return new OpenAI({
+      apiKey,
+      baseURL: QWEN_BASE_URL,
+      timeout: QWEN_TIMEOUT_MS,
+      maxRetries: 2,
+      defaultHeaders: {
+        'HTTP-Referer': this.getFrontendBaseUrl(),
+        'X-Title': 'relive-ai',
+      },
+    });
+  }
+
+  private async generatePlanWithApiKey(
+    apiKeyOverride: string | null,
+    source: RecommendationPlanSource,
+    exercise: SetExerciseDefinition,
+    dto: GeneratePlanDto,
+    contextSummary: string,
+    safetyWindow: RecommendationSafetyWindow,
+    userPrompt: string,
+    logContext: string,
+  ) {
+    const parsed = await this.requestStructuredJson<RawModelPlan>({
+      systemPrompt: WORKOUT_RECOMMENDATION_SYSTEM_PROMPT,
+      userPrompt,
+      logContext,
+      apiKeyOverride,
+    });
+
+    return this.sanitizePlan(
+      parsed,
+      exercise,
+      dto.phaseGoal,
+      contextSummary,
+      safetyWindow,
+      source,
+      null,
+    );
+  }
+
+  private getFrontendBaseUrl() {
+    return (
+      this.configService.get<string>('FRONTEND_URL') ??
+      this.configService.get<string>('APP_FRONTEND_URL') ??
+      'http://localhost:3000'
+    );
+  }
+
+  private isAiConfigured() {
+    return Boolean(this.configService.get<string>('QWEN_API_KEY'));
+  }
+
   private ensureAiConfigured() {
-    if (!this.configService.get<string>('QWEN_API_KEY')) {
+    if (!this.isAiConfigured()) {
       this.logger.error('QWEN_API_KEY is missing.');
       throw new InternalServerErrorException(
         'Recommendation AI is not configured right now.',
@@ -568,18 +879,25 @@ export class RecommendationService {
     systemPrompt,
     userPrompt,
     logContext,
-    failureMessage,
+    apiKeyOverride,
   }: {
     systemPrompt: string;
     userPrompt: string;
     logContext: string;
-    failureMessage: string;
+    apiKeyOverride?: string | null;
   }): Promise<T> {
-    this.ensureAiConfigured();
+    const client = apiKeyOverride
+      ? this.createOpenRouterClient(apiKeyOverride)
+      : this.client;
+
+    if (!apiKeyOverride) {
+      this.ensureAiConfigured();
+    }
+
     this.logger.log(`Starting ${logContext}.`);
 
     try {
-      const response = await this.client.chat.completions.create({
+      const response = await client.chat.completions.create({
         model: QWEN_MODEL,
         temperature: 0.1,
         response_format: { type: 'json_object' },
@@ -609,7 +927,7 @@ export class RecommendationService {
         `${logContext} failed.`,
         error instanceof Error ? error.stack : String(error),
       );
-      throw new InternalServerErrorException(failureMessage);
+      throw error;
     }
   }
 

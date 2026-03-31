@@ -5,12 +5,12 @@ export class AuthPayload {
     @Field()
     id: number;
 
-    @Field()
+    @Field(() => String)
     name: string;
 
-    @Field({nullable: true})
+    @Field(() => String, {nullable: true})
     avatar?: string;
 
-    @Field({nullable: true})
+    @Field(() => String, {nullable: true})
     accessToken: string;
 }

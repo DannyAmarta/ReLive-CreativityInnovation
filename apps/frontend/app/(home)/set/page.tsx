@@ -3,7 +3,7 @@ import { print } from "graphql";
 import { SetPageClient } from "@/components/set/SetPageClient";
 import { fetchGraphql } from "@/lib/fetchGraphQL";
 import { GET_SET_EXERCISES_QUERY } from "@/lib/gqlQueries";
-import { FALLBACK_SET_EXERCISES } from "@/lib/setCatalog";
+import { FALLBACK_SET_EXERCISES } from "@/lib/set/catalog";
 import type { SetExerciseDefinition } from "@/types/set";
 
 export const metadata: Metadata = {

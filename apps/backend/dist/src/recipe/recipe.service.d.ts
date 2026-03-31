@@ -1,0 +1,30 @@
+import { PrismaService } from 'src/prisma/prisma.service';
+import { RecipeSearchResponse, SearchRecipesArgs } from './types/recipe.types';
+import { SpoonacularConnector } from './providers/spoonacular.connector';
+import { TheMealDbConnector } from './providers/themealdb.connector';
+export declare class RecipeService {
+    private readonly prisma;
+    private readonly spoonacularConnector;
+    private readonly theMealDbConnector;
+    private readonly logger;
+    private readonly responseCache;
+    private readonly responseCacheTtlMs;
+    constructor(prisma: PrismaService, spoonacularConnector: SpoonacularConnector, theMealDbConnector: TheMealDbConnector);
+    searchRecipes(args: SearchRecipesArgs): Promise<RecipeSearchResponse>;
+    private normalizeArgs;
+    private createResponseCacheKey;
+    private getCachedResponse;
+    private storeResponseCache;
+    private findCachedRecipes;
+    private mapCachedRecipeToResponse;
+    private hasUsefulResults;
+    private mergeRecipes;
+    private buildResponse;
+    private trySpoonacular;
+    private tryTheMealDb;
+    private upsertRecipes;
+    private normalizeQuery;
+    private getRecipeCacheModel;
+    private createRecipeCacheRecord;
+    private resolveSourceUsed;
+}

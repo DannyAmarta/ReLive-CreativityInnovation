@@ -13,19 +13,30 @@ type ForgotResetPassword {
   message: String!
 }
 
-type User {
-  id: Int!
-  name: String!
-  email: String!
-  bio: String
-  avatar: String
-  createdAt: DateTime
+type OpenRouterConnectionPayload {
+  success: Boolean!
+  message: String!
+  hasConnection: Boolean!
+  keyLabel: String
+  connectedAt: DateTime
 }
 
 """
 A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
 """
 scalar DateTime
+
+type User {
+  id: Int!
+  name: String!
+  email: String!
+  bio: String
+  avatar: String
+  hasOpenRouterConnection: Boolean!
+  openRouterKeyLabel: String
+  openRouterConnectedAt: DateTime
+  createdAt: DateTime
+}
 
 type RegisterResponse {
   message: String!
@@ -199,6 +210,66 @@ type SetExercise {
   requiredMetrics: [String!]!
 }
 
+type FeatureImplementationStepEntity {
+  step: String!
+  action: String!
+  technicalDetail: String!
+}
+
+type FeatureDangerousProblemEntity {
+  threatName: String!
+  theThreat: String!
+  theFix: String!
+}
+
+type FeatureThreatAnalysisEntity {
+  featureName: String!
+  executiveSummary: String!
+  implementationSteps: [FeatureImplementationStepEntity!]!
+  dangerousProblems: [FeatureDangerousProblemEntity!]!
+}
+
+type GeneratedRoutineEntryEntity {
+  exercise: String!
+  sets: Int!
+  reps: Int!
+  prescribedWeightKg: Float
+  rationale: String!
+}
+
+type RecommendationSafetyWindowEntity {
+  minWeightKg: Float
+  maxWeightKg: Float
+  minSets: Int!
+  maxSets: Int!
+  minReps: Int!
+  maxReps: Int!
+}
+
+type GeneratedWorkoutPlanEntity {
+  phaseGoal: RecommendationPhaseGoal!
+  source: RecommendationPlanSource!
+  rationale: String!
+  contextSummary: String!
+  providerNotice: String
+  safetyWindow: RecommendationSafetyWindowEntity!
+  routine: [GeneratedRoutineEntryEntity!]!
+}
+
+enum RecommendationPhaseGoal {
+  BASELINE_TESTING
+  HYPERTROPHY
+  STRENGTH
+  POWER
+  RECOVERY
+}
+
+enum RecommendationPlanSource {
+  CLOUD_AI
+  USER_OPENROUTER
+  RULE_FALLBACK
+}
+
 type Query {
   hello: String!
   getMe: User!
@@ -224,11 +295,15 @@ type Mutation {
   signIn(signInInput: SignInInput!): AuthPayload!
   forgotPassword(forgotInput: ForgotPasswordDto!): ForgotResetPassword!
   resetPassword(resetInput: ResetPasswordDto!): ForgotResetPassword!
+  exchangeOpenRouterCode(input: ExchangeOpenRouterCodeInput!): OpenRouterConnectionPayload!
+  disconnectOpenRouter: OpenRouterConnectionPayload!
   register(createUserInput: CreateUserInput!): RegisterResponse!
   requestEmailChange(input: RequestEmailChangeInput!): RequestEmailChangeResponse!
   verifyEmailChange(token: String!): VerifyEmailChangeResponse!
   updateProfile(input: UpdateProfileInput!): User!
   logWorkoutSet(input: LogWorkoutSetInput!): LoggedWorkoutSetPayload!
+  generateWorkoutRecommendation(input: GeneratePlanDto!): GeneratedWorkoutPlanEntity!
+  analyzeFeatureThreats(input: FeatureAnalysisDto!): FeatureThreatAnalysisEntity!
 }
 
 input SignInInput {
@@ -243,6 +318,11 @@ input ForgotPasswordDto {
 input ResetPasswordDto {
   token: String!
   newPassword: String!
+}
+
+input ExchangeOpenRouterCodeInput {
+  code: String!
+  verifier: String!
 }
 
 input CreateUserInput {
@@ -273,4 +353,21 @@ input LogWorkoutSetInput {
   distanceMeters: Float
   rpe: Float
   notes: String
+}
+
+input GeneratePlanDto {
+  exerciseId: String!
+  phaseGoal: RecommendationPhaseGoal!
+  days: Int = 14
+  trainingDaysPerWeek: Int = 3
+  targetSets: Int
+  targetReps: Int
+  notes: String
+}
+
+input FeatureAnalysisDto {
+  featureRequest: String!
+  featureName: String
+  systemContext: String
+  focusAreas: [String!]
 }

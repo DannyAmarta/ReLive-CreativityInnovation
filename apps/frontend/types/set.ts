@@ -10,6 +10,11 @@ export type RecommendationPhaseGoal =
   | "POWER"
   | "RECOVERY";
 
+export type RecommendationPlanSource =
+  | "CLOUD_AI"
+  | "USER_OPENROUTER"
+  | "RULE_FALLBACK";
+
 export type SetFormulaId = "BRZYCKI" | "WATHAN" | "CARDIO_LOAD";
 
 export interface SetExerciseDefinition {
@@ -115,8 +120,10 @@ export interface GeneratedRoutineEntry {
 
 export interface GeneratedWorkoutPlan {
   phaseGoal: RecommendationPhaseGoal;
+  source: RecommendationPlanSource;
   rationale: string;
   contextSummary: string;
+  providerNotice?: string | null;
   safetyWindow: RecommendationSafetyWindow;
   routine: GeneratedRoutineEntry[];
 }

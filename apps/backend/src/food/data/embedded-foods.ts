@@ -1,0 +1,164 @@
+import { Food } from '../entities/food.entity';
+import { createFoodNutrients } from '../providers/food-mapper';
+
+function createEmbeddedFood(input: {
+  sourceId: string;
+  name: string;
+  description?: string | null;
+  brand?: string | null;
+  calories: number;
+  proteinGrams: number;
+  carbsGrams: number;
+  fatGrams: number;
+  fiberGrams: number;
+  sugarGrams: number;
+  sodiumMilligrams: number;
+}): Food {
+  const per100gNutrients = createFoodNutrients({
+    calories: input.calories,
+    proteinGrams: input.proteinGrams,
+    carbsGrams: input.carbsGrams,
+    fatGrams: input.fatGrams,
+    fiberGrams: input.fiberGrams,
+    sugarGrams: input.sugarGrams,
+    sodiumMilligrams: input.sodiumMilligrams,
+  });
+
+  return {
+    id: `seed:${input.sourceId}`,
+    source: 'SEED',
+    sourceId: input.sourceId,
+    name: input.name,
+    description: input.description ?? null,
+    brand: input.brand ?? null,
+    referenceServingSize: 100,
+    referenceServingUnit: 'g',
+    servingSize: 100,
+    servingUnit: 'g',
+    per100gNutrients,
+    nutrients: per100gNutrients,
+  };
+}
+
+export const EMBEDDED_FOODS: Food[] = [
+  createEmbeddedFood({
+    sourceId: 'chicken-breast',
+    name: 'Chicken Breast',
+    description: 'Skinless, boneless chicken breast',
+    calories: 165,
+    proteinGrams: 31,
+    carbsGrams: 0,
+    fatGrams: 3.6,
+    fiberGrams: 0,
+    sugarGrams: 0,
+    sodiumMilligrams: 74,
+  }),
+  createEmbeddedFood({
+    sourceId: 'white-rice',
+    name: 'White Rice',
+    description: 'Cooked white rice',
+    calories: 130,
+    proteinGrams: 2.7,
+    carbsGrams: 28.2,
+    fatGrams: 0.3,
+    fiberGrams: 0.4,
+    sugarGrams: 0.1,
+    sodiumMilligrams: 1,
+  }),
+  createEmbeddedFood({
+    sourceId: 'brown-rice',
+    name: 'Brown Rice',
+    description: 'Cooked brown rice',
+    calories: 123,
+    proteinGrams: 2.7,
+    carbsGrams: 25.6,
+    fatGrams: 1,
+    fiberGrams: 1.8,
+    sugarGrams: 0.4,
+    sodiumMilligrams: 4,
+  }),
+  createEmbeddedFood({
+    sourceId: 'eggs',
+    name: 'Eggs',
+    description: 'Whole eggs',
+    calories: 143,
+    proteinGrams: 12.6,
+    carbsGrams: 0.7,
+    fatGrams: 9.5,
+    fiberGrams: 0,
+    sugarGrams: 0.7,
+    sodiumMilligrams: 142,
+  }),
+  createEmbeddedFood({
+    sourceId: 'oats',
+    name: 'Oats',
+    description: 'Dry rolled oats',
+    calories: 389,
+    proteinGrams: 16.9,
+    carbsGrams: 66.3,
+    fatGrams: 6.9,
+    fiberGrams: 10.6,
+    sugarGrams: 0.9,
+    sodiumMilligrams: 2,
+  }),
+  createEmbeddedFood({
+    sourceId: 'banana',
+    name: 'Banana',
+    description: 'Raw banana',
+    calories: 89,
+    proteinGrams: 1.1,
+    carbsGrams: 22.8,
+    fatGrams: 0.3,
+    fiberGrams: 2.6,
+    sugarGrams: 12.2,
+    sodiumMilligrams: 1,
+  }),
+  createEmbeddedFood({
+    sourceId: 'broccoli',
+    name: 'Broccoli',
+    description: 'Raw broccoli',
+    calories: 34,
+    proteinGrams: 2.8,
+    carbsGrams: 6.6,
+    fatGrams: 0.4,
+    fiberGrams: 2.6,
+    sugarGrams: 1.7,
+    sodiumMilligrams: 33,
+  }),
+  createEmbeddedFood({
+    sourceId: 'sweet-potato',
+    name: 'Sweet Potato',
+    description: 'Baked sweet potato',
+    calories: 90,
+    proteinGrams: 2,
+    carbsGrams: 20.7,
+    fatGrams: 0.2,
+    fiberGrams: 3.3,
+    sugarGrams: 6.5,
+    sodiumMilligrams: 36,
+  }),
+  createEmbeddedFood({
+    sourceId: 'salmon',
+    name: 'Salmon',
+    description: 'Atlantic salmon',
+    calories: 208,
+    proteinGrams: 20.4,
+    carbsGrams: 0,
+    fatGrams: 13.4,
+    fiberGrams: 0,
+    sugarGrams: 0,
+    sodiumMilligrams: 59,
+  }),
+  createEmbeddedFood({
+    sourceId: 'greek-yogurt',
+    name: 'Greek Yogurt',
+    description: 'Plain nonfat Greek yogurt',
+    calories: 59,
+    proteinGrams: 10.3,
+    carbsGrams: 3.6,
+    fatGrams: 0.4,
+    fiberGrams: 0,
+    sugarGrams: 3.2,
+    sodiumMilligrams: 36,
+  }),
+];

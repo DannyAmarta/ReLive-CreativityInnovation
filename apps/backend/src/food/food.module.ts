@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { PrismaModule } from 'src/prisma/prisma.module';
-import { FoodController } from './lordytrashcan/food.controller';
 import { FoodResolver } from './food.resolver';
 import { FoodService } from './food.service';
 import { UsdaFoodConnector } from './providers/usda-food.connector';

@@ -191,7 +191,34 @@ export const GET_ME_QUERY = gql`
             email
             bio
             avatar
+            hasOpenRouterConnection
+            openRouterKeyLabel
+            openRouterConnectedAt
             createdAt
+        }
+    }
+`
+
+export const EXCHANGE_OPENROUTER_CODE_MUTATION = gql`
+    mutation ExchangeOpenRouterCode($input: ExchangeOpenRouterCodeInput!) {
+        exchangeOpenRouterCode(input: $input) {
+            success
+            message
+            hasConnection
+            keyLabel
+            connectedAt
+        }
+    }
+`
+
+export const DISCONNECT_OPENROUTER_MUTATION = gql`
+    mutation DisconnectOpenRouter {
+        disconnectOpenRouter {
+            success
+            message
+            hasConnection
+            keyLabel
+            connectedAt
         }
     }
 `
@@ -396,6 +423,33 @@ export const GET_SET_PERFORMANCE_ANALYTICS_QUERY = gql`
             contextSummary
             sampleSize
             isColdStart
+        }
+    }
+`
+
+export const GENERATE_WORKOUT_RECOMMENDATION_MUTATION = gql`
+    mutation GenerateWorkoutRecommendation($input: GeneratePlanDto!) {
+        generateWorkoutRecommendation(input: $input) {
+            phaseGoal
+            source
+            rationale
+            contextSummary
+            providerNotice
+            safetyWindow {
+                minWeightKg
+                maxWeightKg
+                minSets
+                maxSets
+                minReps
+                maxReps
+            }
+            routine {
+                exercise
+                sets
+                reps
+                prescribedWeightKg
+                rationale
+            }
         }
     }
 `

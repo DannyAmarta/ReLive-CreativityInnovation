@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { SearchFoodsArgs } from './dto/search-foods.args';
+import { EMBEDDED_FOODS } from './data/embedded-foods';
 import { Food } from './entities/food.entity';
 import { FoodSearchResponse } from './entities/food-search-response.entity';
 import { OpenFoodFactsConnector } from './providers/open-food-facts.connector';
@@ -55,13 +56,25 @@ export class FoodService {
   // Used by FoodController.searchFoods and FoodResolver.searchFoods.
   async searchFoods(args: SearchFoodsArgs): Promise<FoodSearchResponse> {
     // We normalize once so every layer below works with the same safe values.
-    const normalizedArgs = this.normalizeArgs(args);
-    //local storage 60 sec
-    const cacheKey = this.createResponseCacheKey(normalizedArgs);
-    const inMemoryHit = this.getCachedResponse(cacheKey);
+    // Normalizes incoming arguments so all later steps work with trimmed query text
+    // and bounded numeric values regardless of how the request arrived.
+    const normalizedArgs: SearchFoodsArgs = {
+      query: args.query.trim(),
+      page: Math.max(1, Math.trunc(args.page || 1)),
+      pageSize: Math.min(20, Math.max(1, Math.trunc(args.pageSize || 10))),
+      servingSize: Math.max(1, Math.trunc(args.servingSize || 100)),
+    };
 
-    if (inMemoryHit) {
-      return inMemoryHit;
+    // Builds the in-memory cache key for a specific search term + pagination + serving size.
+    // Used only inside searchFoods to reuse recent responses.
+    const cacheKey = 
+    `${this.normalizeQuery(normalizedArgs.query)}:${normalizedArgs.page}:${normalizedArgs.pageSize}:${normalizedArgs.servingSize}`;
+
+    // Reads the short-lived response cache before we touch the database or providers.
+    // Used only by searchFoods.
+    const cached = this.responseCache.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now()) {
+      return cached.value;
     }
 
     //mulai database check
@@ -75,6 +88,7 @@ export class FoodService {
         fallbackUsed: false,
       });
 
+      // taro ke cache memory
       this.storeResponseCache(cacheKey, response);
       return response;
     }
@@ -94,6 +108,7 @@ export class FoodService {
         fallbackUsed: false,
       });
 
+      // taro ke cache memory
       this.storeResponseCache(cacheKey, response);
       return response;
     }
@@ -108,56 +123,34 @@ export class FoodService {
       openFoodFactsFoods,
       normalizedArgs.pageSize,
     );
+    const embeddedFoods = this.hasUsefulResults(finalItems)
+      ? []
+      : this.findEmbeddedFoods(normalizedArgs);
+    const completedItems = this.mergeFoods(
+      finalItems,
+      embeddedFoods,
+      normalizedArgs.pageSize,
+    );
 
     const response = this.buildResponse({
       args: normalizedArgs,
-      items: finalItems,
+      items: completedItems,
       sourceUsed: this.resolveSourceUsed({
         cachedFoods,
         usdaFoods,
         openFoodFactsFoods,
+        embeddedFoods,
       }),
       cacheHit: cachedFoods.length > 0,
-      fallbackUsed: openFoodFactsFoods.length > 0,
+      fallbackUsed:
+        openFoodFactsFoods.length > 0 || embeddedFoods.length > 0,
     });
-
+    
+    //taro ke memory cache
     this.storeResponseCache(cacheKey, response);
     return response;
   }
-
-  // Normalizes incoming arguments so all later steps work with trimmed query text
-  // and bounded numeric values regardless of how the request arrived.
-  private normalizeArgs(args: SearchFoodsArgs): SearchFoodsArgs {
-    return {
-      query: args.query.trim(),
-      page: Math.max(1, Math.trunc(args.page || 1)),
-      pageSize: Math.min(20, Math.max(1, Math.trunc(args.pageSize || 10))),
-      servingSize: Math.max(1, Math.trunc(args.servingSize || 100)),
-    };
-  }
-
-  // Builds the in-memory cache key for a specific search term + pagination + serving size.
-  // Used only inside searchFoods to reuse recent responses.
-  private createResponseCacheKey(args: SearchFoodsArgs) {
-    return `${this.normalizeQuery(args.query)}:${args.page}:${args.pageSize}:${args.servingSize}`;
-  }
-
-  // Reads the short-lived response cache before we touch the database or providers.
-  // Used only by searchFoods.
-  private getCachedResponse(cacheKey: string) {
-    const cachedValue = this.responseCache.get(cacheKey);
-    if (!cachedValue) {
-      return null;
-    }
-
-    if (cachedValue.expiresAt < Date.now()) {
-      this.responseCache.delete(cacheKey);
-      return null;
-    }
-
-    return cachedValue.value;
-  }
-
+  
   // Stores a completed response in the short-lived in-memory cache.
   // Used by searchFoods after each successful search path.
   private storeResponseCache(cacheKey: string, value: FoodSearchResponse) {
@@ -249,6 +242,27 @@ export class FoodService {
   // Used after database and USDA lookups.
   private hasUsefulResults(items: Food[]) {
     return items.length > 0;
+  }
+
+  // Searches a tiny built-in staple-food catalog so common gym queries still
+  // return something useful when the database is cold and external APIs fail.
+  private findEmbeddedFoods(args: SearchFoodsArgs): Food[] {
+    const normalizedQuery = this.normalizeQuery(args.query);
+
+    return EMBEDDED_FOODS.filter((item) => {
+      const haystacks = [
+        this.normalizeQuery(item.name),
+        this.normalizeQuery(item.description ?? ''),
+        this.normalizeQuery(item.brand ?? ''),
+      ].filter((value) => value.length > 0);
+
+      return haystacks.some(
+        (value) =>
+          value.includes(normalizedQuery) || normalizedQuery.includes(value),
+      );
+    })
+      .slice((args.page - 1) * args.pageSize, args.page * args.pageSize)
+      .map((item) => this.withServingSize(item, args.servingSize));
   }
 
   // Merges results from multiple sources while preserving source/id uniqueness.
@@ -394,6 +408,7 @@ export class FoodService {
     cachedFoods: Food[];
     usdaFoods: Food[];
     openFoodFactsFoods: Food[];
+    embeddedFoods: Food[];
   }) {
     if (input.openFoodFactsFoods.length > 0) {
       return 'OPEN_FOOD_FACTS';
@@ -405,6 +420,10 @@ export class FoodService {
 
     if (input.cachedFoods.length > 0) {
       return 'DATABASE';
+    }
+
+    if (input.embeddedFoods.length > 0) {
+      return 'SEED';
     }
 
     return 'NONE';

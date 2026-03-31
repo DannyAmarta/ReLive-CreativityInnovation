@@ -8,11 +8,11 @@ export class FoodResolver {
   constructor(private readonly foodService: FoodService) {}
 
   @Query(() => FoodSearchResponse)
-  // GraphQL query entry point for food search.
-  // Used by clients that prefer the /graphql endpoint over REST.
+  // GraphQL is the canonical contract for this feature.
+  // Keep food search on the resolver/schema path instead of adding REST routes.
   async searchFoods(@Args() args: SearchFoodsArgs) {
-    // GraphQL and REST intentionally share the same service so we only keep one
-    // implementation of the cache/search/fallback behavior.
+    // The resolver stays thin so the cache/search/fallback behavior lives in
+    // one backend service while the schema remains the public contract.
     return this.foodService.searchFoods(args);
   }
 }

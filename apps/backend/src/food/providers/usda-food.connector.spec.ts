@@ -46,6 +46,7 @@ describe('UsdaFoodConnector', () => {
       query: 'apple',
       page: 1,
       pageSize: 10,
+      servingSize: 100,
     });
 
     expect(result.items).toEqual([

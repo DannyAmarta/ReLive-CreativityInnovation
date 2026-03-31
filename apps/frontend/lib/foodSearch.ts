@@ -7,8 +7,8 @@ import type { FoodSearchFormState } from "./types/formState";
 import type { FoodSearchResponse } from "@/types/food";
 import { FoodSearchSchema } from "./zodSchemas/foodSearchSchema";
 
-// This server action validates food search input and hits the GraphQL food query.
-// It mirrors the auth form pattern so the foods page can use form state + zod.
+// Food search stays GraphQL-first by design: Zod validates form input here,
+// and the Nest resolver/schema remains the only contract for this feature.
 export async function SearchFoods(
   state: FoodSearchFormState | undefined,
   formData: FormData,
