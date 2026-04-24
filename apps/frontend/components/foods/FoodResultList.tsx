@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FoodCard } from "./FoodCard";
 import type { Food, FoodSearchResponse } from "@/types/food";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/Button";
 
 type FoodResultListProps = {
   items: Food[];

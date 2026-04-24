@@ -1,4 +1,4 @@
-import { OpenRouterCallbackClient } from "@/components/profile/OpenRouterCallbackClient";
+import { OpenRouterCallbackClient } from "./OpenRouterCallbackClient";
 
 export default function OpenRouterCallbackPage() {
   return <OpenRouterCallbackClient />;

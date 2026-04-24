@@ -34,9 +34,9 @@ export declare class AuthService {
         createdAt: Date;
         updatedAt: Date | null;
         email: string;
+        avatar: string | null;
         password: string;
         bio: string | null;
-        avatar: string | null;
         openRouterApiKeyEncrypted: string | null;
         openRouterKeyLabel: string | null;
         openRouterUserId: string | null;
@@ -60,9 +60,9 @@ export declare class AuthService {
         createdAt: Date;
         updatedAt: Date | null;
         email: string;
+        avatar: string | null;
         password: string;
         bio: string | null;
-        avatar: string | null;
         openRouterApiKeyEncrypted: string | null;
         openRouterKeyLabel: string | null;
         openRouterUserId: string | null;

@@ -9,7 +9,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/Card";
 import { GenerateWorkoutRecommendation } from "@/lib/set/actions/generate-workout-recommendation";
 import { LogWorkoutSet } from "@/lib/set/actions/log-workout-set";
 import { CalculateSetEstimate } from "@/lib/set/actions/calculate-set-estimate";

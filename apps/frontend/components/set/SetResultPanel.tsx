@@ -10,7 +10,7 @@ import {
   Sparkles,
   Waves,
 } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/Card";
 import { formatMetric } from "@/lib/set/forms";
 import type {
   GeneratedWorkoutPlan,

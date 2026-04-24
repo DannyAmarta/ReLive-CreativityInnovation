@@ -3,9 +3,9 @@
 import { Minus, Plus, Soup, Trash2 } from "lucide-react";
 import { formatNutrientValue, summarizeMealNutrition } from "@/lib/food";
 import type { MealFoodItem } from "@/types/food";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 
 type MealSummaryPanelProps = {
   items: MealFoodItem[];

@@ -4,7 +4,7 @@ import { ChefHat, SearchX, ChevronLeft, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Recipe, RecipeSearchResponse } from "@/types/recipe";
 import { RecipeCard } from "./RecipeCard";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/Button";
 
 type RecipeResultListProps = {
   items: Recipe[];

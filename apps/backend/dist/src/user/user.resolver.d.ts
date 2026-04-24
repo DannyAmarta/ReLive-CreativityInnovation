@@ -23,9 +23,9 @@ export declare class UserResolver {
         createdAt: Date;
         updatedAt: Date | null;
         email: string;
+        avatar: string | null;
         password: string;
         bio: string | null;
-        avatar: string | null;
         openRouterApiKeyEncrypted: string | null;
         openRouterUserId: string | null;
     }>;
@@ -53,9 +53,9 @@ export declare class UserResolver {
         createdAt: Date;
         updatedAt: Date | null;
         email: string;
+        avatar: string | null;
         password: string;
         bio: string | null;
-        avatar: string | null;
         openRouterApiKeyEncrypted: string | null;
     }>;
     private extractUserIdFromContext;

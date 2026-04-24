@@ -6,7 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { searchRecipes } from "@/services/recipe.service";
 import type { Food } from "@/types/food";
 import type { Recipe } from "@/types/recipe";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/Card";
 import { RecipeDetailsPanel } from "@/components/cookbook/RecipeDetailsPanel";
 
 type FoodRecipePanelProps = {

@@ -45,6 +45,8 @@ export async function POST(request: NextRequest) {
 
   const json = await res.json();
 
+  console.log("FULL BACKEND RESPONSE:", JSON.stringify(json, null, 2));
+  
   if (json?.errors?.length) {
     return NextResponse.json(
       { error: json.errors[0]?.message ?? "GraphQL error" },

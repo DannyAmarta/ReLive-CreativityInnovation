@@ -1,7 +1,7 @@
 import { AuthService } from './auth.service';
 import type { Response } from 'express';
 import { JwtService } from '@nestjs/jwt';
-import { PrismaService } from 'src/prisma/prisma.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
 export declare class AuthController {
     private readonly authService;

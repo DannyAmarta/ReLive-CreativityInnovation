@@ -20,6 +20,7 @@
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
+    "...": "link:...",
     "@apollo/server": "^4.13.0",
     "@as-integrations/express5": "^1.1.2",
     "@faker-js/faker": "^10.3.0",

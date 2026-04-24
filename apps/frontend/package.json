@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "...": "link:...",
     "@babylonjs/core": "^8.55.1",
     "@babylonjs/loaders": "^8.55.1",
     "@hookform/resolvers": "^4.1.3",
