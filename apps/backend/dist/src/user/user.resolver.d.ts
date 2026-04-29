@@ -19,15 +19,21 @@ export declare class UserResolver {
         openRouterKeyLabel: string | null;
         openRouterConnectedAt: Date | null;
         id: number;
-        name: string | null;
-        createdAt: Date;
-        updatedAt: Date | null;
         email: string;
-        avatar: string | null;
         password: string;
+        name: string | null;
         bio: string | null;
+        avatar: string | null;
+        profileCompleted: boolean;
+        fitnessLevel: string | null;
+        dailyActivity: string | null;
+        primaryGoal: string | null;
+        vitalityScore: number;
+        streakDays: number;
         openRouterApiKeyEncrypted: string | null;
         openRouterUserId: string | null;
+        createdAt: Date;
+        updatedAt: Date | null;
     }>;
     requestEmailChange(input: RequestEmailChangeInput, ctx: {
         req: {
@@ -46,17 +52,20 @@ export declare class UserResolver {
         };
     }): Promise<{
         hasOpenRouterConnection: boolean;
+        id: number;
+        email: string;
+        name: string | null;
+        bio: string | null;
+        avatar: string | null;
+        profileCompleted: boolean;
+        fitnessLevel: string | null;
+        dailyActivity: string | null;
+        primaryGoal: string | null;
+        vitalityScore: number;
+        openRouterApiKeyEncrypted: string | null;
         openRouterKeyLabel: string | null;
         openRouterConnectedAt: Date | null;
-        id: number;
-        name: string | null;
         createdAt: Date;
-        updatedAt: Date | null;
-        email: string;
-        avatar: string | null;
-        password: string;
-        bio: string | null;
-        openRouterApiKeyEncrypted: string | null;
     }>;
     private extractUserIdFromContext;
 }

@@ -2,7 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect, useActionState, useRef } from "react";
-import Face, { Expression } from "@/components/auth/Face";
+import Face, { Expression } from "@/components/auth/components/Face";
 import { Register } from "@/lib/auth";
 
 type FocusField = "none" | "email" | "password";

@@ -30,17 +30,23 @@ export declare class AuthService {
     constructor(prisma: PrismaService, jwtService: JwtService, eventEmitter: EventEmitter2, configService: ConfigService);
     validateLocalUser({ email, password }: SignInInput): Promise<{
         id: number;
-        name: string | null;
-        createdAt: Date;
-        updatedAt: Date | null;
         email: string;
-        avatar: string | null;
         password: string;
+        name: string | null;
         bio: string | null;
+        avatar: string | null;
+        profileCompleted: boolean;
+        fitnessLevel: string | null;
+        dailyActivity: string | null;
+        primaryGoal: string | null;
+        vitalityScore: number;
+        streakDays: number;
         openRouterApiKeyEncrypted: string | null;
         openRouterKeyLabel: string | null;
         openRouterUserId: string | null;
         openRouterConnectedAt: Date | null;
+        createdAt: Date;
+        updatedAt: Date | null;
     }>;
     generateToken(userId: number): Promise<{
         accessToken: string;
@@ -56,17 +62,23 @@ export declare class AuthService {
     }>;
     validateGoogleUser(googleUser: GoogleProfileInput): Promise<{
         id: number;
-        name: string | null;
-        createdAt: Date;
-        updatedAt: Date | null;
         email: string;
-        avatar: string | null;
         password: string;
+        name: string | null;
         bio: string | null;
+        avatar: string | null;
+        profileCompleted: boolean;
+        fitnessLevel: string | null;
+        dailyActivity: string | null;
+        primaryGoal: string | null;
+        vitalityScore: number;
+        streakDays: number;
         openRouterApiKeyEncrypted: string | null;
         openRouterKeyLabel: string | null;
         openRouterUserId: string | null;
         openRouterConnectedAt: Date | null;
+        createdAt: Date;
+        updatedAt: Date | null;
     }>;
     createGoogleAuthHandoff(user: Pick<User, 'id' | 'name' | 'avatar'>): Promise<string>;
     exchangeGoogleAuthHandoff(code: string): Promise<SafeAuthUser>;

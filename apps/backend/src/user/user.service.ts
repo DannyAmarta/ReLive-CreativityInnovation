@@ -51,38 +51,44 @@ export class UserService {
 
   // This function updates the display name and/or bio for the currently authenticated user.
   // Both fields are optional so either can be changed independently.
-  async updateProfile(userId: number, dto: UpdateProfileInput) {
-    if (!dto.name && dto.bio === undefined) {
-      throw new BadRequestException('No profile fields provided to update');
-    }
-
-    const data: { name?: string; bio?: string } = {};
-    if (dto.name) data.name = dto.name;
-    if (dto.bio !== undefined) data.bio = dto.bio;
-
-    return this.prisma.user.update({
-      where: { id: userId },
-      data,
-      select: {
-        id: true,
-        email: true,
-        password: true,
-        name: true,
-        bio: true,
-        avatar: true,
-        createdAt: true,
-        updatedAt: true,
-        openRouterApiKeyEncrypted: true,
-        openRouterKeyLabel: true,
-        openRouterConnectedAt: true,
-      },
-    }).then((user) => ({
-      ...user,
-      hasOpenRouterConnection: Boolean(user.openRouterApiKeyEncrypted),
-      openRouterKeyLabel: user.openRouterKeyLabel,
-      openRouterConnectedAt: user.openRouterConnectedAt,
-    }));
+  async updateProfile(userId: number, dto: UpdateProfileInput) { 
+  // 1. Check if ANY data was provided (including our new onboarding fields)
+  const hasData = Object.keys(dto).length > 0;
+  if (!hasData) {
+    throw new BadRequestException('No profile fields provided to update');
   }
+
+  // 2. Build the data object dynamically
+  // This allows the function to handle name/bio AND fitnessLevel/goal etc.
+  const data: any = { ...dto };
+  
+  // Ensure we don't try to update the 'id' field inside the 'data' block
+  delete data.id;
+
+  return this.prisma.user.update({
+    where: { id: userId },
+    data,
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      bio: true,
+      avatar: true,
+      profileCompleted: true, // Add these to the select!
+      fitnessLevel: true,
+      dailyActivity: true,
+      primaryGoal: true,
+      vitalityScore: true,
+      createdAt: true,
+      openRouterApiKeyEncrypted: true,
+      openRouterKeyLabel: true,
+      openRouterConnectedAt: true,
+    },
+  }).then((user) => ({
+    ...user,
+    hasOpenRouterConnection: Boolean(user.openRouterApiKeyEncrypted),
+  }));
+}
 
   // This function signs the short-lived token that carries pending registration data.
   // It is used only by `register()` so the app can delay user creation until the email owner confirms activation.
@@ -325,5 +331,22 @@ export class UserService {
       this.configService.get<string>('EMAIL_CHANGE_SECRET') ??
       this.configService.getOrThrow<string>('JWT_SECRET')
     );
+  }
+
+  // This helper is for changing avatar
+  async updateAvatar(userId: number, filename: string) {
+    const avatarPath = `/uploads/avatars/${filename}`;
+
+    try {
+      return await this.prisma.user.update({
+        where: { id: userId },
+        data: { avatar: avatarPath },
+      });
+    } catch (error: any) {
+      // Look at your terminal! This will show the specific Prisma error code (like P2025)
+      console.error("DATABASE UPDATE ERROR:", error.meta?.cause || error.message);
+      
+      throw new BadRequestException(`Archive Update Failed: User ID ${userId} not found.`);
+    }
   }
 }

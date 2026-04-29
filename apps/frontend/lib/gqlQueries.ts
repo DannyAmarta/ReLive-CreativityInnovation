@@ -191,6 +191,12 @@ export const GET_ME_QUERY = gql`
             email
             bio
             avatar
+            # --- Add these here ---
+            profileCompleted
+            fitnessLevel
+            primaryGoal
+            vitalityScore
+            # ---------------------
             hasOpenRouterConnection
             openRouterKeyLabel
             openRouterConnectedAt
@@ -248,6 +254,13 @@ export const UPDATE_PROFILE_MUTATION = gql`
             bio
             email
             avatar
+            # --- New Botanical Fields ---
+            profileCompleted
+            fitnessLevel
+            dailyActivity
+            primaryGoal
+            vitalityScore
+            # ---------------------------
             createdAt
         }
     }

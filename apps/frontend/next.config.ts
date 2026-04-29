@@ -1,33 +1,54 @@
+import { NextConfig } from "next";
+
 /** @type {import('next').NextConfig} */
-const nextConfig = {
-  webpack(config: { module: { rules: any[]; }; }) {
-    // Grab the existing rule that handles SVG imports
-    const fileLoaderRule = config.module.rules.find((rule) =>
+const nextConfig: NextConfig = {
+  // 1. Add your Image Domains here
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'spoonacular.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'www.themealdb.com',
+      },
+      // If Spoonacular uses subdomains for images, add this too:
+      {
+        protocol: 'https',
+        hostname: 'img.spoonacular.com',
+      },
+    ],
+  },
+
+  // 2. Your existing Webpack SVG config
+  webpack(config) { // TypeScript now infers 'config' from NextConfig
+    const fileLoaderRule = config.module.rules.find((rule: any) =>
       rule.test?.test?.(".svg")
     );
 
+    if (!fileLoaderRule) return config; // Safety check
+
     config.module.rules.push(
-      // Reapply the existing rule, but only for svg imports ending in ?url
       {
         ...fileLoaderRule,
         test: /\.svg$/i,
-        resourceQuery: /url/, // *.svg?url
+        resourceQuery: /url/,
       },
-      // Convert all other *.svg imports to React components
       {
         test: /\.svg$/i,
         issuer: fileLoaderRule.issuer,
-        resourceQuery: { not: [...fileLoaderRule.resourceQuery.not, /url/] }, // exclude if *.svg?url
+        resourceQuery: { not: [...(fileLoaderRule.resourceQuery?.not || []), /url/] },
         use: ["@svgr/webpack"],
       }
     );
 
-    // Modify the file loader rule to ignore *.svg, since we have it handled now.
     fileLoaderRule.exclude = /\.svg$/i;
 
     return config;
   },
 
+  // 3. Your existing optimization settings
   experimental: {
     optimizePackageImports: [
       "framer-motion",

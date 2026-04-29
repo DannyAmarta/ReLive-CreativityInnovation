@@ -74,26 +74,27 @@ let UserService = class UserService {
         };
     }
     async updateProfile(userId, dto) {
-        if (!dto.name && dto.bio === undefined) {
+        const hasData = Object.keys(dto).length > 0;
+        if (!hasData) {
             throw new common_1.BadRequestException('No profile fields provided to update');
         }
-        const data = {};
-        if (dto.name)
-            data.name = dto.name;
-        if (dto.bio !== undefined)
-            data.bio = dto.bio;
+        const data = { ...dto };
+        delete data.id;
         return this.prisma.user.update({
             where: { id: userId },
             data,
             select: {
                 id: true,
                 email: true,
-                password: true,
                 name: true,
                 bio: true,
                 avatar: true,
+                profileCompleted: true,
+                fitnessLevel: true,
+                dailyActivity: true,
+                primaryGoal: true,
+                vitalityScore: true,
                 createdAt: true,
-                updatedAt: true,
                 openRouterApiKeyEncrypted: true,
                 openRouterKeyLabel: true,
                 openRouterConnectedAt: true,
@@ -101,8 +102,6 @@ let UserService = class UserService {
         }).then((user) => ({
             ...user,
             hasOpenRouterConnection: Boolean(user.openRouterApiKeyEncrypted),
-            openRouterKeyLabel: user.openRouterKeyLabel,
-            openRouterConnectedAt: user.openRouterConnectedAt,
         }));
     }
     async generateActivationToken(dto) {
@@ -266,6 +265,19 @@ let UserService = class UserService {
     getEmailChangeSecret() {
         return (this.configService.get('EMAIL_CHANGE_SECRET') ??
             this.configService.getOrThrow('JWT_SECRET'));
+    }
+    async updateAvatar(userId, filename) {
+        const avatarPath = `/uploads/avatars/${filename}`;
+        try {
+            return await this.prisma.user.update({
+                where: { id: userId },
+                data: { avatar: avatarPath },
+            });
+        }
+        catch (error) {
+            console.error("DATABASE UPDATE ERROR:", error.meta?.cause || error.message);
+            throw new common_1.BadRequestException(`Archive Update Failed: User ID ${userId} not found.`);
+        }
     }
 };
 exports.UserService = UserService;

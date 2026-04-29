@@ -1,8 +1,6 @@
-import { Field, InputType } from '@nestjs/graphql';
-import { IsOptional, IsString, Length } from 'class-validator';
+import { Field, InputType, Int } from '@nestjs/graphql';
+import { IsOptional, IsString, IsBoolean, IsInt, Length } from 'class-validator';
 
-// This DTO carries optional fields for updating a user's display name and bio.
-// Both fields are optional so the client can update just one at a time.
 @InputType()
 export class UpdateProfileInput {
   @IsOptional()
@@ -16,4 +14,30 @@ export class UpdateProfileInput {
   @Length(0, 255, { message: 'Bio cannot exceed 255 characters' })
   @Field(() => String, { nullable: true })
   bio?: string;
+
+  // --- New Onboarding Fields ---
+  @IsOptional()
+  @IsBoolean()
+  @Field(() => Boolean, { nullable: true })
+  profileCompleted?: boolean;
+
+  @IsOptional()
+  @IsString()
+  @Field(() => String, { nullable: true })
+  fitnessLevel?: string;
+
+  @IsOptional()
+  @IsString()
+  @Field(() => String, { nullable: true })
+  dailyActivity?: string;
+
+  @IsOptional()
+  @IsString()
+  @Field(() => String, { nullable: true })
+  primaryGoal?: string;
+
+  @IsOptional()
+  @IsInt()
+  @Field(() => Int, { nullable: true })
+  vitalityScore?: number;
 }

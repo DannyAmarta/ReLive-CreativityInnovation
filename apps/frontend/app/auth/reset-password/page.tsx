@@ -9,7 +9,7 @@ import {
     WinterScene,
     GlassCard,
     SnowParticles,
-} from "@/components/auth/IceThreeJs";
+} from "@/components/auth/components/AuthBackground";
 import Backup from "./backup";
 
 type FocusField = "none" | "password";

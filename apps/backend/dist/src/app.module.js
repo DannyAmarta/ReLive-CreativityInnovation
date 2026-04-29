@@ -28,6 +28,8 @@ const gql_throttler_guard_1 = require("./core/guards/gql-throttler.guard");
 const nestjs_dataloader_1 = require("nestjs-dataloader");
 const set_module_1 = require("./set/set.module");
 const recommendation_module_1 = require("./recommendation/recommendation.module");
+const chat_module_1 = require("./chat/chat.module");
+const workouts_module_1 = require("./workouts/workouts.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -68,6 +70,9 @@ exports.AppModule = AppModule = __decorate([
             recipe_module_1.RecipeModule,
             set_module_1.SetModule,
             recommendation_module_1.RecommendationModule,
+            chat_module_1.ChatModule,
+            workouts_module_1.WorkoutsModule,
+            workouts_module_1.WorkoutsModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [

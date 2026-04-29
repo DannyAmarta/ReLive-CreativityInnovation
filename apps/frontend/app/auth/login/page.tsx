@@ -2,7 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect, useActionState, useRef } from "react";
-import Face, { Expression } from "@/components/auth/Face";
+import Face, { Expression } from "@/components/auth/components/Face";
 import { Login } from "@/lib/auth";
 import { BACKEND_URL } from "@/lib/constants";
 import Link from "next/link";
@@ -11,7 +11,7 @@ import {
     GroundScene,
     SnowflakeSVG,
     StarField,
-} from "@/components/auth/SnowAuth";
+} from "@/components/auth/components/SnowAuth";
 
 type FocusField = "none" | "email" | "password";
 

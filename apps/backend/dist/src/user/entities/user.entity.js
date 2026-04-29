@@ -17,6 +17,12 @@ let User = class User {
     email;
     bio;
     avatar;
+    profileCompleted;
+    fitnessLevel;
+    dailyActivity;
+    primaryGoal;
+    vitalityScore;
+    streakDays;
     hasOpenRouterConnection;
     openRouterKeyLabel;
     openRouterConnectedAt;
@@ -43,6 +49,30 @@ __decorate([
     (0, graphql_1.Field)({ nullable: true }),
     __metadata("design:type", String)
 ], User.prototype, "avatar", void 0);
+__decorate([
+    (0, graphql_1.Field)(),
+    __metadata("design:type", Boolean)
+], User.prototype, "profileCompleted", void 0);
+__decorate([
+    (0, graphql_1.Field)({ nullable: true }),
+    __metadata("design:type", String)
+], User.prototype, "fitnessLevel", void 0);
+__decorate([
+    (0, graphql_1.Field)({ nullable: true }),
+    __metadata("design:type", String)
+], User.prototype, "dailyActivity", void 0);
+__decorate([
+    (0, graphql_1.Field)({ nullable: true }),
+    __metadata("design:type", String)
+], User.prototype, "primaryGoal", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => graphql_1.Int),
+    __metadata("design:type", Number)
+], User.prototype, "vitalityScore", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => graphql_1.Int),
+    __metadata("design:type", Number)
+], User.prototype, "streakDays", void 0);
 __decorate([
     (0, graphql_1.Field)(),
     __metadata("design:type", Boolean)

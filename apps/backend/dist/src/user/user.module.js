@@ -10,10 +10,15 @@ exports.UserModule = void 0;
 const common_1 = require("@nestjs/common");
 const user_service_1 = require("./user.service");
 const user_resolver_1 = require("./user.resolver");
+const user_loader_1 = require("./user.loader");
 const prisma_service_1 = require("../prisma/prisma.service");
 const jwt_1 = require("@nestjs/jwt");
 const mailer_1 = require("@nestjs-modules/mailer");
 const config_1 = require("@nestjs/config");
+const user_controller_1 = require("./user.controller");
+const platform_express_1 = require("@nestjs/platform-express");
+const multer_1 = require("multer");
+const path_1 = require("path");
 let UserModule = class UserModule {
 };
 exports.UserModule = UserModule;
@@ -31,9 +36,20 @@ exports.UserModule = UserModule = __decorate([
                     },
                 }),
             }),
-            mailer_1.MailerModule
+            mailer_1.MailerModule,
+            platform_express_1.MulterModule.register({
+                storage: (0, multer_1.diskStorage)({
+                    destination: './uploads/avatars',
+                    filename: (req, file, callback) => {
+                        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+                        const ext = (0, path_1.extname)(file.originalname);
+                        callback(null, `avatar-${uniqueSuffix}${ext}`);
+                    },
+                }),
+            }),
         ],
-        providers: [user_resolver_1.UserResolver, user_service_1.UserService, prisma_service_1.PrismaService],
+        controllers: [user_controller_1.UserController],
+        providers: [user_resolver_1.UserResolver, user_service_1.UserService, prisma_service_1.PrismaService, user_loader_1.UserLoader],
     })
 ], UserModule);
 //# sourceMappingURL=user.module.js.map

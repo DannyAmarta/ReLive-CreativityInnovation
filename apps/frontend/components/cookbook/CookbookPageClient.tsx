@@ -1,51 +1,61 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CookbookExperience } from "./CookbookExperience";
+import dynamic from "next/dynamic";
 
 type CookbookPageClientProps = {
   initialQuery?: string;
   initialRecipeId?: string;
 };
 
-export function CookbookPageClient({
-  initialQuery,
-  initialRecipeId,
-}: CookbookPageClientProps) {
+function CookbookSkeleton() {
+  return (
+    <div className="min-h-screen bg-[#FFFAFB] overflow-hidden">
+      {/* Skeleton Background Blobs (Static) */}
+      <div className="fixed inset-0 -z-10">
+        <div className="absolute -left-[10%] -top-[10%] h-[50vh] w-[50vw] rounded-full bg-[#FFB7C5]/10 blur-[80px]" />
+        <div className="absolute -bottom-[10%] -right-[10%] h-[50vh] w-[50vw] rounded-full bg-[#FFE4EE]/10 blur-[80px]" />
+      </div>
+
+      <div className="flex min-h-[60vh] flex-col items-center justify-center px-6 text-center">
+        {/* Badge Skeleton */}
+        <div className="mb-8 h-10 w-64 animate-pulse rounded-full bg-[#FFB7C5]/20" />
+        {/* Title Skeleton */}
+        <div className="h-16 w-full max-w-2xl animate-pulse rounded-2xl bg-[#1a0a12]/5" />
+        <div className="mt-4 h-16 w-3/4 max-w-xl animate-pulse rounded-2xl bg-[#1a0a12]/5" />
+        {/* Description Skeleton */}
+        <div className="mt-8 h-6 w-full max-w-lg animate-pulse rounded-lg bg-[#6b3550]/10" />
+      </div>
+
+      {/* Search Bar Skeleton */}
+      <div className="mx-auto max-w-3xl px-4">
+        <div className="h-16 w-full animate-pulse rounded-2xl border border-white bg-white/40 shadow-sm" />
+      </div>
+    </div>
+  );
+}
+
+const CookbookExperience = dynamic(
+  () => import("./CookbookMain").then((mod) => mod.CookbookMain),
+  { 
+    ssr: false, 
+    loading: () => <CookbookSkeleton /> 
+  }
+);
+
+export function CookbookPageClient({ initialQuery, initialRecipeId }: CookbookPageClientProps) {
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
-  if (!isMounted) {
-    return (
-      <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(123,31,162,0.32),_transparent_24%),linear-gradient(180deg,_#080510_0%,_#16091e_52%,_#080510_100%)]">
-        <div className="flex min-h-[58vh] flex-col items-center justify-center gap-6 px-6 text-center">
-          <div className="h-8 w-48 animate-pulse rounded-full bg-fuchsia-200/20" />
-          <div className="h-16 w-full max-w-3xl animate-pulse rounded-3xl bg-fuchsia-200/15" />
-          <div className="h-7 w-full max-w-xl animate-pulse rounded-2xl bg-fuchsia-100/10" />
-          <div className="mt-4 h-5 w-6 animate-pulse rounded-full bg-fuchsia-200/20" />
-        </div>
-
-        <div className="mx-auto max-w-3xl px-4">
-          <div className="h-56 animate-pulse rounded-[2rem] border border-fuchsia-200/15 bg-white/5" />
-        </div>
-
-        <div className="mx-auto mt-8 max-w-7xl px-4">
-          <div className="grid gap-4 lg:grid-cols-[0.72fr_1.28fr]">
-            <div className="h-80 animate-pulse rounded-[2rem] border border-fuchsia-200/15 bg-white/5" />
-            <div className="h-[32rem] animate-pulse rounded-[2rem] border border-fuchsia-200/15 bg-white/5" />
-          </div>
-        </div>
-      </div>
-    );
-  }
+  if (!isMounted) return <CookbookSkeleton />;
 
   return (
-    <CookbookExperience
-      initialQuery={initialQuery}
-      initialRecipeId={initialRecipeId}
+    <CookbookExperience 
+      initialQuery={initialQuery} 
+      initialRecipeId={initialRecipeId} 
     />
   );
 }

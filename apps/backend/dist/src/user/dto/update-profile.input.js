@@ -15,6 +15,11 @@ const class_validator_1 = require("class-validator");
 let UpdateProfileInput = class UpdateProfileInput {
     name;
     bio;
+    profileCompleted;
+    fitnessLevel;
+    dailyActivity;
+    primaryGoal;
+    vitalityScore;
 };
 exports.UpdateProfileInput = UpdateProfileInput;
 __decorate([
@@ -31,6 +36,36 @@ __decorate([
     (0, graphql_1.Field)(() => String, { nullable: true }),
     __metadata("design:type", String)
 ], UpdateProfileInput.prototype, "bio", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsBoolean)(),
+    (0, graphql_1.Field)(() => Boolean, { nullable: true }),
+    __metadata("design:type", Boolean)
+], UpdateProfileInput.prototype, "profileCompleted", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, graphql_1.Field)(() => String, { nullable: true }),
+    __metadata("design:type", String)
+], UpdateProfileInput.prototype, "fitnessLevel", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, graphql_1.Field)(() => String, { nullable: true }),
+    __metadata("design:type", String)
+], UpdateProfileInput.prototype, "dailyActivity", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, graphql_1.Field)(() => String, { nullable: true }),
+    __metadata("design:type", String)
+], UpdateProfileInput.prototype, "primaryGoal", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsInt)(),
+    (0, graphql_1.Field)(() => graphql_1.Int, { nullable: true }),
+    __metadata("design:type", Number)
+], UpdateProfileInput.prototype, "vitalityScore", void 0);
 exports.UpdateProfileInput = UpdateProfileInput = __decorate([
     (0, graphql_1.InputType)()
 ], UpdateProfileInput);

@@ -1,4 +1,4 @@
-import { asOptionalInput } from "@/lib/set/forms";
+import { asOptionalInput, parseOptionalNumber } from "@/lib/set/forms";
 import type {
   RecommendationPhaseGoal,
   SetExerciseCategory,
@@ -122,11 +122,11 @@ export function createSetEstimateRawValues(
 export function createSetRecommendationRawValues(form: SetExperienceFormValues) {
   return {
     exerciseId: form.selectedExerciseId,
-    phaseGoal: form.phaseGoal,
-    days: asOptionalInput(form.days),
-    trainingDaysPerWeek: asOptionalInput(form.trainingDaysPerWeek),
-    targetSets: asOptionalInput(form.targetSets),
-    targetReps: asOptionalInput(form.targetReps),
+    phaseGoal: form.phaseGoal, 
+    days: parseOptionalNumber(form.days),
+    trainingDaysPerWeek: parseOptionalNumber(form.trainingDaysPerWeek),
+    targetSets: parseOptionalNumber(form.targetSets),
+    targetReps: parseOptionalNumber(form.targetReps),
     notes: form.notes,
   };
 }

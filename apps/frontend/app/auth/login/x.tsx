@@ -5,7 +5,7 @@ import { useState, useEffect, useActionState } from "react";
 // import Eye from './Eye'
 // import Mouth from "./Mouth"
 // import Eyes from "./Eyes"
-import Face, { Expression } from "@/components/auth/Face";
+import Face, { Expression } from "@/components/auth/components/Face";
 import { Login } from "@/lib/auth";
 import { BACKEND_URL } from "@/lib/constants";
 

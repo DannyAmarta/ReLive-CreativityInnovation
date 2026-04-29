@@ -19,6 +19,8 @@ import { GqlThrottlerGuard } from './core/guards/gql-throttler.guard';
 import { DataLoaderInterceptor } from 'nestjs-dataloader';
 import { SetModule } from './set/set.module';
 import { RecommendationModule } from './recommendation/recommendation.module';
+import { ChatModule } from './chat/chat.module';
+import { WorkoutsModule } from './workouts/workouts.module';
 
 @Module({
   imports: [
@@ -56,6 +58,9 @@ import { RecommendationModule } from './recommendation/recommendation.module';
     RecipeModule,
     SetModule,
     RecommendationModule,
+    ChatModule,
+    WorkoutsModule,
+    WorkoutsModule,
   ],
   controllers: [AppController],
   providers: [

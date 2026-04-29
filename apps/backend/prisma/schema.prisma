@@ -15,21 +15,35 @@ generator client {
   provider = "prisma-client-js"
 }
 
-model User{
-  id Int @id @default(autoincrement())
-  email String @unique
-  password String
-  name String?
-  bio String?
-  avatar String?
-  openRouterApiKeyEncrypted String?
-  openRouterKeyLabel String?
-  openRouterUserId String?
-  openRouterConnectedAt DateTime?
-  createdAt DateTime @default(now())
-  updatedAt DateTime?
-  workoutSets WorkoutSet[]
-  dailyPerformanceSnapshots DailyPerformanceSnapshot[]
+model User {
+  id                         Int                        @id @default(autoincrement())
+  email                      String                     @unique
+  password                   String
+  name                       String?
+  bio                        String?
+  avatar                     String?
+  
+  // --- New Onboarding & Lifestyle Fields ---
+  profileCompleted           Boolean                    @default(false)
+  fitnessLevel               String?                    // "Sprouting", "Growing", "Evergreen"
+  dailyActivity              String?                    // "Rooted", "Shifting", "Aerial"
+  primaryGoal                String?                    // "Strength", "Weight Loss", "Energy"
+  vitalityScore              Int                        @default(0)     // For your VitalityCard
+  streakDays                 Int                        @default(0)     // For your StatBadge
+  
+  // --- Security & AI ---
+  openRouterApiKeyEncrypted  String?
+  openRouterKeyLabel         String?
+  openRouterUserId           String?
+  openRouterConnectedAt      DateTime?
+  
+  // --- Metadata ---
+  createdAt                  DateTime                   @default(now())
+  updatedAt                  DateTime?                  @updatedAt // Added @updatedAt to auto-track changes
+
+  // --- Relations ---
+  workoutSets                WorkoutSet[]
+  dailyPerformanceSnapshots  DailyPerformanceSnapshot[]
 }
 
 model Exercise{

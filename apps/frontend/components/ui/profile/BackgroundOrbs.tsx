@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { motion, useSpring, useTransform } from "framer-motion";
-import { useMousePosition } from "@/hooks/useMousePosition";
+import { useMousePosition } from "@/hooks/ui/useMousePosition";
 
 export function BackgroundOrbs() {
   const { x, y } = useMousePosition();

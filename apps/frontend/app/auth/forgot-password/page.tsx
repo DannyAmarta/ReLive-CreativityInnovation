@@ -8,7 +8,7 @@ import {
     WinterScene,
     GlassCard,
     SnowParticles,
-} from "@/components/auth/IceThreeJs";
+} from "@/components/auth/components/AuthBackground";
 
 type FocusField = "none" | "email";
 

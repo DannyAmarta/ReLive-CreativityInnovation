@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { SidebarItem } from "./SidebarItem";
 import {
   Globe2,
+  Dumbbell,
   Utensils,
   BookOpenText,
   User,
@@ -27,45 +28,45 @@ export function Sidebar() {
   const toggleSidebar = () => setIsCollapsed(!isCollapsed);
   const toggleMobile = () => setIsMobileOpen(!isMobileOpen);
 
-  const links = [
-    { href: "/world", label: "World", icon: Globe2 },
-    { href: "/foods", label: "Foods", icon: Utensils },
-    { href: "/cookbook", label: "Cookbook", icon: BookOpenText },
-    { href: "/profile", label: "Profile", icon: User },
-    { href: "/set", label: "Settings", icon: Settings },
-  ];
+    const links = [
+      { href: "/world", label: "World", icon: Globe2 },
+      { href: "/foods", label: "Foods", icon: Utensils },
+      { href: "/workouts", label: "Workouts", icon: Dumbbell },
+      { href: "/cookbook", label: "Cookbook", icon: BookOpenText },
+      { href: "/profile", label: "Profile", icon: User },
+      { href: "/set", label: "Settings", icon: Settings },
+    ];
 
+  // Inside SidebarContent function within Sidebar.tsx
   const SidebarContent = () => (
-    <div className="flex h-full w-full flex-col justify-between overflow-y-auto px-4 py-6 text-zinc-300 scrollbar-hide">
+    <div className="flex h-full w-full flex-col justify-between overflow-y-auto px-4 py-6 text-[#8C8C8C] scrollbar-hide bg-[#F9F9F7]">
       <div>
         {/* Header / Logo */}
-        <div className="mb-10 flex items-center justify-between">
+        <div className="mb-10 flex items-center justify-between px-2">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-violet-600 to-indigo-600 shadow-[0_0_20px_rgba(99,102,241,0.4)]">
+            {/* Logo Box - Match your profile's green accent */}
+            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-[#2D4A22] shadow-sm">
               <Sparkles className="h-5 w-5 text-white" />
             </div>
             {!isCollapsed && (
-              <motion.span
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -10 }}
-                className="bg-gradient-to-r from-gray-100 to-gray-400 bg-clip-text text-xl font-bold tracking-tight text-transparent"
-              >
-                ReLive
-              </motion.span>
+              <div className="flex flex-col">
+                <motion.span
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="text-xl font-bold tracking-tight text-[#2D4A22]"
+                >
+                  ReLive
+                </motion.span>
+                <span className="text-[10px] uppercase tracking-[0.2em] font-bold text-[#8C8C8C]">
+                  The Botanical Archivist
+                </span>
+              </div>
             )}
           </div>
-          {/* Desktop Toggle Button */}
-          <button
-            onClick={toggleSidebar}
-            className="hidden lg:flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 hover:bg-white/10 hover:text-white transition-colors flex-shrink-0"
-          >
-            {isCollapsed ? <Menu className="h-4 w-4" /> : <X className="h-4 w-4" />}
-          </button>
         </div>
 
         {/* Navigation Links */}
-        <nav className="flex flex-col gap-2">
+        <nav className="flex flex-col gap-1">
           {links.map((link) => (
             <SidebarItem
               key={link.href}
@@ -81,7 +82,7 @@ export function Sidebar() {
 
       {/* Footer / Logout */}
       <div className="mt-8">
-        <div className="h-px w-full bg-gradient-to-r from-transparent via-white/10 to-transparent mb-6" />
+        <div className="h-px w-full bg-[#DDE1DF]/40 mb-6" />
         <SidebarItem
           href="/auth/logout"
           label="Log Out"
@@ -112,14 +113,15 @@ export function Sidebar() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={toggleMobile}
-              className="fixed inset-0 z-40 bg-black/60 backdrop-blur-md lg:hidden"
+              className="fixed inset-0 z-40 bg-black/10 backdrop-blur-sm lg:hidden"
             />
             <motion.div
               initial={{ x: "-100%" }}
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
               transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              className="fixed inset-y-0 left-0 z-50 w-[280px] border-r border-white/10 bg-zinc-950/80 backdrop-blur-3xl lg:hidden shadow-[20px_0_40px_rgba(0,0,0,0.8)]"
+              // Exact match background and border
+              className="fixed inset-y-0 left-0 z-50 w-[280px] border-r border-[#DDE1DF]/40 bg-[#F7F9F7] lg:hidden"
             >
               <SidebarContent />
             </motion.div>
@@ -131,7 +133,8 @@ export function Sidebar() {
       <motion.aside
         animate={{ width: isCollapsed ? 88 : 280 }}
         transition={{ type: "spring", stiffness: 250, damping: 25 }}
-        className="hidden lg:flex h-screen flex-col border-r border-white/10 bg-zinc-950/80 backdrop-blur-3xl relative z-40 shadow-[10px_0_30px_rgba(0,0,0,0.5)] will-change-[width]"
+        // Match the profile card background exactly
+        className="hidden lg:flex h-screen flex-col border-r border-[#DDE1DF]/40 bg-[#F7F9F7] relative z-40 will-change-[width]"
       >
         <SidebarContent />
       </motion.aside>

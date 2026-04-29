@@ -1,13 +1,13 @@
-import { LazySkyComponent } from "../components/landing/LazySkyComponent";
-import Header from "../components/landing/Header";
-import Hero from "../components/landing/Hero";
-import AboutUs from "../components/landing/AboutUs";
+import { LazySkyComponent } from "../components/landing/components/LazySkyComponent";
+import LandingHeader from "../components/landing/sections/LandingHeader";
+import LandingHero from "../components/landing/sections/LandingHero";
+import LandingAbout from "../components/landing/sections/LandingAbout";
 
 export default function Home() {
     return (
         <>
-            <Header />
-            <Hero />
+            <LandingHeader />
+            <LandingHero />
             {/* <LazySkyComponent /> */}
             {/* <AboutUs /> */}
         </>

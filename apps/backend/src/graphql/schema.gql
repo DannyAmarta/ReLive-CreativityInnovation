@@ -32,6 +32,12 @@ type User {
   email: String!
   bio: String
   avatar: String
+  profileCompleted: Boolean!
+  fitnessLevel: String
+  dailyActivity: String
+  primaryGoal: String
+  vitalityScore: Int!
+  streakDays: Int!
   hasOpenRouterConnection: Boolean!
   openRouterKeyLabel: String
   openRouterConnectedAt: DateTime
@@ -342,6 +348,11 @@ input RequestEmailChangeInput {
 input UpdateProfileInput {
   name: String
   bio: String
+  profileCompleted: Boolean
+  fitnessLevel: String
+  dailyActivity: String
+  primaryGoal: String
+  vitalityScore: Int
 }
 
 input LogWorkoutSetInput {

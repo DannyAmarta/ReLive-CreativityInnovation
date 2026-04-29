@@ -1,7 +1,7 @@
     "use client";
 
 import { useEffect, useState } from "react";
-import { FoodSearchExperience } from "./FoodSearchExperience";
+import { FoodMain } from "./FoodMain";
 
 type FoodSearchPageClientProps = {
   initialQuery?: string;
@@ -37,5 +37,5 @@ export function FoodSearchPageClient({ initialQuery, initialRecipeId }: FoodSear
     );
   }
 
-  return <FoodSearchExperience initialQuery={initialQuery} initialRecipeId={initialRecipeId} />;
+  return <FoodMain initialQuery={initialQuery} initialRecipeId={initialRecipeId} />;
 }
