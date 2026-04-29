@@ -29,25 +29,98 @@ export function CookbookBackground() {
   }, []);
 
   return (
-    <div
-      aria-hidden="true"
-      className="pointer-events-none fixed inset-0 z-0 overflow-hidden"
-    >
-      {/* ── Just the clean, full-opacity Wallpaper ── */}
-      <div className="absolute inset-0">
-        <Image
-          src={Wallpaper}
-          alt="Spring Background"
-          fill
-          // CHANGED THIS: 'object-fill' stretches it so nothing is cut. 
-          // If it looks too stretched, change this to 'object-contain'.
-          className="object-cover" 
-          priority
-        />
-      </div>
+    // <div
+    //   aria-hidden="true"
+    //   className="pointer-events-none fixed inset-0 z-0 overflow-hidden"
+    // >
+    //   {/* ── Just the clean, full-opacity Wallpaper ── */}
+    //   <div className="absolute inset-0">
+    //     <Image
+    //       src={Wallpaper}
+    //       alt="Spring Background"
+    //       fill
+    //       // CHANGED THIS: 'object-fill' stretches it so nothing is cut. 
+    //       // If it looks too stretched, change this to 'object-contain'.
+    //       className="object-cover" 
+    //       priority
+    //     />
+    //   </div>
+
+    //   {/* ── tsParticles spring leaves ── */}
+    //   {engineReady && (
+    //     <Particles
+    //       id="spring-leaves"
+    //       className="absolute inset-0 z-20"
+    //       options={{
+    //         fullScreen: { enable: false, zIndex: 20 },
+    //         fpsLimit: 60,
+    //         particles: {
+    //           number: {
+    //             value: 30,
+    //             density: { enable: true, width: 1300, height: 900 },
+    //           },
+    //           shape: {
+    //             type: "image",
+    //             options: {
+    //               image: LEAF_SVGS.map((svg) => ({
+    //                 src: `data:image/svg+xml;charset=utf8,${svg}`,
+    //                 width: 40,
+    //                 height: 40,
+    //               })),
+    //             },
+    //           },
+    //           size: { value: { min: 9, max: 20 } },
+    //           opacity: {
+    //             value: { min: 0.30, max: 0.80 },
+    //             animation: { enable: true, speed: 0.35, sync: false },
+    //           },
+    //           move: {
+    //             enable: true,
+    //             speed: { min: 0.8, max: 2.2 },
+    //             direction: "bottom-left",
+    //             straight: false,
+    //             outModes: { default: "out" },
+    //             gravity: { enable: false },
+    //             drift: { min: -0.4, max: 0.6 },
+    //           },
+    //           rotate: {
+    //             value: { min: 0, max: 360 },
+    //             animation: { enable: true, speed: 2.5, sync: false },
+    //             direction: "random",
+    //           },
+    //           wobble: {
+    //             enable: true,
+    //             distance: 22,
+    //             speed: { min: -1.2, max: 1.2 },
+    //           },
+    //         },
+    //         detectRetina: true,
+    //       }}
+    //     />
+    //   )}
+    // </div>
+    <div aria-hidden="true" className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+    {/* ── 1. The Wallpaper Layer ── */}
+    <div className="absolute inset-0">
+      <Image
+        src={Wallpaper}
+        alt="Spring Background"
+        fill
+        className="object-cover"
+        priority
+      />
+    </div>
+
+    {/* ── 2. The Atmospheric Tint (NEW) ── */}
+    {/* This makes the green leaves pop and ensures white text stays readable */}
+    <div className="absolute inset-0 bg-white/30 backdrop-blur-[2px] transition-all duration-700" />
+
+    {/* ── 3. Subtle Vignette (NEW) ── */}
+    {/* This focuses the user's eye on the center search bar */}
+    <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(255,250,251,0.4)_100%)]" />
 
       {/* ── tsParticles spring leaves ── */}
-      {engineReady && (
+      {/* {engineReady && (
         <Particles
           id="spring-leaves"
           className="absolute inset-0 z-20"
@@ -97,7 +170,7 @@ export function CookbookBackground() {
             detectRetina: true,
           }}
         />
-      )}
+      )} */}
     </div>
   );
 }

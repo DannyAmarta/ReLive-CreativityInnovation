@@ -50,7 +50,7 @@ export function CookbookMain({
   return (
     <>
       {/* ── AMBIENT MESH BACKGROUND ── */}
-      <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden bg-[#FFFAFB]">
+      <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden bg-[#F7F9F7]">
         {/* Top Left Soft Glow */}
         <motion.div
           animate={{
@@ -60,7 +60,7 @@ export function CookbookMain({
             y: [0, -20, 0],
           }}
           transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute -left-[15%] -top-[15%] h-[60vh] w-[60vw] rounded-full bg-gradient-to-br from-[#FFB7C5] to-[#FF9EBB] opacity-40 blur-[130px] will-change-transform"
+          className="absolute -left-[15%] -top-[15%] h-[60vh] w-[60vw] rounded-full bg-gradient-to-br from-[#D1E2C4] to-[#D1E2C4] opacity-40 blur-[130px] will-change-transform"
         />
         {/* Bottom Right Deep Magenta Glow */}
         <motion.div
@@ -71,7 +71,7 @@ export function CookbookMain({
             x: [0, -30, 0],
           }}
           transition={{ duration: 18, repeat: Infinity, ease: "easeInOut", delay: 1.5 }}
-          className="absolute -bottom-[25%] -right-[15%] h-[70vh] w-[70vw] rounded-full bg-gradient-to-tl from-[#FFE4EE] via-[#FFB7C5] to-[#C94F7E] opacity-30 blur-[150px]"
+          className="absolute -bottom-[25%] -right-[15%] h-[70vh] w-[70vw] rounded-full bg-gradient-to-tl from-[#FFE4EE] via-[#D1E2C4] to-[#2D4A22] opacity-30 blur-[150px]"
         />
         {/* Center Accent Glow */}
         <motion.div
@@ -80,7 +80,7 @@ export function CookbookMain({
             scale: [1, 1.05, 1],
           }}
           transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-          className="absolute left-[20%] top-[30%] h-[40vh] w-[60vw] rounded-full bg-gradient-to-r from-[#FF9EBB] to-[#FFB7C5] opacity-20 blur-[110px]"
+          className="absolute left-[20%] top-[30%] h-[40vh] w-[60vw] rounded-full bg-gradient-to-r from-[#E1EDD9] to-[#D1E2C4] opacity-20 blur-[110px]"
         />
         {/* Subtle dot matrix */}
         <div
@@ -101,21 +101,21 @@ export function CookbookMain({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -40, height: 0 }}
             transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-            className="relative z-10 flex min-h-[62vh] flex-col items-center justify-center overflow-hidden px-6 text-center"
+            className="relative z-10 flex min-h-[62vh] flex-col items-center justify-center overflow-hidden px-6 text-center" // changed 62vh to 48vh
           >
             {/* Radial glow blobs */}
-            <div className="pointer-events-none absolute -top-20 left-1/2 h-[500px] w-[700px] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,183,197,0.3)_0%,transparent_70%)]" />
+            {/* <div className="pointer-events-none absolute -top-20 left-1/2 h-[500px] w-[700px] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,183,197,0.3)_0%,transparent_70%)]" />
             <div className="pointer-events-none absolute top-1/3 -left-20 h-80 w-80 rounded-full bg-[radial-gradient(circle,rgba(249,168,192,0.25)_0%,transparent_70%)]" />
-            <div className="pointer-events-none absolute top-1/3 -right-20 h-80 w-80 rounded-full bg-[radial-gradient(circle,rgba(201,79,126,0.2)_0%,transparent_70%)]" />
+            <div className="pointer-events-none absolute top-1/3 -right-20 h-80 w-80 rounded-full bg-[radial-gradient(circle,rgba(201,79,126,0.2)_0%,transparent_70%)]" /> */}
 
             <motion.div
               initial={{ scale: 0.8, opacity: 0, y: 10 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               transition={{ delay: 0.1, duration: 0.6, type: "spring", stiffness: 200, damping: 20 }}
-              className="mb-8 inline-flex items-center gap-2.5 rounded-full border border-white/80 bg-white/40 px-5 py-2.5 text-xs font-bold uppercase tracking-[0.1em] text-[#9B2C5A] backdrop-blur-2xl shadow-[0_8px_32px_rgba(200,80,130,0.15),inset_0_1px_1px_rgba(255,255,255,0.8)]"
+              className="mb-8 inline-flex items-center gap-2.5 rounded-full border border-[#D1E2C4]/50 bg-white/40 px-5 py-2.5 text-xs font-bold uppercase tracking-[0.15em] text-[#3D5A35] backdrop-blur-2xl shadow-[0_8px_32px_rgba(45,74,34,0.08),inset_0_1px_1px_rgba(255,255,255,0.8)]"
             >
-              <Sparkles className="h-4 w-4 text-[#C94F7E]" />
-              Recipe Discovery — Cook Something Beautiful
+              <Sparkles className="h-4 w-4 text-[#6B8E23]" />
+              Recipe Discovery — Cook in the Garden
             </motion.div>
 
             <motion.h1
@@ -126,12 +126,12 @@ export function CookbookMain({
               style={{ fontFamily: "'Sora', var(--font-geist-sans)" }}
             >
               Cook in the{" "}
-              <span className="bg-gradient-to-br from-[#C94F7E] via-[#FF9EBB] to-[#9B2C5A] bg-clip-text text-transparent drop-shadow-[0_4px_24px_rgba(200,80,130,0.2)]">
-                sakura bloom.
+              <span className="bg-gradient-to-br from-[#3D5A35] via-[#6B8E23] to-[#3D5A35] bg-clip-text text-transparent drop-shadow-[0_4px_24px_rgba(200,80,130,0.2)]">
+                evergreen archive.
               </span>
             </motion.h1>
 
-            <motion.p
+            {/* <motion.p
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3, duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
@@ -139,10 +139,10 @@ export function CookbookMain({
               style={{ fontFamily: "'Nunito', var(--font-geist-sans)" }}
             >
               Discover healthy recipes, explore ingredients and macros, and pick something beautiful to cook today.
-            </motion.p>
+            </motion.p> */}
 
             {/* Bounce arrow */}
-            <motion.div
+            {/* <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: [0, 8, 0] }}
               transition={{ delay: 0.8, duration: 2, repeat: Infinity, ease: "easeInOut" }}
@@ -151,7 +151,7 @@ export function CookbookMain({
               <svg width="24" height="36" viewBox="0 0 24 36" fill="none">
                 <path d="M12 0v28M2 20l10 12 10-12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
-            </motion.div>
+            </motion.div> */}
           </motion.header>
         )}
       </AnimatePresence>
@@ -186,7 +186,7 @@ export function CookbookMain({
       </AnimatePresence>
 
       {/* ── FLOATING SEARCH BAR ── */}
-      <div className={`relative z-30 ${hasQuery ? "pt-3" : "pt-0"}`}>
+      <div className={`relative z-30 ${hasQuery ? "pt-3" : "-mt-32"}`}> //changed from pt-0 to -mt-24
         <motion.div
           layout
           className="mx-auto max-w-3xl px-4 sm:px-6"
