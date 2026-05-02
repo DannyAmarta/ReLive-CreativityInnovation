@@ -29,7 +29,19 @@ export function CookbookSearch({
   const expanded = focused || query.length > 0;
 
   return (
-    <motion.div layout className="relative mx-auto w-full max-w-3xl">
+    <motion.div
+      layout
+      animate={{
+        borderRadius: expanded ? 28 : 16,
+        backgroundColor: expanded ? "rgba(255, 255, 255, 1)" : "rgba(234, 236, 233, 0.8)",
+        /* ── NEON BOTANICAL SHADOW ── */
+        boxShadow: `0 0 0 2px rgba(107, 142, 35, 0.4),            /* Sharp Wire Edge */
+         0 0 25px 10px rgba(209, 226, 196, 0.6),       /* Thick Inner Glow */
+         0 0 70px 25px rgba(107, 142, 35, 0.2),        /* Massive Ambient Bloom */
+         0 25px 80px -15px rgba(45, 74, 34, 0.35)` 
+      }}
+        className="overflow-hidden border border-stone-200/60 backdrop-blur-xl transition-all"
+      >
       <motion.div
         layout
         animate={{
@@ -112,10 +124,14 @@ export function CookbookSearch({
                   </div>
                 )}
               </div>
+              
             </motion.div>
           )}
+          
         </AnimatePresence>
+        
       </motion.div>
+      
     </motion.div>
   );
 }

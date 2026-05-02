@@ -91,7 +91,7 @@ export function FoodDetails({ food, defaultServingSize, onAddToMeal }: FoodDetai
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.82, opacity: 0 }}
               transition={{ type: "spring", stiffness: 340, damping: 28 }}
-              className="rounded-[1.4rem] bg-gradient-to-br from-[#C94F7E] to-[#7B1C44] px-6 py-4 text-white shadow-[0_12px_40px_rgba(180,50,100,0.45)]"
+              className="rounded-[1.4rem] bg-gradient-to-br from-[#3D5A35] to-[#1a2e14] px-6 py-4 text-white shadow-[0_12px_40px_rgba(45,74,34,0.45)]"
             >
               <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/60">Calories</p>
               <p className="mt-0.5 text-4xl font-black tabular-nums leading-none">
@@ -114,10 +114,38 @@ export function FoodDetails({ food, defaultServingSize, onAddToMeal }: FoodDetai
       <div className="rounded-[2rem] border border-white/60 bg-white/55 p-5 backdrop-blur-xl">
         <p className="mb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-[#9B2C5A]/60">Macros</p>
         <div className="grid grid-cols-2 gap-3">
-          <MacroRing label="Protein" value={nutrients.proteinGrams} baseline={food.per100gNutrients.proteinGrams} pct={pct(nutrients.proteinGrams)} color="#C94F7E" track="#FFE4EE" />
-          <MacroRing label="Carbs" value={nutrients.carbsGrams} baseline={food.per100gNutrients.carbsGrams} pct={pct(nutrients.carbsGrams)} color="#9B2C5A" track="#FFD6E7" />
-          <MacroRing label="Fat" value={nutrients.fatGrams} baseline={food.per100gNutrients.fatGrams} pct={pct(nutrients.fatGrams)} color="#7B1C44" track="#F9D8EE" />
-          <MacroRing label="Fiber" value={nutrients.fiberGrams} baseline={food.per100gNutrients.fiberGrams} pct={pct(nutrients.fiberGrams)} color="#5C2C9B" track="#EDE8FF" />
+          <MacroRing 
+            label="Protein" 
+            value={nutrients.proteinGrams} 
+            baseline={food.per100gNutrients.proteinGrams} 
+            pct={pct(nutrients.proteinGrams)} 
+            color="#3D5A35" 
+            track="#E1EDD9" 
+          />
+          <MacroRing 
+            label="Carbs" 
+            value={nutrients.carbsGrams} 
+            baseline={food.per100gNutrients.carbsGrams} 
+            pct={pct(nutrients.carbsGrams)} 
+            color="#6B8E23" 
+            track="#F1F7EC" 
+          />
+          <MacroRing 
+            label="Fat" 
+            value={nutrients.fatGrams} 
+            baseline={food.per100gNutrients.fatGrams} 
+            pct={pct(nutrients.fatGrams)} 
+            color="#2D4A22" 
+            track="#E9F0E4" 
+          />
+          <MacroRing 
+            label="Fiber" 
+            value={nutrients.fiberGrams} 
+            baseline={food.per100gNutrients.fiberGrams} 
+            pct={pct(nutrients.fiberGrams)} 
+            color="#4A6141" 
+            track="#F7F9F7" 
+          />
         </div>
       </div>
 

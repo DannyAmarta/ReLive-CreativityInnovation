@@ -54,6 +54,13 @@ export const FoodCard = memo(function FoodCard({
     const spotX = useTransform(springX, [-0.5, 0.5], ["10%", "90%"]);
     const spotY = useTransform(springY, [-0.5, 0.5], ["10%", "90%"]);
 
+    const macroColors = {
+        rose: "from-[#E1EDD9] to-[#D1E2C4] text-[#2D4A22]",    // Protein -> Sage
+        pink: "from-[#F1F7EC] to-[#E1EDD9] text-[#3D5A35]",    // Carbs -> Light Sage
+        fuchsia: "from-[#E9F0E4] to-[#D1E2C4] text-[#2D4A22]", // Fat -> Moss
+        purple: "from-[#F7F9F7] to-[#E1EDD9] text-[#3D5A35]",  // Fiber -> Archive Grey
+    };
+
     return (
         // <motion.div
         //     ref={cardRef}
@@ -169,16 +176,13 @@ export const FoodCard = memo(function FoodCard({
                             />
                         </motion.button>
 
-                        <div className="rounded-[1rem] bg-gradient-to-br from-[#C94F7E] to-[#7B1C44] px-3 py-2.5 text-white shadow-[0_8px_24px_rgba(180,50,100,0.45)]">
-                            <div className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-[0.2em] text-white/70">
-                                <Flame className="h-3 w-3" /> kcal
-                            </div>
-                            <p className="mt-0.5 text-xl font-black tabular-nums">
-                                {formatNutrientValue(food.nutrients.calories)}
-                            </p>
-                            <p className="text-[9px] text-white/60">
-                                per {food.servingSize}g
-                            </p>
+                        <div className="rounded-[1rem] bg-gradient-to-br from-[#3D5A35] to-[#2D4A22] px-3 py-2.5 text-white shadow-[0_8px_24px_rgba(45,74,34,0.45)]">
+                        <div className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-[0.2em] text-white/70">
+                            <Flame className="h-3 w-3" /> kcal
+                        </div>
+                        <p className="mt-0.5 text-xl font-black tabular-nums">
+                            {formatNutrientValue(food.nutrients.calories)}
+                        </p>
                         </div>
                     </div>
                 </div>

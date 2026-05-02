@@ -5,7 +5,7 @@ import {
 } from "react";
 import dynamic from "next/dynamic";
 import { motion, AnimatePresence } from "framer-motion";
-import { CherryIcon, Sparkles, X } from "lucide-react";
+import { CherryIcon, Sparkles, X, Leaf } from "lucide-react";
 import { useFoodSearch } from "@/hooks/features/foods/useFoodSearch";
 import { FoodDetails } from "./sections/FoodDetails";
 import { FoodSummary } from "./sections/FoodSummary";
@@ -65,29 +65,19 @@ export function FoodMain({
     <>
       {/* <FallingSakura /> */}
       {/* ── AMBIENT MESH BACKGROUND ── */}
-      <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden bg-[#FFFAFB]">
+      <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden bg-[#F7F9F7]">
         {/* Top Left Soft Glow */}
         <motion.div
-          animate={{
-            scale: [1, 1.2, 1],
-            opacity: [0.5, 0.7, 0.5],
-            x: [0, 40, 0],
-            y: [0, -20, 0],
-          }}
+          animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0.7, 0.5], x: [0, 40, 0], y: [0, -20, 0] }}
           transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute -left-[15%] -top-[15%] h-[60vh] w-[60vw] rounded-full bg-gradient-to-br from-[#FFB7C5] to-[#FF9EBB] opacity-40 blur-[130px]"
+          className="absolute -left-[15%] -top-[15%] h-[60vh] w-[60vw] rounded-full bg-gradient-to-br from-[#D1E2C4] to-[#D1E2C4] opacity-40 blur-[130px]"
         />
         
         {/* Bottom Right Deep Magenta Glow */}
         <motion.div
-          animate={{
-            scale: [1, 1.3, 1],
-            opacity: [0.3, 0.5, 0.3],
-            y: [0, -60, 0],
-            x: [0, -30, 0],
-          }}
+          animate={{ scale: [1, 1.3, 1], opacity: [0.3, 0.5, 0.3], y: [0, -60, 0], x: [0, -30, 0] }}
           transition={{ duration: 18, repeat: Infinity, ease: "easeInOut", delay: 1.5 }}
-          className="absolute -bottom-[25%] -right-[15%] h-[70vh] w-[70vw] rounded-full bg-gradient-to-tl from-[#FFE4EE] via-[#FFB7C5] to-[#C94F7E] opacity-30 blur-[150px]"
+          className="absolute -bottom-[25%] -right-[15%] h-[70vh] w-[70vw] rounded-full bg-gradient-to-tl from-[#FFE4EE] via-[#D1E2C4] to-[#2D4A22] opacity-30 blur-[150px]"
         />
 
         {/* Center Accent Glow (Follows the search bar area roughly) */}
@@ -97,7 +87,11 @@ export function FoodMain({
             scale: [1, 1.05, 1],
           }}
           transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-          className="absolute left-[20%] top-[30%] h-[40vh] w-[60vw] rounded-full bg-gradient-to-r from-[#FF9EBB] to-[#FFB7C5] opacity-20 blur-[110px]"
+          /* 
+            Updated from Pink to Sage/Evergreen gradient[cite: 4]
+            from-[#E1EDD9] (Light Sage) to-[#D1E2C4] (Soft Sage)
+          */
+          className="absolute left-[20%] top-[30%] h-[40vh] w-[60vw] rounded-full bg-gradient-to-r from-[#E1EDD9] to-[#D1E2C4] opacity-20 blur-[110px]"
         />
 
         {/* Subtle dot matrix pattern (Optional, gives it that tech/macro tracker feel) */}
@@ -121,17 +115,13 @@ export function FoodMain({
             className="relative z-10 flex min-h-[62vh] flex-col items-center justify-center overflow-hidden px-6 text-center"
           >
             {/* Radial glow blobs (Optimized without blur) */}
-            <div className="pointer-events-none absolute -top-20 left-1/2 h-[500px] w-[700px] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,183,197,0.3)_0%,transparent_70%)]" />
-            <div className="pointer-events-none absolute top-1/3 -left-20 h-80 w-80 rounded-full bg-[radial-gradient(circle,rgba(249,168,192,0.25)_0%,transparent_70%)]" />
-            <div className="pointer-events-none absolute top-1/3 -right-20 h-80 w-80 rounded-full bg-[radial-gradient(circle,rgba(201,79,126,0.2)_0%,transparent_70%)]" />
-
-            <motion.div
-              initial={{ scale: 0.8, opacity: 0, y: 10 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              transition={{ delay: 0.1, duration: 0.6, type: "spring", stiffness: 200, damping: 20 }}
-              className="mb-8 inline-flex items-center gap-2.5 rounded-full border border-white/80 bg-white/40 px-5 py-2.5 text-xs font-bold uppercase tracking-[0.1em] text-[#9B2C5A] backdrop-blur-2xl shadow-[0_8px_32px_rgba(200,80,130,0.15),inset_0_1px_1px_rgba(255,255,255,0.8)]"
+            <div className="pointer-events-none absolute -top-20 left-1/2 h-[500px] w-[700px] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(209,226,196,0.3)_0%,transparent_70%)]" />
+            <div className="pointer-events-none absolute top-1/3 -left-20 h-80 w-80 rounded-full bg-[radial-gradient(circle,rgba(107,142,35,0.2)_0%,transparent_70%)]" />
+            <div className="pointer-events-none absolute top-1/3 -right-20 h-80 w-80 rounded-full bg-[radial-gradient(circle,rgba(61,90,53,0.15)_0%,transparent_70%)]" />
+            <motion.div 
+              className="mb-8 inline-flex items-center gap-2.5 rounded-full border border-[#D1E2C4]/50 bg-white/40 px-5 py-2.5 text-xs font-bold uppercase tracking-[0.15em] text-[#3D5A35] backdrop-blur-2xl shadow-[0_8px_32px_rgba(45,74,34,0.08),inset_0_1px_1px_rgba(255,255,255,0.8)]"
             >
-              <Sparkles className="h-4 w-4 text-[#C94F7E]" />
+              <Sparkles className="h-4 w-4 text-[#6B8E23]" />
               Powered by USDA & Open Food Facts
             </motion.div>
 
@@ -143,9 +133,7 @@ export function FoodMain({
               style={{ fontFamily: "'Sora', var(--font-geist-sans)" }}
             >
               Every meal,{" "}
-              <span
-                className="bg-gradient-to-br from-[#C94F7E] via-[#FF9EBB] to-[#9B2C5A] bg-clip-text text-transparent drop-shadow-[0_4px_24px_rgba(200,80,130,0.2)]"
-              >
+              <span className="bg-gradient-to-br from-[#3D5A35] via-[#6B8E23] to-[#3D5A35] bg-clip-text text-transparent drop-shadow-[0_4px_24px_rgba(45,74,34,0.2)]">
                 perfectly scaled.
               </span>
             </motion.h1>
@@ -154,7 +142,8 @@ export function FoodMain({
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3, duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-              className="mt-6 max-w-2xl text-lg leading-relaxed text-[#6b3550]/80 sm:text-xl font-medium"
+              /* Updated text color to Moss Green */
+              className="mt-6 max-w-2xl text-lg leading-relaxed text-[#3D5A35]/80 sm:text-xl font-medium"
               style={{ fontFamily: "'Nunito', var(--font-geist-sans)" }}
             >
               Search any food and get exact macros for your portion size — instantly, without a page reload.
@@ -165,7 +154,8 @@ export function FoodMain({
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: [0, 8, 0] }}
               transition={{ delay: 0.8, duration: 2, repeat: Infinity, ease: "easeInOut" }}
-              className="mt-12 text-[#C94F7E]/50"
+              /* Updated arrow color to Olive Green with 50% opacity */
+              className="mt-12 text-[#6B8E23]/50"
             >
               <svg width="24" height="36" viewBox="0 0 24 36" fill="none">
                 <path d="M12 0v28M2 20l10 12 10-12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -262,17 +252,24 @@ export function FoodMain({
             <button
               type="button"
               onClick={() => setMealOpen(true)}
-              className="w-full overflow-hidden rounded-[2rem] border border-white/50 bg-[#2d1520]/92 px-6 py-4 text-left shadow-[0_24px_80px_rgba(100,10,50,0.55)] backdrop-blur-2xl"
+              /* 
+                Background: Deep Forest Green
+                Shadow: Large Forest Bloom[cite: 9]
+              */
+              className="w-full overflow-hidden rounded-[2rem] border border-white/40 bg-[#1a2e14]/92 px-6 py-4 text-left shadow-[0_24px_80px_rgba(45,74,34,0.45)] backdrop-blur-2xl"
             >
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <CherryIcon className="h-5 w-5 text-[#FFB7C5]" />
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.2em] text-[#FFB7C5]/70">Meal tray</p>
-                    <p className="text-base font-semibold text-white">{mealItems.length} item{mealItems.length !== 1 ? "s" : ""} added</p>
-                  </div>
+              <div className="flex items-center gap-3">
+                {/* Swapped Cherry for Leaf in Sage color */}
+                <Leaf className="h-5 w-5 text-[#D1E2C4]" />
+                <div>
+                  <p className="text-xs uppercase tracking-[0.2em] text-[#D1E2C4]/70">Meal tray</p>
+                  <p className="text-base font-semibold text-white">
+                    {mealItems.length} item{mealItems.length !== 1 ? "s" : ""} added
+                  </p>
                 </div>
-                <span className="rounded-full bg-[#C94F7E] px-4 py-1.5 text-sm font-bold text-white shadow-[0_4px_16px_rgba(200,80,130,0.5)]">
+              </div>
+                <span className="rounded-full bg-[#3D5A35] px-4 py-1.5 text-sm font-bold text-white shadow-[0_4px_16px_rgba(107,142,35,0.4)]">
                   View meal →
                 </span>
               </div>
@@ -333,33 +330,43 @@ export function FoodMain({
       <AnimatePresence>
         {mealOpen && (
           <>
+            {/* Backdrop: Deep Forest tint */}
             <motion.div
               key="meal-backdrop"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 bg-[#1a0a12]/60 backdrop-blur-md"
+              className="fixed inset-0 z-50 bg-[#1a2e14]/60 backdrop-blur-md"
               onClick={() => setMealOpen(false)}
             />
+            
             <motion.div
               key="meal-modal"
               initial={{ y: "100%", opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: "100%", opacity: 0 }}
               transition={{ type: "spring", stiffness: 300, damping: 35 }}
-              className="fixed bottom-0 left-0 right-0 z-50 max-h-[85vh] overflow-y-auto rounded-t-[2.5rem] border-t border-[#FFB7C5]/30 bg-[#fff5f8]/95 shadow-[0_-40px_100px_rgba(180,50,100,0.3)] backdrop-blur-3xl"
+              /* 
+                Sidebar Offset: md:left-70 
+                Border: Sage Green
+                Shadow: Large Forest Bloom[cite: 9]
+              */
+              className="fixed bottom-0 left-0 right-0 md:left-70 z-50 max-h-[85vh] overflow-y-auto rounded-t-[2.5rem] border-t border-[#D1E2C4]/30 bg-[#F7F9F7]/95 shadow-[0_-40px_100px_rgba(45,74,34,0.25)] backdrop-blur-3xl"
             >
-              <div className="sticky top-0 flex items-center justify-between border-b border-[#FFB7C5]/20 bg-[#fff5f8]/80 px-6 py-4 backdrop-blur-xl">
-                <span className="text-lg font-bold text-[#2d1520]" style={{ fontFamily: "'Sora', var(--font-geist-sans)" }}>
+              {/* Sticky Header: Sage border and Archive background[cite: 4] */}
+              <div className="sticky top-0 flex items-center justify-between border-b border-[#D1E2C4]/20 bg-[#F7F9F7]/80 px-6 py-4 backdrop-blur-xl">
+                <span className="text-lg font-bold text-[#1a2e14]" style={{ fontFamily: "'Sora', var(--font-geist-sans)" }}>
                   🍱 Meal Summary
                 </span>
                 <button
                   onClick={() => setMealOpen(false)}
-                  className="rounded-full border border-[#FFB7C5]/40 bg-white/60 p-1.5 text-[#9B2C5A] hover:bg-[#FFB7C5]/20 transition"
+                  /* Close Button: Sage border with Forest Green text[cite: 4] */
+                  className="rounded-full border border-[#D1E2C4]/40 bg-white/60 p-1.5 text-[#3D5A35] hover:bg-[#D1E2C4]/20 transition"
                 >
                   <X className="h-4 w-4" />
                 </button>
               </div>
+
               <div className="p-4 pb-10">
                 <FoodSummary
                   items={mealItems}
@@ -371,7 +378,6 @@ export function FoodMain({
             </motion.div>
           </>
         )}
-        
       </AnimatePresence>
 
       {/* Spacer to prevent pagination from being eaten by the fixed Meal Tray */}
