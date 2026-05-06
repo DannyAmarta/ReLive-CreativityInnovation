@@ -116,8 +116,8 @@ export async function Login(
         accessToken: data.signIn.accessToken,
     });
 
-    revalidatePath("/home/");
-    redirect("/home/");
+    revalidatePath("/world/");
+    redirect("/world/");
 }
 
 // This server action starts the reset-password email flow.

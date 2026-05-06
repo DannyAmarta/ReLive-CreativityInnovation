@@ -1,0 +1,8 @@
+C:\Users\VICTUS\coding\GitHub\ReLive-CreativityInnovation\apps\contracts\target\debug\deps\spl_token_group_interface-daf19390b6e2db53.d: C:\Users\VICTUS\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\spl-token-group-interface-0.2.5\src\lib.rs C:\Users\VICTUS\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\spl-token-group-interface-0.2.5\src\error.rs C:\Users\VICTUS\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\spl-token-group-interface-0.2.5\src\instruction.rs C:\Users\VICTUS\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\spl-token-group-interface-0.2.5\src\state.rs
+
+C:\Users\VICTUS\coding\GitHub\ReLive-CreativityInnovation\apps\contracts\target\debug\deps\libspl_token_group_interface-daf19390b6e2db53.rmeta: C:\Users\VICTUS\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\spl-token-group-interface-0.2.5\src\lib.rs C:\Users\VICTUS\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\spl-token-group-interface-0.2.5\src\error.rs C:\Users\VICTUS\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\spl-token-group-interface-0.2.5\src\instruction.rs C:\Users\VICTUS\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\spl-token-group-interface-0.2.5\src\state.rs
+
+C:\Users\VICTUS\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\spl-token-group-interface-0.2.5\src\lib.rs:
+C:\Users\VICTUS\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\spl-token-group-interface-0.2.5\src\error.rs:
+C:\Users\VICTUS\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\spl-token-group-interface-0.2.5\src\instruction.rs:
+C:\Users\VICTUS\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\spl-token-group-interface-0.2.5\src\state.rs:

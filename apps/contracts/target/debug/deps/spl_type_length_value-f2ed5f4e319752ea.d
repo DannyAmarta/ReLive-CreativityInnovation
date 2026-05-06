@@ -1,0 +1,9 @@
+C:\Users\VICTUS\coding\GitHub\ReLive-CreativityInnovation\apps\contracts\target\debug\deps\spl_type_length_value-f2ed5f4e319752ea.d: C:\Users\VICTUS\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\spl-type-length-value-0.4.6\src\lib.rs C:\Users\VICTUS\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\spl-type-length-value-0.4.6\src\error.rs C:\Users\VICTUS\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\spl-type-length-value-0.4.6\src\length.rs C:\Users\VICTUS\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\spl-type-length-value-0.4.6\src\state.rs C:\Users\VICTUS\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\spl-type-length-value-0.4.6\src\variable_len_pack.rs
+
+C:\Users\VICTUS\coding\GitHub\ReLive-CreativityInnovation\apps\contracts\target\debug\deps\libspl_type_length_value-f2ed5f4e319752ea.rmeta: C:\Users\VICTUS\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\spl-type-length-value-0.4.6\src\lib.rs C:\Users\VICTUS\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\spl-type-length-value-0.4.6\src\error.rs C:\Users\VICTUS\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\spl-type-length-value-0.4.6\src\length.rs C:\Users\VICTUS\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\spl-type-length-value-0.4.6\src\state.rs C:\Users\VICTUS\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\spl-type-length-value-0.4.6\src\variable_len_pack.rs
+
+C:\Users\VICTUS\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\spl-type-length-value-0.4.6\src\lib.rs:
+C:\Users\VICTUS\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\spl-type-length-value-0.4.6\src\error.rs:
+C:\Users\VICTUS\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\spl-type-length-value-0.4.6\src\length.rs:
+C:\Users\VICTUS\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\spl-type-length-value-0.4.6\src\state.rs:
+C:\Users\VICTUS\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\spl-type-length-value-0.4.6\src\variable_len_pack.rs:

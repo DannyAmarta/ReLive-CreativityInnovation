@@ -44,5 +44,5 @@ export async function GET(req: Request) {
         accessToken: authPayload.accessToken,
     });
 
-    return NextResponse.redirect(new URL("/home/", req.url));
+    return NextResponse.redirect(new URL("/world/", req.url));
 }

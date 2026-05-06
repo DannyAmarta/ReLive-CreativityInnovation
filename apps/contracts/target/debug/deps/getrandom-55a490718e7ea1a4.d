@@ -1,0 +1,10 @@
+C:\Users\VICTUS\coding\GitHub\ReLive-CreativityInnovation\apps\contracts\target\debug\deps\getrandom-55a490718e7ea1a4.d: C:\Users\VICTUS\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\getrandom-0.2.17\src\lib.rs C:\Users\VICTUS\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\getrandom-0.2.17\src\error.rs C:\Users\VICTUS\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\getrandom-0.2.17\src\util.rs C:\Users\VICTUS\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\getrandom-0.2.17\src\custom.rs C:\Users\VICTUS\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\getrandom-0.2.17\src\error_impls.rs C:\Users\VICTUS\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\getrandom-0.2.17\src\windows.rs
+
+C:\Users\VICTUS\coding\GitHub\ReLive-CreativityInnovation\apps\contracts\target\debug\deps\libgetrandom-55a490718e7ea1a4.rmeta: C:\Users\VICTUS\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\getrandom-0.2.17\src\lib.rs C:\Users\VICTUS\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\getrandom-0.2.17\src\error.rs C:\Users\VICTUS\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\getrandom-0.2.17\src\util.rs C:\Users\VICTUS\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\getrandom-0.2.17\src\custom.rs C:\Users\VICTUS\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\getrandom-0.2.17\src\error_impls.rs C:\Users\VICTUS\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\getrandom-0.2.17\src\windows.rs
+
+C:\Users\VICTUS\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\getrandom-0.2.17\src\lib.rs:
+C:\Users\VICTUS\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\getrandom-0.2.17\src\error.rs:
+C:\Users\VICTUS\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\getrandom-0.2.17\src\util.rs:
+C:\Users\VICTUS\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\getrandom-0.2.17\src\custom.rs:
+C:\Users\VICTUS\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\getrandom-0.2.17\src\error_impls.rs:
+C:\Users\VICTUS\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\getrandom-0.2.17\src\windows.rs:

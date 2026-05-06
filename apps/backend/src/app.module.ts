@@ -21,6 +21,10 @@ import { SetModule } from './set/set.module';
 import { RecommendationModule } from './recommendation/recommendation.module';
 import { ChatModule } from './chat/chat.module';
 import { WorkoutsModule } from './workouts/workouts.module';
+import { TrainerModule } from './trainer/trainer.module';
+import { BlockchainModule } from './blockchain/blockchain.module';
+import { FiatPaymentService } from './fiat-payment/fiat-payment.service';
+import { FiatPaymentModule } from './fiat-payment/fiat-payment.module';
 
 @Module({
   imports: [
@@ -60,7 +64,9 @@ import { WorkoutsModule } from './workouts/workouts.module';
     RecommendationModule,
     ChatModule,
     WorkoutsModule,
-    WorkoutsModule,
+    TrainerModule,
+    BlockchainModule,
+    FiatPaymentModule,
   ],
   controllers: [AppController],
   providers: [
@@ -73,6 +79,7 @@ import { WorkoutsModule } from './workouts/workouts.module';
       provide: APP_INTERCEPTOR,
       useClass: DataLoaderInterceptor,
     },
+    FiatPaymentService,
   ],
 })
 export class AppModule {}

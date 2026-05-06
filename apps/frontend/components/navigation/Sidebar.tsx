@@ -34,7 +34,9 @@ export function Sidebar() {
       { href: "/workouts", label: "Workouts", icon: Dumbbell },
       { href: "/cookbook", label: "Cookbook", icon: BookOpenText },
       { href: "/profile", label: "Profile", icon: User },
-      { href: "/set", label: "Settings", icon: Settings },
+      { href: "/set", label: "Set", icon: Settings },
+      { href: "/trainer", label: "Trainer Dashboard", icon: Settings },
+      { href: "/client", label: "Find a trainer", icon: Settings },
     ];
 
   // Inside SidebarContent function within Sidebar.tsx

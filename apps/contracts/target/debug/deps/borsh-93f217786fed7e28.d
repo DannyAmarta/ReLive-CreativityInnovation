@@ -1,0 +1,11 @@
+C:\Users\VICTUS\coding\GitHub\ReLive-CreativityInnovation\apps\contracts\target\debug\deps\borsh-93f217786fed7e28.d: C:\Users\VICTUS\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\borsh-0.9.3\src\lib.rs C:\Users\VICTUS\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\borsh-0.9.3\src\de\mod.rs C:\Users\VICTUS\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\borsh-0.9.3\src\de\hint.rs C:\Users\VICTUS\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\borsh-0.9.3\src\schema.rs C:\Users\VICTUS\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\borsh-0.9.3\src\schema_helpers.rs C:\Users\VICTUS\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\borsh-0.9.3\src\ser\mod.rs C:\Users\VICTUS\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\borsh-0.9.3\src\ser\helpers.rs
+
+C:\Users\VICTUS\coding\GitHub\ReLive-CreativityInnovation\apps\contracts\target\debug\deps\libborsh-93f217786fed7e28.rmeta: C:\Users\VICTUS\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\borsh-0.9.3\src\lib.rs C:\Users\VICTUS\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\borsh-0.9.3\src\de\mod.rs C:\Users\VICTUS\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\borsh-0.9.3\src\de\hint.rs C:\Users\VICTUS\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\borsh-0.9.3\src\schema.rs C:\Users\VICTUS\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\borsh-0.9.3\src\schema_helpers.rs C:\Users\VICTUS\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\borsh-0.9.3\src\ser\mod.rs C:\Users\VICTUS\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\borsh-0.9.3\src\ser\helpers.rs
+
+C:\Users\VICTUS\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\borsh-0.9.3\src\lib.rs:
+C:\Users\VICTUS\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\borsh-0.9.3\src\de\mod.rs:
+C:\Users\VICTUS\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\borsh-0.9.3\src\de\hint.rs:
+C:\Users\VICTUS\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\borsh-0.9.3\src\schema.rs:
+C:\Users\VICTUS\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\borsh-0.9.3\src\schema_helpers.rs:
+C:\Users\VICTUS\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\borsh-0.9.3\src\ser\mod.rs:
+C:\Users\VICTUS\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\borsh-0.9.3\src\ser\helpers.rs:

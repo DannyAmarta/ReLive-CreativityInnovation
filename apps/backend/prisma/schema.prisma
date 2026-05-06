@@ -15,138 +15,286 @@ generator client {
   provider = "prisma-client-js"
 }
 
-model User {
-  id                         Int                        @id @default(autoincrement())
-  email                      String                     @unique
-  password                   String
-  name                       String?
-  bio                        String?
-  avatar                     String?
-  
-  // --- New Onboarding & Lifestyle Fields ---
-  profileCompleted           Boolean                    @default(false)
-  fitnessLevel               String?                    // "Sprouting", "Growing", "Evergreen"
-  dailyActivity              String?                    // "Rooted", "Shifting", "Aerial"
-  primaryGoal                String?                    // "Strength", "Weight Loss", "Energy"
-  vitalityScore              Int                        @default(0)     // For your VitalityCard
-  streakDays                 Int                        @default(0)     // For your StatBadge
-  
-  // --- Security & AI ---
-  openRouterApiKeyEncrypted  String?
-  openRouterKeyLabel         String?
-  openRouterUserId           String?
-  openRouterConnectedAt      DateTime?
-  
-  // --- Metadata ---
-  createdAt                  DateTime                   @default(now())
-  updatedAt                  DateTime?                  @updatedAt // Added @updatedAt to auto-track changes
-
-  // --- Relations ---
-  workoutSets                WorkoutSet[]
-  dailyPerformanceSnapshots  DailyPerformanceSnapshot[]
+enum Role {
+  USER
+  TRAINER
+  ADMIN
 }
 
-model Exercise{
-  id String @id
-  name String
-  category String
-  formula String
-  description String
-  repCap Int?
-  requiredMetrics String[]
-  isActive Boolean @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  workoutSets WorkoutSet[]
+enum BookingStatus {
+  PENDING // Waiting for on-chain confirmation
+  ACTIVE // Funds confirmed in escrow, service in progress
+  COMPLETED // Service delivered, funds released to trainer
+  DISPUTED // Claim raised, locked until admin resolves
+  CANCELLED // Trainer rejected or mutual cancellation (funds refunded)
+}
+
+enum PaymentType {
+  CRYPTO
+  FIAT
+}
+
+enum WithdrawalStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model User {
+  id            Int     @id @default(autoincrement())
+  email         String  @unique
+  password      String
+  name          String?
+  bio           String?
+  avatar        String?
+  role          Role    @default(USER)
+  walletAddress String? @unique
+  phone         String? // For fiat payment notifications
+
+  // --- New Onboarding & Lifestyle Fields ---
+  profileCompleted Boolean @default(false)
+  fitnessLevel     String? // "Sprouting", "Growing", "Evergreen"
+  dailyActivity    String? // "Rooted", "Shifting", "Aerial"
+  primaryGoal      String? // "Strength", "Weight Loss", "Energy"
+  vitalityScore    Int     @default(0) // For your VitalityCard
+  streakDays       Int     @default(0) // For your StatBadge
+
+  // --- Security & AI ---
+  openRouterApiKeyEncrypted String?
+  openRouterKeyLabel        String?
+  openRouterUserId          String?
+  openRouterConnectedAt     DateTime?
+
+  // --- Metadata ---
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt // Added @updatedAt to auto-track changes
+
+  // --- Relations ---
+  workoutSets               WorkoutSet[]
+  dailyPerformanceSnapshots DailyPerformanceSnapshot[]
+  trainerProfile            TrainerProfile?
+  clientBookings            Booking[]                  @relation("ClientBookings")
+  fiatWallet                FiatWallet?                // One-to-one with trainer
+  withdrawalRequests        WithdrawalRequest[]
+}
+
+model Exercise {
+  id                        String                     @id
+  name                      String
+  category                  String
+  formula                   String
+  description               String
+  repCap                    Int?
+  requiredMetrics           String[]
+  isActive                  Boolean                    @default(true)
+  createdAt                 DateTime                   @default(now())
+  updatedAt                 DateTime                   @updatedAt
+  workoutSets               WorkoutSet[]
   dailyPerformanceSnapshots DailyPerformanceSnapshot[]
 }
 
-model WorkoutSet{
-  id Int @id @default(autoincrement())
-  userId Int
-  exerciseId String
-  weightLifted Float?
-  actualReps Int?
-  rirLogged Int?
-  calculated1Rm Float?
-  formulaUsed String
-  isCnsFatigue Boolean @default(false)
+model WorkoutSet {
+  id              Int      @id @default(autoincrement())
+  userId          Int
+  exerciseId      String
+  weightLifted    Float?
+  actualReps      Int?
+  rirLogged       Int?
+  calculated1Rm   Float?
+  formulaUsed     String
+  isCnsFatigue    Boolean  @default(false)
   durationMinutes Float?
-  distanceMeters Float?
-  rpeLogged Float?
-  notes String?
-  createdAt DateTime @default(now())
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  exercise Exercise @relation(fields: [exerciseId], references: [id], onDelete: Restrict)
+  distanceMeters  Float?
+  rpeLogged       Float?
+  notes           String?
+  createdAt       DateTime @default(now())
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exercise        Exercise @relation(fields: [exerciseId], references: [id], onDelete: Restrict)
 
   @@index([userId, exerciseId, createdAt(sort: Desc)])
   @@index([userId, createdAt(sort: Desc)])
 }
 
-model DailyPerformanceSnapshot{
-  id Int @id @default(autoincrement())
-  userId Int
-  exerciseId String
-  periodDays Int @default(14)
-  snapshotDate DateTime
-  emaOneRepMax Float?
-  baselineAverage1Rm Float?
-  latestLogged1Rm Float?
-  latestClean1Rm Float?
-  latestRirTrend Float?
-  latestSessionFlagged Boolean @default(false)
-  contextSummary String
-  sampleSize Int @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  exercise Exercise @relation(fields: [exerciseId], references: [id], onDelete: Restrict)
+model DailyPerformanceSnapshot {
+  id                   Int      @id @default(autoincrement())
+  userId               Int
+  exerciseId           String
+  periodDays           Int      @default(14)
+  snapshotDate         DateTime
+  emaOneRepMax         Float?
+  baselineAverage1Rm   Float?
+  latestLogged1Rm      Float?
+  latestClean1Rm       Float?
+  latestRirTrend       Float?
+  latestSessionFlagged Boolean  @default(false)
+  contextSummary       String
+  sampleSize           Int      @default(0)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exercise             Exercise @relation(fields: [exerciseId], references: [id], onDelete: Restrict)
 
   @@unique([userId, exerciseId, periodDays, snapshotDate])
   @@index([userId, exerciseId, snapshotDate(sort: Desc)])
 }
 
-model FoodCache{
-  id Int @id @default(autoincrement())
-  source String
-  sourceId String
-  name String
-  normalizedName String
-  description String?
-  brand String?
-  referenceServingSize Float?
-  referenceServingUnit String?
-  caloriesPer100g Float?
-  proteinGramsPer100g Float?
-  carbsGramsPer100g Float?
-  fatGramsPer100g Float?
-  fiberGramsPer100g Float?
-  sugarGramsPer100g Float?
+model FoodCache {
+  id                      Int      @id @default(autoincrement())
+  source                  String
+  sourceId                String
+  name                    String
+  normalizedName          String
+  description             String?
+  brand                   String?
+  referenceServingSize    Float?
+  referenceServingUnit    String?
+  caloriesPer100g         Float?
+  proteinGramsPer100g     Float?
+  carbsGramsPer100g       Float?
+  fatGramsPer100g         Float?
+  fiberGramsPer100g       Float?
+  sugarGramsPer100g       Float?
   sodiumMilligramsPer100g Float?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
 
   @@unique([source, sourceId])
   @@index([normalizedName])
 }
 
-model RecipeCache{
-  id Int @id @default(autoincrement())
-  source String
-  sourceId String
-  title String
+model RecipeCache {
+  id              Int      @id @default(autoincrement())
+  source          String
+  sourceId        String
+  title           String
   normalizedTitle String
-  image String
-  calories Float?
-  protein Float?
-  cookTime Int?
-  ingredients String[]
-  instructions String
-  sourceUrl String?
-  dietTags String[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  image           String
+  calories        Float?
+  protein         Float?
+  cookTime        Int?
+  ingredients     String[]
+  instructions    String
+  sourceUrl       String?
+  dietTags        String[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   @@unique([source, sourceId])
   @@index([normalizedTitle])
+}
+
+// --- Trainer Marketplace & Blockchain Ready Models ---
+
+model TrainerProfile {
+  id     Int  @id @default(autoincrement())
+  userId Int  @unique
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  bio               String?
+  certifications    String[]
+  rating            Float     @default(0)
+  payoutAtaAddress  String?   @unique
+  payoutMintAddress String?
+  ataInitializedAt  DateTime?
+
+  // Relations
+  services         TrainerService[]
+  providedBookings Booking[]        @relation("TrainerBookings")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model TrainerService {
+  id        Int            @id @default(autoincrement())
+  trainerId Int
+  trainer   TrainerProfile @relation(fields: [trainerId], references: [id], onDelete: Cascade)
+
+  title            String
+  description      String
+  priceInLamports  Int // Token amount in smallest on-chain unit (e.g., lamports for SOL)
+  tokenMintAddress String @default("So11111111111111111111111111111111111111112") // Default = native SOL wrapped mint
+
+  // New FIAT price
+  priceInIdr Int? // IDR price for fiat payments (optional, if not set crypto-only)
+
+  // Relations
+  bookings Booking[]
+
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Booking {
+  id        Int            @id @default(autoincrement())
+  clientId  Int
+  client    User           @relation("ClientBookings", fields: [clientId], references: [id], onDelete: Cascade)
+  trainerId Int
+  trainer   TrainerProfile @relation("TrainerBookings", fields: [trainerId], references: [id], onDelete: Cascade)
+  serviceId Int
+  service   TrainerService @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+
+  status        BookingStatus @default(PENDING)
+  txHash        String?       @unique // Prevents duplicate bookings from indexer replay (crypto)
+  escrowAddress String?       @unique
+
+  // --- New Fiat Payment Fields ---
+  paymentType         PaymentType? // CRYPTO or FIAT
+  fiatAmount          Int?        // Total paid in IDR (including fee)
+  servicePriceIdr     Int?        // Base price (excl fee)
+  processingFeeIdr    Int?        // Fee amount
+  gatewayTxId         String?     @unique // Duitku reference / transaction ID
+  gatewayPaymentMethod String?    // e.g., "BCA_VA", "QRIS", "GOPAY"
+  webhookReceivedAt   DateTime?   // When we last processed a webhook for this booking
+
+  // Dispute resolution
+  disputeReason String? // Filled in when status = DISPUTED
+  resolvedBy    Int? // Admin userId who resolved the dispute
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations for fiat payments
+  paymentTransactions PaymentTransaction[]
+}
+
+// --- Fiat Payment Models ---
+
+model FiatWallet {
+  id          Int      @id @default(autoincrement())
+  trainerId   Int      @unique
+  balanceIdr  Int      @default(0)
+  updatedAt   DateTime @updatedAt
+  trainer     User     @relation(fields: [trainerId], references: [id], onDelete: Cascade)
+}
+
+model WithdrawalRequest {
+  id              Int            @id @default(autoincrement())
+  trainerId       Int
+  amountIdr       Int
+  bankCode        String?
+  accountNumber   String?
+  accountName     String?
+  paymentMethod   String   // "BANK_TRANSFER" or "EWALLET"
+  status          WithdrawalStatus @default(PENDING)
+  gatewayReference String? @unique
+  requestedAt     DateTime @default(now())
+  processedAt     DateTime?
+  failureReason   String?
+  trainer         User     @relation(fields: [trainerId], references: [id], onDelete: Cascade)
+}
+
+model PaymentTransaction {
+  id               String   @id @default(cuid())
+  bookingId        Int
+  gateway          String   // "DUITKU"
+  gatewayTxId      String   @unique
+  amountIdr        Int
+  feeIdr           Int
+  status           String   // "PENDING", "SUCCESS", "FAILURE", "REFUNDED"
+  rawPayload       Json?    // Store webhook body for debugging
+  createdAt        DateTime @default(now())
+  booking          Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
 }

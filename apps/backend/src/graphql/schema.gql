@@ -276,6 +276,86 @@ enum RecommendationPlanSource {
   RULE_FALLBACK
 }
 
+type TrainerService {
+  id: Int!
+  trainerId: Int!
+  trainer: TrainerProfile
+  title: String!
+  description: String!
+  priceInLamports: Float!
+  tokenMintAddress: String!
+  isActive: Boolean!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type TrainerProfile {
+  id: Int!
+  userId: Int!
+  user: User
+  bio: String
+  certifications: [String!]!
+  rating: Float!
+  payoutAtaAddress: String
+  payoutMintAddress: String
+  ataInitializedAt: DateTime
+  services: [TrainerService]
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type Booking {
+  id: Int!
+  clientId: Int!
+  client: User
+  trainerId: Int!
+  trainer: TrainerProfile
+  serviceId: Int!
+  service: TrainerService
+  status: String!
+  txHash: String
+  escrowAddress: String
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type FiatDepositResponse {
+  paymentUrl: String!
+  transactionId: String!
+  bookingId: Int!
+  totalAmount: Int!
+  fee: Int!
+}
+
+type FiatWalletEntity {
+  id: Int!
+  trainerId: Int!
+  balanceIdr: Int!
+  updatedAt: DateTime!
+}
+
+type WithdrawalRequestEntity {
+  id: Int!
+  trainerId: Int!
+  amountIdr: Int!
+  bankCode: String
+  accountNumber: String
+  accountName: String
+  paymentMethod: String!
+  status: String!
+  gatewayReference: String
+  requestedAt: DateTime!
+  processedAt: DateTime
+  failureReason: String
+}
+
+type PartialSignedTx {
+  serializedTx: String!
+  bookingId: Int!
+  instruction: String!
+  escrowAddress: String
+}
+
 type Query {
   hello: String!
   getMe: User!
@@ -284,6 +364,11 @@ type Query {
   setExercises: [SetExercise!]!
   calculateSetEstimate(input: CalculateSetInput!): SetCalculationResult!
   setPerformanceAnalytics(exerciseId: String!, days: Int = 14): SetPerformanceAnalytics!
+  getTrainerProfiles: [TrainerProfile!]!
+  getTrainerProfile(id: Int!): TrainerProfile!
+  myClientBookings: [Booking!]!
+  myTrainerBookings: [Booking!]!
+  myFiatWallet: FiatWalletEntity!
 }
 
 input CalculateSetInput {
@@ -310,6 +395,18 @@ type Mutation {
   logWorkoutSet(input: LogWorkoutSetInput!): LoggedWorkoutSetPayload!
   generateWorkoutRecommendation(input: GeneratePlanDto!): GeneratedWorkoutPlanEntity!
   analyzeFeatureThreats(input: FeatureAnalysisDto!): FeatureThreatAnalysisEntity!
+  createTrainerProfile(input: CreateTrainerProfileInput!): TrainerProfile!
+  upgradeToTrainer(input: UpgradeToTrainerInput!): TrainerProfile!
+  createTrainerService(input: CreateTrainerServiceInput!): TrainerService!
+  updateTrainerService(input: UpdateTrainerServiceInput!): TrainerService!
+  createBooking(input: CreateBookingInput!): Booking!
+  updateBookingStatus(input: UpdateBookingStatusInput!): Booking!
+  requestFiatBookingDeposit(input: RequestFiatDepositInput!): FiatDepositResponse!
+  requestFiatWithdrawal(input: RequestWithdrawalInput!): WithdrawalRequestEntity!
+  adminRefundFiatBooking(bookingId: Float!): Boolean!
+  requestBookingDeposit(bookingId: Int!): PartialSignedTx!
+  requestRelease(bookingId: Int!): PartialSignedTx!
+  requestRefund(bookingId: Int!): PartialSignedTx!
 }
 
 input SignInInput {
@@ -381,4 +478,56 @@ input FeatureAnalysisDto {
   featureName: String
   systemContext: String
   focusAreas: [String!]
+}
+
+input CreateTrainerProfileInput {
+  bio: String
+  certifications: [String!]
+}
+
+input UpgradeToTrainerInput {
+  bio: String!
+  certifications: [String!]!
+  walletAddress: String!
+  payoutAtaAddress: String!
+  payoutMintAddress: String!
+}
+
+input CreateTrainerServiceInput {
+  title: String!
+  description: String!
+  priceInLamports: Float!
+  tokenMintAddress: String
+}
+
+input UpdateTrainerServiceInput {
+  serviceId: Int!
+  title: String
+  description: String
+  priceInLamports: Float
+  isActive: Boolean
+}
+
+input CreateBookingInput {
+  trainerId: Int!
+  serviceId: Int!
+}
+
+input UpdateBookingStatusInput {
+  bookingId: Int!
+  status: String!
+  disputeReason: String
+}
+
+input RequestFiatDepositInput {
+  bookingId: Int!
+}
+
+input RequestWithdrawalInput {
+  amountIdr: Int!
+  paymentMethod: String!
+  bankCode: String
+  accountNumber: String
+  accountName: String
+  ewalletPhone: String
 }

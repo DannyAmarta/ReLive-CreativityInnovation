@@ -10,7 +10,7 @@ import {
   startTransition,
 } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { BookOpen, Sparkles } from "lucide-react";
+import { BookOpen, Sparkles, X } from "lucide-react";
 import Link from "next/link";
 import { useLocalStorageState } from "@/hooks/ui/useLocalStorageState";
 import { useCookbookSearch } from "@/hooks/features/cookbook/useCookbookSearch";
@@ -104,9 +104,9 @@ export function CookbookMain({
             className="relative z-10 flex min-h-[62vh] flex-col items-center justify-center overflow-hidden px-6 text-center" // changed 62vh to 48vh
           >
             {/* Radial glow blobs */}
-            {/* <div className="pointer-events-none absolute -top-20 left-1/2 h-[500px] w-[700px] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,183,197,0.3)_0%,transparent_70%)]" />
-            <div className="pointer-events-none absolute top-1/3 -left-20 h-80 w-80 rounded-full bg-[radial-gradient(circle,rgba(249,168,192,0.25)_0%,transparent_70%)]" />
-            <div className="pointer-events-none absolute top-1/3 -right-20 h-80 w-80 rounded-full bg-[radial-gradient(circle,rgba(201,79,126,0.2)_0%,transparent_70%)]" /> */}
+            <div className="pointer-events-none absolute -top-20 left-1/2 h-[500px] w-[700px] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(209,226,196,0.3)_0%,transparent_70%)]" />
+            <div className="pointer-events-none absolute top-1/3 -left-20 h-80 w-80 rounded-full bg-[radial-gradient(circle,rgba(107,142,35,0.15)_0%,transparent_70%)]" />
+            <div className="pointer-events-none absolute top-1/3 -right-20 h-80 w-80 rounded-full bg-[radial-gradient(circle,rgba(45,74,34,0.1)_0%,transparent_70%)]" />
 
             <motion.div
               initial={{ scale: 0.8, opacity: 0, y: 10 }}
@@ -167,9 +167,9 @@ export function CookbookMain({
             transition={{ duration: 0.4 }}
             className="relative z-10 flex items-center gap-3 px-6 pt-6 pb-2"
           >
-            <BookOpen className="h-5 w-5 text-[#C94F7E]" />
+            <BookOpen className="h-5 w-5 text-[#6B8E23]" />
             <span
-              className="text-sm font-bold text-[#9B2C5A] uppercase tracking-[0.2em]"
+              className="text-sm font-bold text-[#2D4A22] uppercase tracking-[0.2em]"
               style={{ fontFamily: "'Sora', var(--font-geist-sans)" }}
             >
               Cookbook
@@ -177,9 +177,9 @@ export function CookbookMain({
             <span className="mx-3 h-px flex-1 bg-gradient-to-r from-[#FFB7C5]/60 to-transparent" />
             <Link
               href={query.trim() ? `/foods?query=${encodeURIComponent(query.trim())}` : "/foods"}
-              className="text-sm font-bold text-[#C94F7E] transition hover:text-[#9B2C5A]"
+              className="text-sm font-bold text-[#3D5A35] transition-all hover:text-[#6B8E23] hover:translate-x-1 flex items-center gap-1"
             >
-              → Search macros
+              <span className="tracking-wide">→ Search macros</span>
             </Link>
           </motion.div>
         )}
@@ -202,8 +202,8 @@ export function CookbookMain({
         </motion.div>
       </div>
 
-      {/* ── MAIN RESULTS ── */}
-      <main className="relative z-10 mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
+      {/* ── MAIN RESULTS GRID ── */}
+      <main className="relative z-10 mx-auto max-w-8xl px-4 py-8 sm:px-6 lg:px-8">
         <AnimatePresence>
           {hasQuery && (
             <motion.div
@@ -211,7 +211,6 @@ export function CookbookMain({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 20 }}
               transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-              className="space-y-6"
             >
               <CookbookResults
                 items={results}
@@ -227,12 +226,69 @@ export function CookbookMain({
                 onNextPage={handleNextPage}
                 onPreviousPage={handlePreviousPage}
               />
-
-              <CookbookDetails recipe={selectedRecipe} searchBaseTerm={query} />
             </motion.div>
           )}
         </AnimatePresence>
       </main>
+
+      {/* ── MODAL POP-OUT (CENTRAL FOCUS) ── */}
+      <AnimatePresence>
+        {selectedRecipe && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
+            {/* 1. Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedRecipe(null)}
+              className="absolute inset-0 bg-[#1a1c1a]/40 backdrop-blur-md"
+            />
+
+            {/* 2. Modal Content Container (The Frame) */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              className="relative z-[110] p-2 flex w-full max-w-4xl max-h-[90vh] flex-col overflow-hidden rounded-[2.5rem] bg-[#F7F9F7] shadow-[0_32px_128px_rgba(45,74,34,0.3)] border border-white/50 isolate"
+              style={{
+                /* Keep your existing mask styles here */
+                WebkitMaskImage: "linear-gradient(#fff 0 0), linear-gradient(#fff 0 0)",
+                maskImage: "linear-gradient(#fff 0 0), linear-gradient(#fff 0 0)",
+                WebkitMaskClip: "content-box, border-box",
+                maskClip: "content-box, border-box",
+                WebkitMaskComposite: "destination-in",
+                maskComposite: "intersect",
+              }}
+            >
+              {/* ── STATIC CLOSE BUTTON ── */}
+              {/* Now it stays fixed because the parent is overflow-hidden, not overflow-scroll */}
+              <button 
+                onClick={() => setSelectedRecipe(null)}
+                className="absolute right-8 top-8 z-[130] flex h-10 w-10 items-center justify-center rounded-full bg-black/20 text-white backdrop-blur-md transition-transform hover:scale-110 active:scale-95 border border-white/30"
+              >
+                <X className="h-5 w-5" />
+              </button>
+
+              {/* ── SCROLLABLE CONTENT AREA ── */}
+              {/* This internal div handles all the movement */}
+              <div className="no-scrollbar flex-1 overflow-y-auto rounded-[2rem] overflow-hidden">
+                <CookbookDetails 
+                  recipe={selectedRecipe} 
+                  searchBaseTerm={query} 
+                />
+              </div>
+
+              <style jsx global>{`
+                .no-scrollbar::-webkit-scrollbar {
+                  display: none !important;
+                  width: 0 !important;
+                }
+              `}</style>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </>
   );
 }

@@ -115,7 +115,10 @@ export class AuthService {
 
   // This function verifies that a JWT subject still points to a valid user record.
   // It is used by `JwtStrategy` whenever a protected request sends a bearer token.
-  async validate(userId: number) {
+  // Returns the full user object (minus password & sensitive fields) so that
+  // downstream guards, decorators, and services can access user.role without
+  // an additional database query.
+  async validateJwt(userId: number) {
     const user = await this.prisma.user.findUnique({
       where: {
         id: userId,
@@ -126,7 +129,14 @@ export class AuthService {
       throw new UnauthorizedException('User not found');
     }
 
-    return { id: user.id };
+    // Strip sensitive fields before attaching to request context
+    const { password, openRouterApiKeyEncrypted, ...safeUser } = user;
+    return safeUser;
+  }
+
+  // Backward-compatible alias for any code that still calls validate()
+  async validate(userId: number) {
+    return this.validateJwt(userId);
   }
 
   // This function resolves a Google profile into a local user record.
