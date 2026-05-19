@@ -2,12 +2,12 @@
 
 import { decodeJwt, jwtVerify, SignJWT } from "jose";
 import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
 
 export type SessionUser = {
     id?: string | number;
     name?: string;
     avatar?: string;
+    role?: 'USER' | 'TRAINER' | 'ADMIN';
 };
 
 export type Session = {
@@ -15,15 +15,27 @@ export type Session = {
     accessToken: string;
 };
 
+export type SessionState = {
+    session: Session | null;
+    status: "valid" | "access-token-expired" | "missing" | "invalid";
+    accessTokenExpiryDate: Date | null;
+};
+
 const secretKey = process.env.SESSION_SECRET_KEY!;
 const encodedKey = new TextEncoder().encode(secretKey);
+const sessionCookieMaxAgeHours = Number(process.env.SESSION_COOKIE_MAX_AGE_HOURS ?? 24 * 7);
+const SESSION_COOKIE_MAX_AGE_MS =
+    (Number.isFinite(sessionCookieMaxAgeHours) && sessionCookieMaxAgeHours > 0
+        ? sessionCookieMaxAgeHours
+        : 24 * 7) *
+    60 *
+    60 *
+    1000;
 
 // This function creates the encrypted session cookie used by the frontend.
 // It is used after login and Google OAuth completion so the browser never needs to manage the raw JWT itself.
 export async function createSession(payload: Session) {
-    const accessTokenExpiryDate = getAccessTokenExpiryDate(payload.accessToken);
-    const sessionExpiryDate =
-        accessTokenExpiryDate ?? new Date(Date.now() + 24 * 60 * 60 * 1000);
+    const sessionExpiryDate = new Date(Date.now() + SESSION_COOKIE_MAX_AGE_MS);
 
     const session = await new SignJWT(payload)
         .setProtectedHeader({ alg: "HS256" })
@@ -40,29 +52,59 @@ export async function createSession(payload: Session) {
     });
 }
 
-// This function reads and verifies the encrypted session cookie.
-// It is used by authenticated frontend code before it forwards the access token to the backend.
-export async function getSession() {
+// This function reads the encrypted session cookie and reports whether the backend access token is still fresh.
+// It is used by authenticated frontend code so pages can warn before forcing a fresh login.
+export async function getSessionState(): Promise<SessionState> {
     const cookieStore = await cookies();
     const cookie = cookieStore.get("session")?.value;
-    if (!cookie) return null;
+    if (!cookie) {
+        return {
+            session: null,
+            status: "missing",
+            accessTokenExpiryDate: null,
+        };
+    }
 
     try {
         const { payload } = await jwtVerify(cookie, encodedKey, {
             algorithms: ["HS256"],
         });
         const session = payload as Session;
+        const accessTokenExpiryDate = getAccessTokenExpiryDate(session.accessToken);
 
-        if (isAccessTokenExpired(session.accessToken)) {
-            await deleteSession();
-            redirect("/auth/login");
-        }
+        // Extract role from accessToken so layouts can gate UI without extra queries
+        let role: 'USER' | 'TRAINER' | 'ADMIN' | undefined;
+        try {
+            const decoded = decodeJwt(session.accessToken);
+            if (decoded.role === 'USER' || decoded.role === 'TRAINER' || decoded.role === 'ADMIN') {
+                role = decoded.role;
+            }
+        } catch { /* ignore decode errors */ }
 
-        return session;
+        return {
+            session: {
+                ...session,
+                user: { ...session.user, role },
+            },
+            status: isAccessTokenExpired(session.accessToken)
+                ? "access-token-expired"
+                : "valid",
+            accessTokenExpiryDate,
+        };
     } catch {
-        await deleteSession();
-        redirect("/auth/login");
+        return {
+            session: null,
+            status: "invalid",
+            accessTokenExpiryDate: null,
+        };
     }
+}
+
+// This function returns only the session payload for existing callers.
+// It is used when route code only needs the user/token and can handle stale auth separately.
+export async function getSession() {
+    const sessionState = await getSessionState();
+    return sessionState.session;
 }
 
 // This function removes the current session cookie.

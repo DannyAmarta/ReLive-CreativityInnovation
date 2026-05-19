@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "pnpm -r --parallel dev",
+    "dev": "concurrently \"pnpm --filter backend dev\" \"wait-on tcp:8000 && pnpm --filter frontend dev\"",
     "build": "pnpm -w run build:all",
     "lint": "pnpm -w run lint:all",
     "dev:all": "pnpm --filter \"./apps/*\" dev",
@@ -22,6 +22,8 @@
     "prisma": "^6.19.2"
   },
   "devDependencies": {
-    "@types/node": "^25.0.9"
+    "@types/node": "^25.0.9",
+    "concurrently": "^9.2.1",
+    "wait-on": "^9.0.10"
   }
 }

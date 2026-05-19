@@ -24,6 +24,12 @@ export class UpdateTrainerServiceInput {
   priceInLamports?: number;
 
   @IsOptional()
+  @IsInt()
+  @IsPositive()
+  @Field({ nullable: true })
+  priceInIdr?: number;
+
+  @IsOptional()
   @IsBoolean()
   @Field({ nullable: true })
   isActive?: boolean;

@@ -131,17 +131,17 @@ export function SetControls({
         </FieldBlock>
 
         <FieldBlock label="Category">
-          <div className="rounded-[1.2rem] border border-stone-200 bg-stone-50 px-4 py-3 text-sm font-medium text-stone-700">
+          <div className="rounded-xl border border-sage-200 bg-cream-50 px-4 py-2.5 text-sm font-medium text-olive-700">
             {formatCategory(category)}
           </div>
         </FieldBlock>
       </div>
 
-      {selectedExerciseDescription ? (
-        <div className="rounded-[1.5rem] border border-stone-200/80 bg-stone-50/80 px-4 py-3 text-sm leading-7 text-stone-600">
+      {selectedExerciseDescription && (
+        <div className="rounded-2xl border border-sage-100/70 bg-cream-50/60 px-4 py-3 text-sm leading-relaxed text-stone-600">
           {selectedExerciseDescription}
         </div>
-      ) : null}
+      )}
 
       {isCardio ? (
         <div className="grid gap-4 sm:grid-cols-2">
@@ -156,9 +156,7 @@ export function SetControls({
               step="0.25"
               value={durationMinutes}
               onChange={(event) => onDurationMinutesChange(event.target.value)}
-              className={inputClassName(
-                Boolean(calculatorErrors?.durationMinutes?.[0]),
-              )}
+              className={inputClassName(Boolean(calculatorErrors?.durationMinutes?.[0]))}
               placeholder="20"
             />
           </FieldBlock>
@@ -188,9 +186,7 @@ export function SetControls({
               step="10"
               value={distanceMeters}
               onChange={(event) => onDistanceMetersChange(event.target.value)}
-              className={inputClassName(
-                Boolean(calculatorErrors?.distanceMeters?.[0]),
-              )}
+              className={inputClassName(Boolean(calculatorErrors?.distanceMeters?.[0]))}
               placeholder="4000"
             />
           </FieldBlock>
@@ -247,44 +243,44 @@ export function SetControls({
         <textarea
           value={notes}
           onChange={(event) => onNotesChange(event.target.value)}
-          className={`${inputClassName(Boolean(calculatorErrors?.notes?.[0]))} min-h-28 resize-none`}
-          placeholder="Add anything important from the set."
+          className={`${inputClassName(Boolean(calculatorErrors?.notes?.[0]))} min-h-24 resize-none`}
+          placeholder="Anything important from this set? (e.g. form, fatigue)"
         />
       </FieldBlock>
 
-      {!isCardio ? (
+      {!isCardio && (
         <div className="grid gap-4 sm:grid-cols-2">
           <PreviewCard
-            label="Live 1RM preview"
+            label="Estimated 1RM"
             value={
               previewOneRepMaxKg === null
-                ? "Waiting"
+                ? "—"
                 : `${previewOneRepMaxKg.toFixed(1)} kg`
             }
           />
           <PreviewCard
-            label="Live training max"
+            label="Training max (90%)"
             value={
               previewTrainingMaxKg === null
-                ? "Waiting"
+                ? "—"
                 : `${previewTrainingMaxKg.toFixed(1)} kg`
             }
           />
         </div>
-      ) : null}
+      )}
 
-      <div className="rounded-[1.6rem] border border-stone-200/80 bg-white/80 p-4">
+      {/* Routine preferences (collapsible vibe but still visible – slightly softer) */}
+      <div className="rounded-2xl border border-sage-100/80 bg-cream-50/40 p-4">
         <div className="flex items-start gap-3">
-          <div className="rounded-full bg-stone-100 p-2 text-stone-600">
+          <div className="rounded-full bg-sage-100 p-2 text-sage-700">
             <WandSparkles className="h-4 w-4" />
           </div>
-          <div className="space-y-1">
-            <p className="text-sm font-semibold text-stone-950">
-              Recommendation inputs
+          <div className="space-y-0.5">
+            <p className="text-sm font-semibold text-olive-900">
+              Routine preferences
             </p>
-            <p className="text-sm leading-6 text-stone-500">
-              These fields only shape the next routine suggestion. They do not
-              change your live estimate.
+            <p className="text-sm text-stone-500">
+              These settings only influence the suggested routine.
             </p>
           </div>
         </div>
@@ -300,11 +296,11 @@ export function SetControls({
                 onPhaseGoalChange(event.target.value as RecommendationPhaseGoal)
               }
               className={inputClassName(
-                Boolean(recommendationErrors?.phaseGoal?.[0]),
+                Boolean(recommendationErrors?.phaseGoal?.[0])
               )}
             >
-              <option value="BASELINE_TESTING">Baseline</option>
-              <option value="HYPERTROPHY">Hypertrophy</option>
+              <option value="BASELINE_TESTING">Baseline / Maintenance</option>
+              <option value="HYPERTROPHY">Muscle gain</option>
               <option value="STRENGTH">Strength</option>
               <option value="POWER">Power</option>
               <option value="RECOVERY">Recovery</option>
@@ -312,7 +308,7 @@ export function SetControls({
           </FieldBlock>
 
           <FieldBlock
-            label="Recent window (days)"
+            label="Look‑back days"
             error={recommendationErrors?.days?.[0]}
           >
             <input
@@ -340,7 +336,7 @@ export function SetControls({
               value={trainingDaysPerWeek}
               onChange={(event) => onTrainingDaysPerWeekChange(event.target.value)}
               className={inputClassName(
-                Boolean(recommendationErrors?.trainingDaysPerWeek?.[0]),
+                Boolean(recommendationErrors?.trainingDaysPerWeek?.[0])
               )}
             />
           </FieldBlock>
@@ -358,7 +354,7 @@ export function SetControls({
               value={targetSets}
               onChange={(event) => onTargetSetsChange(event.target.value)}
               className={inputClassName(
-                Boolean(recommendationErrors?.targetSets?.[0]),
+                Boolean(recommendationErrors?.targetSets?.[0])
               )}
               placeholder="Optional"
             />
@@ -377,7 +373,7 @@ export function SetControls({
               value={targetReps}
               onChange={(event) => onTargetRepsChange(event.target.value)}
               className={inputClassName(
-                Boolean(recommendationErrors?.targetReps?.[0]),
+                Boolean(recommendationErrors?.targetReps?.[0])
               )}
               placeholder="Optional"
             />
@@ -419,7 +415,7 @@ export function SetControls({
           onClick={onBuildRoutine}
           disabled={!canBuildRoutine || isGeneratingRecommendation}
           className={secondaryButtonClassName(
-            !canBuildRoutine || isGeneratingRecommendation,
+            !canBuildRoutine || isGeneratingRecommendation
           )}
         >
           {isGeneratingRecommendation ? (
@@ -427,20 +423,20 @@ export function SetControls({
           ) : (
             <WandSparkles className="h-4 w-4" />
           )}
-          Build AI routine
+          Suggest next routine
         </button>
       </div>
 
       {(calculatorErrors || recommendationErrors) &&
-      (Object.keys(calculatorErrors ?? {}).length > 0 ||
-        Object.keys(recommendationErrors ?? {}).length > 0) ? (
-        <ValidationSummary
-          errors={[
-            ...collectErrors(calculatorErrors),
-            ...collectErrors(recommendationErrors),
-          ]}
-        />
-      ) : null}
+        (Object.keys(calculatorErrors ?? {}).length > 0 ||
+          Object.keys(recommendationErrors ?? {}).length > 0) && (
+          <ValidationSummary
+            errors={[
+              ...collectErrors(calculatorErrors),
+              ...collectErrors(recommendationErrors),
+            ]}
+          />
+        )}
     </div>
   );
 }

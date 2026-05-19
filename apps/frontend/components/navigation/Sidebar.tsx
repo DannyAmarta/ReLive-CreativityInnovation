@@ -37,6 +37,7 @@ export function Sidebar() {
       { href: "/set", label: "Set", icon: Settings },
       { href: "/trainer", label: "Trainer Dashboard", icon: Settings },
       { href: "/client", label: "Find a trainer", icon: Settings },
+      { href: "/dev/change-role", label: "Dev Change Role", icon: Settings },
     ];
 
   // Inside SidebarContent function within Sidebar.tsx

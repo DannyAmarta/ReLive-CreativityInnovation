@@ -21,7 +21,7 @@ export function WalletButton() {
       <>
         <button
           onClick={() => setOpen(true)}
-          className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
+          className="inline-flex items-center gap-1.5 rounded-full bg-[#4a5d3e] px-4 py-2 text-sm font-semibold text-[#f8f6ef] shadow-[0_12px_24px_rgba(74,93,62,0.16)] transition-opacity hover:opacity-92"
         >
           <Wallet className="h-4 w-4" />
           Connect Wallet
@@ -34,8 +34,8 @@ export function WalletButton() {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <button className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-2 text-sm font-medium text-primary-deep transition-colors hover:bg-primary/15">
-          <span className="h-2 w-2 rounded-full bg-primary" />
+        <button className="inline-flex items-center gap-2 rounded-full border border-[rgba(74,93,62,0.18)] bg-[rgba(255,252,246,0.9)] px-3 py-2 text-sm font-medium text-primary-deep transition-colors hover:bg-[rgba(234,240,225,0.85)]">
+          <span className="h-2 w-2 rounded-full bg-[#4a5d3e]" />
           {truncateAddress(wallet.address)}
           <ChevronDown className="h-3.5 w-3.5" />
         </button>

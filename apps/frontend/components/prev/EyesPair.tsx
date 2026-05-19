@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import Eye from "./prev/Eye";
+import Eye from "./Eye";
 
 export default function EyesPair({ mouse, size = 12 }: any) {
     return (

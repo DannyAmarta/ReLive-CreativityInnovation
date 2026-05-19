@@ -30,10 +30,28 @@ export class Booking {
   status: string;
 
   @Field({ nullable: true })
+  paymentType?: string;
+
+  @Field({ nullable: true })
   txHash?: string;
 
   @Field({ nullable: true })
   escrowAddress?: string;
+
+  @Field(() => Int, { nullable: true })
+  fiatAmount?: number;
+
+  @Field(() => Int, { nullable: true })
+  servicePriceIdr?: number;
+
+  @Field(() => Int, { nullable: true })
+  processingFeeIdr?: number;
+
+  @Field({ nullable: true })
+  gatewayPaymentMethod?: string;
+
+  @Field({ nullable: true })
+  disputeReason?: string;
 
   @Field()
   createdAt: Date;

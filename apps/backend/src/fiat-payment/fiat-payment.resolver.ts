@@ -26,7 +26,7 @@ export class FiatPaymentResolver {
     @Args('input') input: RequestFiatDepositInput,
     @CurrentUser() user: CurrentUserTypes.CurrentUserPayload,
   ): Promise<FiatDepositResponse> {
-    return this.fiatPaymentService.createDeposit(user, input.bookingId);
+    return this.fiatPaymentService.createDeposit(user, input.bookingId, input.paymentMethodCode);
   }
 
   @Mutation(() => WithdrawalRequestEntity)
@@ -58,5 +58,14 @@ export class FiatPaymentResolver {
     @CurrentUser() user: CurrentUserTypes.CurrentUserPayload,
   ): Promise<FiatWalletEntity> {
     return this.fiatPaymentService.getWallet(user);
+  }
+
+  @Query(() => [WithdrawalRequestEntity])
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.TRAINER)
+  async myWithdrawalRequests(
+    @CurrentUser() user: CurrentUserTypes.CurrentUserPayload,
+  ): Promise<WithdrawalRequestEntity[]> {
+    return this.fiatPaymentService.getWithdrawalRequests(user);
   }
 }

@@ -3,9 +3,9 @@
 import { Minus, Plus, Soup, Trash2 } from "lucide-react";
 import { formatNutrientValue, summarizeMealNutrition } from "@/lib/food";
 import type { MealFoodItem } from "@/types/food";
-import { Badge } from "@/components/ui/Badge";
-import { Button } from "@/components/ui/Button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 type FoodSummaryProps = {
   items: MealFoodItem[];
@@ -141,7 +141,7 @@ export function FoodSummary({
 
                   <Button
                     size="icon"
-                    variant="danger"
+                    variant="destructive"
                     onClick={() => onRemoveItem(item.id)}
                     aria-label={`Remove ${item.name} from meal`}
                   >

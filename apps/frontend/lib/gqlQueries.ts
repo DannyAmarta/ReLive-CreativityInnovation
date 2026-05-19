@@ -189,6 +189,7 @@ export const GET_ME_QUERY = gql`
             id
             name
             email
+            role
             bio
             avatar
             # --- Add these here ---
@@ -466,3 +467,375 @@ export const GENERATE_WORKOUT_RECOMMENDATION_MUTATION = gql`
         }
     }
 `
+
+export const CHANGE_MY_ROLE_MUTATION = gql`
+    mutation ChangeMyRole($role: String!) {
+        changeMyRole(role: $role) {
+            id
+            role
+            name
+            email
+        }
+    }
+`
+
+export const DEV_REFRESH_SESSION_MUTATION = gql`
+    mutation DevRefreshSession {
+        devRefreshSession {
+            id
+            name
+            avatar
+            accessToken
+        }
+    }
+`
+
+export const GET_TRAINER_PROFILES_QUERY = gql`
+    query GetTrainerProfiles {
+        getTrainerProfiles {
+            id
+            bio
+            certifications
+            rating
+            user {
+                id
+                name
+                avatar
+                bio
+            }
+            services {
+                id
+                title
+                description
+                priceInLamports
+                priceInIdr
+                tokenMintAddress
+                isActive
+            }
+        }
+    }
+`
+
+export const GET_TRAINER_PROFILE_QUERY = gql`
+    query GetTrainerProfile($id: Int!) {
+        getTrainerProfile(id: $id) {
+            id
+            bio
+            certifications
+            rating
+            user {
+                id
+                name
+                avatar
+                bio
+            }
+            services {
+                id
+                title
+                description
+                priceInLamports
+                priceInIdr
+                tokenMintAddress
+                isActive
+            }
+        }
+    }
+`
+
+export const GET_MY_TRAINER_PROFILE_QUERY = gql`
+    query MyTrainerProfile {
+        myTrainerProfile {
+            id
+            bio
+            certifications
+            rating
+            user {
+                id
+                name
+                avatar
+                bio
+            }
+            services {
+                id
+                title
+                description
+                priceInLamports
+                priceInIdr
+                tokenMintAddress
+                isActive
+            }
+        }
+    }
+`
+
+export const GET_MY_CLIENT_BOOKINGS_QUERY = gql`
+    query MyClientBookings {
+        myClientBookings {
+            id
+            status
+            paymentType
+            txHash
+            escrowAddress
+            fiatAmount
+            servicePriceIdr
+            processingFeeIdr
+            gatewayPaymentMethod
+            disputeReason
+            scheduledStart
+            scheduledEnd
+            timezone
+            meetingLink
+            createdAt
+            updatedAt
+            trainer {
+                id
+                bio
+                user {
+                    id
+                    name
+                    avatar
+                }
+            }
+            service {
+                id
+                title
+                description
+                priceInLamports
+                priceInIdr
+                tokenMintAddress
+                isActive
+            }
+        }
+    }
+`
+
+export const GET_MY_TRAINER_BOOKINGS_QUERY = gql`
+    query MyTrainerBookings {
+        myTrainerBookings {
+            id
+            status
+            paymentType
+            txHash
+            escrowAddress
+            fiatAmount
+            servicePriceIdr
+            processingFeeIdr
+            gatewayPaymentMethod
+            disputeReason
+            scheduledStart
+            scheduledEnd
+            timezone
+            meetingLink
+            createdAt
+            updatedAt
+            client {
+                id
+                name
+                avatar
+                email
+            }
+            service {
+                id
+                title
+                description
+                priceInLamports
+                priceInIdr
+                tokenMintAddress
+                isActive
+            }
+        }
+    }
+`
+
+export const CREATE_BOOKING_MUTATION = gql`
+    mutation CreateBooking($input: CreateBookingInput!) {
+        createBooking(input: $input) {
+            id
+            status
+            paymentType
+            createdAt
+            trainerId
+            serviceId
+        }
+    }
+`
+
+export const UPDATE_BOOKING_STATUS_MUTATION = gql`
+    mutation UpdateBookingStatus($input: UpdateBookingStatusInput!) {
+        updateBookingStatus(input: $input) {
+            id
+            status
+            paymentType
+            updatedAt
+            disputeReason
+        }
+    }
+`
+
+export const CREATE_TRAINER_SERVICE_MUTATION = gql`
+    mutation CreateTrainerService($input: CreateTrainerServiceInput!) {
+        createTrainerService(input: $input) {
+            id
+            title
+            description
+            priceInLamports
+            priceInIdr
+            tokenMintAddress
+            isActive
+        }
+    }
+`
+
+export const UPDATE_TRAINER_SERVICE_MUTATION = gql`
+    mutation UpdateTrainerService($input: UpdateTrainerServiceInput!) {
+        updateTrainerService(input: $input) {
+            id
+            title
+            description
+            priceInLamports
+            priceInIdr
+            tokenMintAddress
+            isActive
+        }
+    }
+`
+
+export const REQUEST_FIAT_BOOKING_DEPOSIT_MUTATION = gql`
+    mutation RequestFiatBookingDeposit($input: RequestFiatDepositInput!) {
+        requestFiatBookingDeposit(input: $input) {
+            paymentUrl
+            transactionId
+            bookingId
+            totalAmount
+            fee
+        }
+    }
+`
+
+export const GET_MY_FIAT_WALLET_QUERY = gql`
+    query MyFiatWallet {
+        myFiatWallet {
+            id
+            trainerId
+            balanceIdr
+            updatedAt
+        }
+    }
+`
+
+export const GET_MY_WITHDRAWAL_REQUESTS_QUERY = gql`
+    query MyWithdrawalRequests {
+        myWithdrawalRequests {
+            id
+            trainerId
+            amountIdr
+            bankCode
+            accountNumber
+            accountName
+            paymentMethod
+            status
+            gatewayReference
+            requestedAt
+            processedAt
+            failureReason
+        }
+    }
+`
+
+export const REQUEST_FIAT_WITHDRAWAL_MUTATION = gql`
+    mutation RequestFiatWithdrawal($input: RequestWithdrawalInput!) {
+        requestFiatWithdrawal(input: $input) {
+            id
+            trainerId
+            amountIdr
+            bankCode
+            accountNumber
+            accountName
+            paymentMethod
+            status
+            gatewayReference
+            requestedAt
+            processedAt
+            failureReason
+        }
+    }
+`
+
+export const REGISTER_TRAINER_FIAT_MUTATION = gql`
+    mutation RegisterTrainerFiat($input: RegisterTrainerFiatInput!) {
+        registerTrainerFiat(input: $input) {
+            id
+            bio
+            certifications
+            user {
+                id
+                name
+                role
+            }
+        }
+    }
+`
+
+// ─── Trainer Availability ─────────────────────────────────────────────────
+
+export const GET_TRAINER_AVAILABILITY_RULES_QUERY = gql`
+    query GetTrainerAvailabilityRules($trainerId: Int!) {
+        getTrainerAvailabilityRules(trainerId: $trainerId) {
+            id
+            trainerId
+            dayOfWeek
+            specificDate
+            startTime
+            endTime
+            isAvailable
+            title
+            timezone
+            createdAt
+            updatedAt
+        }
+    }
+`
+
+export const GET_AVAILABLE_SLOTS_QUERY = gql`
+    query GetAvailableSlots($trainerId: Int!, $startDate: String!, $endDate: String!, $slotDurationMinutes: Int) {
+        getAvailableSlots(trainerId: $trainerId, startDate: $startDate, endDate: $endDate, slotDurationMinutes: $slotDurationMinutes) {
+            start
+            end
+            label
+        }
+    }
+`
+
+export const CREATE_AVAILABILITY_RULE_MUTATION = gql`
+    mutation CreateAvailabilityRule($input: CreateAvailabilityRuleInput!) {
+        createAvailabilityRule(input: $input) {
+            id
+            dayOfWeek
+            specificDate
+            startTime
+            endTime
+            isAvailable
+            title
+            timezone
+        }
+    }
+`
+
+export const UPDATE_AVAILABILITY_RULE_MUTATION = gql`
+    mutation UpdateAvailabilityRule($input: UpdateAvailabilityRuleInput!) {
+        updateAvailabilityRule(input: $input) {
+            id
+            startTime
+            endTime
+            isAvailable
+            title
+        }
+    }
+`
+
+export const DELETE_AVAILABILITY_RULE_MUTATION = gql`
+    mutation DeleteAvailabilityRule($ruleId: Int!) {
+        deleteAvailabilityRule(ruleId: $ruleId)
+    }
+`
+

@@ -5,8 +5,8 @@ import { Scale, Plus } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { calculateNutrientsForServing, formatNutrientValue, withServingSize } from "@/lib/food";
 import type { Food } from "@/types/food";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 type FoodDetailsProps = {
   food: Food | null;

@@ -4,7 +4,7 @@ import { Search, Clock3, X, ArrowRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Variants } from "framer-motion";
 import { useState } from "react";
-import { Input } from "@/components/ui/Input";
+import { Input } from "@/components/ui/input";
 
 type CookbookSearchProps = {
   query: string;

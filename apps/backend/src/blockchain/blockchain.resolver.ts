@@ -60,6 +60,10 @@ export class BlockchainResolver {
       throw new ForbiddenException('Trainer wallet address is not set');
     }
 
+    if (!booking.service.tokenMintAddress || !booking.service.priceInLamports) {
+      throw new ForbiddenException('This service does not support crypto payments');
+    }
+
     const { serializedTx, escrowAddress } = await this.txService.buildInitializeBookingTx({
       bookingId,
       clientWallet: booking.client.walletAddress,
@@ -111,6 +115,10 @@ export class BlockchainResolver {
       throw new ForbiddenException('Client and trainer wallet addresses must both be set');
     }
 
+    if (!booking.service.tokenMintAddress) {
+      throw new ForbiddenException('This service does not support crypto payments');
+    }
+
     const { serializedTx, escrowAddress } = await this.txService.buildReleaseTx({
       bookingId,
       clientWallet: booking.client.walletAddress,
@@ -148,6 +156,10 @@ export class BlockchainResolver {
     }
     if (!booking.client.walletAddress) {
       throw new ForbiddenException('Client wallet address is not set');
+    }
+
+    if (!booking.service.tokenMintAddress) {
+      throw new ForbiddenException('This service does not support crypto payments');
     }
 
     const { serializedTx, escrowAddress } = await this.txService.buildRefundTx({

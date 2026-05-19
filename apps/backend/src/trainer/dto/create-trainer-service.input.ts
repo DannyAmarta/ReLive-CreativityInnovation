@@ -1,5 +1,5 @@
 import { InputType, Field } from '@nestjs/graphql';
-import { IsString, IsNotEmpty, IsOptional, IsPositive, IsNumber } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsPositive, IsNumber, IsInt } from 'class-validator';
 
 @InputType()
 export class CreateTrainerServiceInput {
@@ -13,15 +13,21 @@ export class CreateTrainerServiceInput {
   @Field()
   description: string;
 
-  // Stored as a number representing the full lamport value (integer).
-  // Use string on the Rust side to avoid JS floating-point precision issues.
+  // Optional — if omitted the service is Fiat-only (no crypto booking button shown)
+  @IsOptional()
   @IsNumber()
   @IsPositive()
-  @Field()
-  priceInLamports: number;
+  @Field({ nullable: true })
+  priceInLamports?: number;
 
   @IsOptional()
   @IsString()
   @Field({ nullable: true })
   tokenMintAddress?: string;
+
+  @IsOptional()
+  @IsInt()
+  @IsPositive()
+  @Field({ nullable: true })
+  priceInIdr?: number;
 }

@@ -72,6 +72,26 @@ export class UserResolver {
     return this.userService.updateProfile(userId, input);
   }
 
+  @Mutation(() => User)
+  async changeMyRole(
+    @Args('role') role: string,
+    @Context() ctx: { req: { headers: Record<string, string> } },
+  ) {
+    const authHeader = ctx.req?.headers?.authorization ?? '';
+    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : authHeader;
+    if (!token) throw new UnauthorizedException('Not authenticated');
+
+    let userId: number;
+    try {
+      const payload = this.jwtService.verify<{ sub: number }>(token, { ignoreExpiration: true });
+      userId = payload.sub;
+    } catch {
+      throw new UnauthorizedException('Invalid token');
+    }
+
+    return this.userService.changeMyRole(userId, role);
+  }
+
   // This helper extracts the authenticated user's ID from the request context JWT.
   private extractUserIdFromContext(ctx: {
     req: { headers: Record<string, string> };

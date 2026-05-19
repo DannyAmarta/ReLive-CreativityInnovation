@@ -8,7 +8,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { SignInInput } from './dto/signInInput';
 import { hash, verify } from 'argon2';
-import { User } from '@prisma/client';
+import { User, Role } from '@prisma/client';
 import { AuthJwtPayload } from './types/auth-jwtPayload';
 import { JwtService } from '@nestjs/jwt';
 import { CreateUserInput } from '../user/dto/create-user.input';
@@ -94,9 +94,13 @@ export class AuthService {
   }
 
   // This function creates the access token that powers authenticated API calls.
-  // It is used by `login()` for both normal login and Google login handoff exchange.
+  // It includes the user's role so the frontend can gate UI without extra queries.
   async generateToken(userId: number) {
-    const payload: AuthJwtPayload = { sub: userId };
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true },
+    });
+    const payload: AuthJwtPayload = { sub: userId, role: user?.role ?? Role.USER };
     const accessToken = await this.jwtService.signAsync(payload);
     return { accessToken };
   }

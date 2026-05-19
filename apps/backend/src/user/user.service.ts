@@ -7,6 +7,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ConfigService } from '@nestjs/config';
 import { RequestEmailChangeInput } from './dto/request-email-change.input';
 import { UpdateProfileInput } from './dto/update-profile.input';
+import { Role } from '@prisma/client';
 
 import * as fs from 'fs';
 import * as path from 'path';
@@ -47,6 +48,56 @@ export class UserService {
       openRouterKeyLabel: user.openRouterKeyLabel,
       openRouterConnectedAt: user.openRouterConnectedAt,
     };
+  }
+
+  async changeMyRole(userId: number, nextRole: string) {
+    if (nextRole !== Role.USER && nextRole !== Role.TRAINER) {
+      throw new BadRequestException('Role must be USER or TRAINER');
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      const currentUser = await tx.user.findUnique({
+        where: { id: userId },
+      });
+
+      if (!currentUser) {
+        throw new UnauthorizedException('User not found');
+      }
+
+      const updatedUser = await tx.user.update({
+        where: { id: userId },
+        data: { role: nextRole },
+      });
+
+      if (nextRole === Role.TRAINER) {
+        await tx.trainerProfile.upsert({
+          where: { userId },
+          update: {},
+          create: {
+            userId,
+            bio: currentUser.bio ?? 'Dev role switch trainer profile.',
+            certifications: [],
+            rating: 0,
+          },
+        });
+
+        await tx.fiatWallet.upsert({
+          where: { trainerId: userId },
+          update: {},
+          create: {
+            trainerId: userId,
+            balanceIdr: 0,
+          },
+        });
+      }
+
+      return {
+        ...updatedUser,
+        hasOpenRouterConnection: Boolean(updatedUser.openRouterApiKeyEncrypted),
+        openRouterKeyLabel: updatedUser.openRouterKeyLabel,
+        openRouterConnectedAt: updatedUser.openRouterConnectedAt,
+      };
+    });
   }
 
   // This function updates the display name and/or bio for the currently authenticated user.

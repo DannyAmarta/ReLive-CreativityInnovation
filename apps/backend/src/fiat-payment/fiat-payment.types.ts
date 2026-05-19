@@ -2,9 +2,10 @@ export type DuitkuCreateInvoiceResponse = {
   merchantCode: string;
   reference: string;
   paymentUrl: string;
-  amount: number;
-  resultCode: string;
-  resultMessage: string;
+  amount: string; // The API returns amount as a string (e.g. "496568")
+  statusCode: string;
+  statusMessage: string;
+  vaNumber?: string;
   transIdMerchant?: string;
 };
 

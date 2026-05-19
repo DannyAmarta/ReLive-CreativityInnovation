@@ -2,17 +2,17 @@
 
 export function SetHero() {
   return (
-    <div className="space-y-4 text-center">
-      <div className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-amber-700">
+    <div className="space-y-5 text-center">
+      <div className="inline-flex items-center gap-2 rounded-full bg-sage-100/60 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-sage-800">
+        <span className="h-1.5 w-1.5 rounded-full bg-terracotta-400" />
         Set Lab
       </div>
-      <div className="space-y-3">
-        <h1 className="text-4xl font-semibold tracking-tight text-stone-950 sm:text-5xl">
-          Log a set, preview your strength, and build the next routine.
+      <div className="space-y-4">
+        <h1 className="font-serif text-4xl font-medium tracking-tight text-olive-900 sm:text-5xl">
+          Log a set, uncover your strength, and shape the next session.
         </h1>
-        <p className="mx-auto max-w-2xl text-sm leading-7 text-stone-600 sm:text-base">
-          Choose a movement, record what you just did, and turn it into a safer
-          next session in one flow.
+        <p className="mx-auto max-w-2xl font-sans text-base leading-relaxed text-stone-600">
+          Pick an exercise, record your set, and get a smart recommendation for what comes next.
         </p>
       </div>
     </div>

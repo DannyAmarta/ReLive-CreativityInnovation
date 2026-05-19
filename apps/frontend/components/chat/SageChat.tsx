@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, X, Send, User } from "lucide-react";
 
@@ -10,6 +10,12 @@ export function SageChat({ user }: { user: any }) {
   const [messages, setMessages] = useState([
     { role: "assistant", content: `Greetings, ${user.name}. I am Sage. How shall we curate your wellness archive today?` }
   ]);
+
+  useEffect(() => {
+    const handleOpenSage = () => setIsOpen(true);
+    window.addEventListener("open-sage-chat", handleOpenSage);
+    return () => window.removeEventListener("open-sage-chat", handleOpenSage);
+  }, []);
 
   const handleSend = async () => {
     if (!input.trim()) return;

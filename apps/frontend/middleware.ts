@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { decodeJwt, jwtVerify } from "jose";
+import { jwtVerify } from "jose";
 
 // Routes that do NOT require authentication
 const PUBLIC_PATHS = [
@@ -37,18 +37,9 @@ export async function middleware(req: NextRequest) {
 
   try {
     // Verify the session cookie signature and expiry
-    const { payload } = await jwtVerify(sessionCookie, encodedKey, {
+    await jwtVerify(sessionCookie, encodedKey, {
       algorithms: ["HS256"],
     });
-
-    const accessToken =
-      typeof payload.accessToken === "string" ? payload.accessToken : "";
-
-    if (isAccessTokenExpired(accessToken)) {
-      const res = NextResponse.redirect(new URL("/auth/login", req.url));
-      res.cookies.set("session", "", { maxAge: 0, path: "/" });
-      return res;
-    }
 
     return NextResponse.next();
   } catch {
@@ -56,20 +47,6 @@ export async function middleware(req: NextRequest) {
     const res = NextResponse.redirect(new URL("/auth/login", req.url));
     res.cookies.set("session", "", { maxAge: 0, path: "/" });
     return res;
-  }
-}
-
-function isAccessTokenExpired(accessToken: string) {
-  try {
-    const decoded = decodeJwt(accessToken);
-
-    if (typeof decoded.exp !== "number") {
-      return true;
-    }
-
-    return decoded.exp * 1000 <= Date.now();
-  } catch {
-    return true;
   }
 }
 

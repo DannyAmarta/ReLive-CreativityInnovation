@@ -30,6 +30,7 @@ type User {
   id: Int!
   name: String!
   email: String!
+  role: String!
   bio: String
   avatar: String
   profileCompleted: Boolean!
@@ -282,8 +283,9 @@ type TrainerService {
   trainer: TrainerProfile
   title: String!
   description: String!
-  priceInLamports: Float!
-  tokenMintAddress: String!
+  priceInLamports: Float
+  priceInIdr: Int
+  tokenMintAddress: String
   isActive: Boolean!
   createdAt: DateTime!
   updatedAt: DateTime!
@@ -313,10 +315,36 @@ type Booking {
   serviceId: Int!
   service: TrainerService
   status: String!
+  paymentType: String
   txHash: String
   escrowAddress: String
+  fiatAmount: Int
+  servicePriceIdr: Int
+  processingFeeIdr: Int
+  gatewayPaymentMethod: String
+  disputeReason: String
   createdAt: DateTime!
   updatedAt: DateTime!
+}
+
+type TrainerAvailabilityModel {
+  id: Int!
+  trainerId: Int!
+  dayOfWeek: Int
+  specificDate: DateTime
+  startTime: String!
+  endTime: String!
+  isAvailable: Boolean!
+  title: String
+  timezone: String!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type AvailableSlot {
+  start: DateTime!
+  end: DateTime!
+  label: String!
 }
 
 type FiatDepositResponse {
@@ -366,9 +394,13 @@ type Query {
   setPerformanceAnalytics(exerciseId: String!, days: Int = 14): SetPerformanceAnalytics!
   getTrainerProfiles: [TrainerProfile!]!
   getTrainerProfile(id: Int!): TrainerProfile!
+  myTrainerProfile: TrainerProfile!
   myClientBookings: [Booking!]!
   myTrainerBookings: [Booking!]!
+  getTrainerAvailabilityRules(trainerId: Int!): [TrainerAvailabilityModel!]!
+  getAvailableSlots(trainerId: Int!, startDate: String!, endDate: String!, slotDurationMinutes: Int! = 60): [AvailableSlot!]!
   myFiatWallet: FiatWalletEntity!
+  myWithdrawalRequests: [WithdrawalRequestEntity!]!
 }
 
 input CalculateSetInput {
@@ -388,19 +420,25 @@ type Mutation {
   resetPassword(resetInput: ResetPasswordDto!): ForgotResetPassword!
   exchangeOpenRouterCode(input: ExchangeOpenRouterCodeInput!): OpenRouterConnectionPayload!
   disconnectOpenRouter: OpenRouterConnectionPayload!
+  devRefreshSession: AuthPayload!
   register(createUserInput: CreateUserInput!): RegisterResponse!
   requestEmailChange(input: RequestEmailChangeInput!): RequestEmailChangeResponse!
   verifyEmailChange(token: String!): VerifyEmailChangeResponse!
   updateProfile(input: UpdateProfileInput!): User!
+  changeMyRole(role: String!): User!
   logWorkoutSet(input: LogWorkoutSetInput!): LoggedWorkoutSetPayload!
   generateWorkoutRecommendation(input: GeneratePlanDto!): GeneratedWorkoutPlanEntity!
   analyzeFeatureThreats(input: FeatureAnalysisDto!): FeatureThreatAnalysisEntity!
   createTrainerProfile(input: CreateTrainerProfileInput!): TrainerProfile!
   upgradeToTrainer(input: UpgradeToTrainerInput!): TrainerProfile!
+  registerTrainerFiat(input: RegisterTrainerFiatInput!): TrainerProfile!
   createTrainerService(input: CreateTrainerServiceInput!): TrainerService!
   updateTrainerService(input: UpdateTrainerServiceInput!): TrainerService!
   createBooking(input: CreateBookingInput!): Booking!
   updateBookingStatus(input: UpdateBookingStatusInput!): Booking!
+  createAvailabilityRule(input: CreateAvailabilityRuleInput!): TrainerAvailabilityModel!
+  updateAvailabilityRule(input: UpdateAvailabilityRuleInput!): TrainerAvailabilityModel!
+  deleteAvailabilityRule(ruleId: Int!): Boolean!
   requestFiatBookingDeposit(input: RequestFiatDepositInput!): FiatDepositResponse!
   requestFiatWithdrawal(input: RequestWithdrawalInput!): WithdrawalRequestEntity!
   adminRefundFiatBooking(bookingId: Float!): Boolean!
@@ -493,11 +531,17 @@ input UpgradeToTrainerInput {
   payoutMintAddress: String!
 }
 
+input RegisterTrainerFiatInput {
+  bio: String!
+  certifications: [String!]! = []
+}
+
 input CreateTrainerServiceInput {
   title: String!
   description: String!
-  priceInLamports: Float!
+  priceInLamports: Float
   tokenMintAddress: String
+  priceInIdr: Float
 }
 
 input UpdateTrainerServiceInput {
@@ -505,12 +549,16 @@ input UpdateTrainerServiceInput {
   title: String
   description: String
   priceInLamports: Float
+  priceInIdr: Float
   isActive: Boolean
 }
 
 input CreateBookingInput {
   trainerId: Int!
   serviceId: Int!
+  scheduledStart: String!
+  scheduledEnd: String!
+  timezone: String
 }
 
 input UpdateBookingStatusInput {
@@ -519,8 +567,27 @@ input UpdateBookingStatusInput {
   disputeReason: String
 }
 
+input CreateAvailabilityRuleInput {
+  dayOfWeek: Int
+  specificDate: String
+  startTime: String!
+  endTime: String!
+  isAvailable: Boolean! = true
+  title: String
+  timezone: String! = "Asia/Jakarta"
+}
+
+input UpdateAvailabilityRuleInput {
+  id: Int!
+  startTime: String
+  endTime: String
+  isAvailable: Boolean
+  title: String
+}
+
 input RequestFiatDepositInput {
   bookingId: Int!
+  paymentMethodCode: String
 }
 
 input RequestWithdrawalInput {

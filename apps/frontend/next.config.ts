@@ -13,7 +13,6 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'www.themealdb.com',
       },
-      // If Spoonacular uses subdomains for images, add this too:
       {
         protocol: 'https',
         hostname: 'img.spoonacular.com',
@@ -21,13 +20,16 @@ const nextConfig: NextConfig = {
     ],
   },
 
-  // 2. Your existing Webpack SVG config
-  webpack(config) { // TypeScript now infers 'config' from NextConfig
+  // 2. Turbopack config (empty silences the webpack vs turbopack conflict warning)
+  turbopack: {},
+
+  // 3. Your existing Webpack SVG config (used in webpack mode only)
+  webpack(config) {
     const fileLoaderRule = config.module.rules.find((rule: any) =>
       rule.test?.test?.(".svg")
     );
 
-    if (!fileLoaderRule) return config; // Safety check
+    if (!fileLoaderRule) return config;
 
     config.module.rules.push(
       {
@@ -48,7 +50,7 @@ const nextConfig: NextConfig = {
     return config;
   },
 
-  // 3. Your existing optimization settings
+  // 4. Optimization settings
   experimental: {
     optimizePackageImports: [
       "framer-motion",

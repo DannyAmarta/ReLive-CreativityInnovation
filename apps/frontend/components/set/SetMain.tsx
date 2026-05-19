@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence } from "framer-motion";
-import { Card, CardContent } from "@/components/ui/Card";
+import { Card, CardContent } from "@/components/ui/card";
 import { useSetManager } from "@/hooks/features/set/useSetManager";
 import {
   calculateBrzyckiPreview,
@@ -35,70 +35,89 @@ export function SetMain({ initialExercises }: SetExperienceProps) {
     states,
     status,
     actions,
-    validation, // 1. Added validation destructure
+    validation,
   } = useSetManager(initialExercises);
 
-  // 2. Fixed params for calculateBrzyckiPreview
-  const previewOneRepMaxKg = isCardio 
-    ? null 
-    : calculateBrzyckiPreview(
-        parseOptionalNumber(form.weightKg),
-        parseOptionalNumber(form.reps),
-        parseOptionalNumber(form.rir)
-      );
+  const weightNum = parseOptionalNumber(form.weightKg);
+  const repsNum = parseOptionalNumber(form.reps);
+  const rirNum = parseOptionalNumber(form.rir);
+
+  const isValid =
+    weightNum != null &&
+    repsNum != null &&
+    rirNum != null &&
+    weightNum > 0 &&
+    repsNum > 0;
+
+  const previewOneRepMaxKg = isValid
+    ? calculateBrzyckiPreview(weightNum, repsNum, rirNum)
+    : null;
 
   const previewTrainingMaxKg = calculateTrainingMaxPreview(previewOneRepMaxKg);
 
   return (
-    <div className="relative overflow-hidden bg-[radial-gradient(circle_at_top_left,rgba(253,230,138,0.4),transparent_26%),radial-gradient(circle_at_bottom_right,rgba(125,211,252,0.22),transparent_30%),linear-gradient(180deg,#fffdf7_0%,#fffaf0_46%,#ffffff_100%)] text-stone-950">
+    <div className="relative min-h-screen overflow-hidden bg-cream-50 bg-[radial-gradient(circle_at_top_left,_rgba(138,154,107,0.08)_0%,_transparent_50%),_radial-gradient(circle_at_bottom_right,_rgba(199,122,90,0.06)_0%,_transparent_60%)] text-stone-900">
       <SetPearlBackground />
 
-      <div className="relative mx-auto flex min-h-screen w-full max-w-4xl flex-col px-4 py-8 sm:px-6 lg:px-8">
+      <div className="relative mx-auto flex w-full max-w-5xl flex-col px-4 py-8 sm:px-6 lg:px-8">
         <AnimatePresence>
-          {notice ? (
+          {notice && (
             <FloatingNotice
               kind={notice.kind}
               message={notice.message}
               onClose={() => setNotice(null)}
             />
-          ) : null}
+          )}
         </AnimatePresence>
 
-        <Card className="border-white/80 bg-white/88">
+        <Card className="border-sage-100/50 bg-white/90 shadow-sm backdrop-blur-[2px]">
           <CardContent className="space-y-8 p-6 sm:p-8">
             <SetHero />
 
             <SetControls
-              {...form} 
+              {...form}
               exercises={exercises}
               selectedExerciseDescription={selectedExercise?.description}
               category={category}
               isCardio={isCardio}
               previewOneRepMaxKg={previewOneRepMaxKg}
-              previewTrainingMaxKg={previewTrainingMaxKg} // 3. Fixed variable name
-              
+              previewTrainingMaxKg={previewTrainingMaxKg}
               isPending={status.isPending}
               isLogging={status.isLogging}
               isGeneratingRecommendation={status.isGeneratingRecommendation}
-              
-              // 4. Mapped validation data
               canRefreshEstimate={validation.estimateValidation?.success}
               canSaveSet={validation.calculatorValidation?.success}
               canBuildRoutine={validation.recommendationValidation?.success}
-              calculatorErrors={validation.calculatorValidation?.success ? undefined : validation.calculatorValidation?.error.flatten().fieldErrors}
-              recommendationErrors={validation.recommendationValidation?.success ? undefined : validation.recommendationValidation?.error.flatten().fieldErrors}
-              
+              calculatorErrors={
+                validation.calculatorValidation?.success
+                  ? undefined
+                  : validation.calculatorValidation?.error.flatten().fieldErrors
+              }
+              recommendationErrors={
+                validation.recommendationValidation?.success
+                  ? undefined
+                  : validation.recommendationValidation?.error.flatten()
+                      .fieldErrors
+              }
               onExerciseChange={actions.handleExerciseChange}
               onWeightKgChange={(v) => actions.updateField("weightKg", v)}
               onRepsChange={(v) => actions.updateField("reps", v)}
               onRirChange={(v) => actions.updateField("rir", v)}
-              onDurationMinutesChange={(v) => actions.updateField("durationMinutes", v)}
-              onDistanceMetersChange={(v) => actions.updateField("distanceMeters", v)}
+              onDurationMinutesChange={(v) =>
+                actions.updateField("durationMinutes", v)
+              }
+              onDistanceMetersChange={(v) =>
+                actions.updateField("distanceMeters", v)
+              }
               onRpeChange={(v) => actions.updateField("rpe", v)}
               onNotesChange={(v) => actions.updateField("notes", v)}
-              onPhaseGoalChange={(v) => actions.updateField("phaseGoal", v as RecommendationPhaseGoal)}
+              onPhaseGoalChange={(v) =>
+                actions.updateField("phaseGoal", v as RecommendationPhaseGoal)
+              }
               onDaysChange={(v) => actions.updateField("days", v)}
-              onTrainingDaysPerWeekChange={(v) => actions.updateField("trainingDaysPerWeek", v)}
+              onTrainingDaysPerWeekChange={(v) =>
+                actions.updateField("trainingDaysPerWeek", v)
+              }
               onTargetSetsChange={(v) => actions.updateField("targetSets", v)}
               onTargetRepsChange={(v) => actions.updateField("targetReps", v)}
               onRefreshEstimate={actions.refreshEstimate}

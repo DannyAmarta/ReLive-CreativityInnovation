@@ -11,6 +11,7 @@ import { CreateBookingInput } from './dto/create-booking.input';
 import { UpgradeToTrainerInput } from './dto/upgrade-to-trainer.input';
 import { UpdateTrainerServiceInput } from './dto/update-trainer-service.input';
 import { UpdateBookingStatusInput } from './dto/update-booking-status.input';
+import { RegisterTrainerFiatInput } from './dto/register-trainer-fiat.input';
 import { PrismaService } from '../prisma/prisma.service';
 import { Role } from '@prisma/client';
 
@@ -56,6 +57,13 @@ export class TrainerResolver {
     return this.trainerService.getTrainerProfile(id);
   }
 
+  @Query(() => TrainerProfile)
+  async myTrainerProfile(@Context() ctx: { req: { headers: Record<string, string> } }) {
+    const userId = this.extractUserIdFromContext(ctx);
+    await this.requireRole(userId, Role.TRAINER);
+    return this.trainerService.getMyTrainerProfile(userId);
+  }
+
   @Query(() => [Booking])
   async myClientBookings(@Context() ctx: { req: { headers: Record<string, string> } }) {
     const userId = this.extractUserIdFromContext(ctx);
@@ -90,6 +98,15 @@ export class TrainerResolver {
     // No pre-check here — eliminates the TOCTOU race condition.
     const userId = this.extractUserIdFromContext(ctx);
     return this.trainerService.upgradeToTrainer(userId, input);
+  }
+
+  @Mutation(() => TrainerProfile)
+  async registerTrainerFiat(
+    @Context() ctx: { req: { headers: Record<string, string> } },
+    @Args('input') input: RegisterTrainerFiatInput,
+  ) {
+    const userId = this.extractUserIdFromContext(ctx);
+    return this.trainerService.registerTrainerFiat(userId, input);
   }
 
   @Mutation(() => TrainerService)

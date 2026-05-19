@@ -16,8 +16,11 @@ import { CreateBookingInput } from './dto/create-booking.input';
 import { UpgradeToTrainerInput } from './dto/upgrade-to-trainer.input';
 import { UpdateTrainerServiceInput } from './dto/update-trainer-service.input';
 import { UpdateBookingStatusInput } from './dto/update-booking-status.input';
+import { RegisterTrainerFiatInput } from './dto/register-trainer-fiat.input';
 import { Role, BookingStatus } from '@prisma/client';
 import { FiatPaymentService } from '../fiat-payment/fiat-payment.service';
+import { NotificationService } from '../core/notification.service';
+import { TrainerAvailabilityService } from './trainer-availability.service';
 
 // ─── Booking State Machine (RBAC) ────────────────────────────────────────────
 // TRAINER: PENDING  → ACTIVE | CANCELLED
@@ -45,6 +48,8 @@ export class TrainerService {
     private prisma: PrismaService,
     private configService: ConfigService,
     private fiatPaymentService: FiatPaymentService,
+    private notificationService: NotificationService,
+    private availabilityService: TrainerAvailabilityService,
   ) {}
 
   // ─── Security: Strip sensitive fields from User objects ───────────────────
@@ -83,6 +88,15 @@ export class TrainerService {
   async getTrainerProfile(id: number) {
     const profile = await this.prisma.trainerProfile.findUnique({
       where: { id },
+      include: { user: true, services: true },
+    });
+    if (!profile) throw new NotFoundException('Trainer profile not found');
+    return this.sanitizeProfile(profile);
+  }
+
+  async getMyTrainerProfile(userId: number) {
+    const profile = await this.prisma.trainerProfile.findUnique({
+      where: { userId },
       include: { user: true, services: true },
     });
     if (!profile) throw new NotFoundException('Trainer profile not found');
@@ -139,6 +153,48 @@ export class TrainerService {
     }
   }
 
+  // ─── Fiat-only trainer registration (no Solana wallet required) ───────────
+  async registerTrainerFiat(userId: number, input: RegisterTrainerFiatInput) {
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        const user = await tx.user.findUnique({ where: { id: userId } });
+        if (!user) throw new NotFoundException('User not found');
+        if (user.role === Role.TRAINER) {
+          throw new ConflictException('You are already a trainer');
+        }
+
+        await tx.user.update({
+          where: { id: userId },
+          data: { role: Role.TRAINER },
+        });
+
+        const profile = await tx.trainerProfile.create({
+          data: {
+            userId,
+            bio: input.bio,
+            certifications: input.certifications ?? [],
+            // No wallet/ATA fields — fiat-only trainer
+          },
+          include: { user: true },
+        });
+
+        // Auto-create fiat wallet so they can receive IDR payments immediately
+        await tx.fiatWallet.upsert({
+          where: { trainerId: userId },
+          create: { trainerId: userId, balanceIdr: 0 },
+          update: {},
+        });
+
+        return this.sanitizeProfile(profile);
+      });
+    } catch (err) {
+      if ((err as any)?.code === 'P2002') {
+        throw new ConflictException('Trainer profile already exists for this account');
+      }
+      throw err;
+    }
+  }
+
   private async assertPayoutAtaExists(
     walletAddress: string,
     payoutAtaAddress: string,
@@ -172,23 +228,39 @@ export class TrainerService {
   async createTrainerService(userId: number, input: CreateTrainerServiceInput) {
     const profile = await this.prisma.trainerProfile.findUnique({ where: { userId } });
     if (!profile) throw new NotFoundException('Create a trainer profile first');
-    if (!profile.payoutAtaAddress || !profile.payoutMintAddress) {
-      throw new ForbiddenException('Initialize and register your payout ATA before listing services');
-    }
-    const tokenMintAddress = input.tokenMintAddress ?? profile.payoutMintAddress;
-    if (tokenMintAddress !== profile.payoutMintAddress) {
-      throw new ForbiddenException('Service mint must match the payout ATA mint registered during onboarding');
+
+    // Must have at least one payment option set
+    if (!input.priceInLamports && !input.priceInIdr) {
+      throw new BadRequestException('Set at least a Crypto price (Token price) or a Fiat price (IDR) for the service');
     }
 
-    return this.prisma.trainerService.create({
+    // Crypto: only enforce mint match if a crypto price is being set
+    const tokenMintAddress = input.priceInLamports
+      ? (input.tokenMintAddress ?? profile.payoutMintAddress ?? 'So11111111111111111111111111111111111111112')
+      : null;
+
+    const service = await this.prisma.trainerService.create({
       data: {
         trainerId: profile.id,
         title: input.title,
         description: input.description,
-        priceInLamports: input.priceInLamports,
+        priceInLamports: input.priceInLamports ?? null,
+        priceInIdr: input.priceInIdr ?? null,
         tokenMintAddress,
       },
     });
+
+    // Auto-create a FiatWallet ledger row for this trainer if it doesn't exist yet,
+    // so fiat earnings are captured the moment the first client pays.
+    if (input.priceInIdr) {
+      await this.prisma.fiatWallet.upsert({
+        where: { trainerId: userId },
+        create: { trainerId: userId, balanceIdr: 0 },
+        update: {},
+      });
+    }
+
+    return service;
   }
 
   async getTrainerServices(trainerId: number) {
@@ -211,6 +283,7 @@ export class TrainerService {
         title: input.title,
         description: input.description,
         priceInLamports: input.priceInLamports ?? undefined,
+        priceInIdr: input.priceInIdr ?? undefined,
         isActive: input.isActive,
       },
     });
@@ -230,15 +303,47 @@ export class TrainerService {
       throw new BadRequestException('You cannot book your own trainer service');
     }
 
+    const scheduledStart = new Date(input.scheduledStart);
+    const scheduledEnd = new Date(input.scheduledEnd);
+    
+    // Assert no conflicts before proceeding
+    await this.availabilityService.assertNoSchedulingConflict(
+      input.trainerId,
+      scheduledStart,
+      scheduledEnd,
+    );
+
     const booking = await this.prisma.booking.create({
       data: {
         clientId,
         trainerId: input.trainerId,
         serviceId: input.serviceId,
         status: BookingStatus.PENDING,
+        scheduledStart,
+        scheduledEnd,
+        timezone: input.timezone ?? 'Asia/Jakarta',
       },
       include: { trainer: { include: { user: true } }, service: true, client: true },
     });
+
+    // ── Notify the trainer that a new booking was requested ──────────────
+    try {
+      const formattedDate = new Intl.DateTimeFormat('en-US', {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+        timeZone: input.timezone ?? 'Asia/Jakarta',
+      }).format(scheduledStart);
+
+      await this.notificationService.create({
+        userId: booking.trainer.user.id,
+        title: '📅 New Booking Request',
+        body: `${booking.client?.name ?? 'A client'} has requested "${booking.service.title}" for ${formattedDate}. Review and accept it from your Bookings page.`,
+        link: '/trainer/bookings',
+      });
+    } catch (err) {
+      this.logger.warn(`Failed to send new-booking notification: ${(err as Error).message}`);
+    }
+
     return this.sanitizeBooking(booking);
   }
 
@@ -346,8 +451,6 @@ export class TrainerService {
     });
 
     // ─── FIX #2 & #7: Fiat payment hooks on status transitions ────────────
-    // When a fiat booking is COMPLETED, credit the trainer's wallet.
-    // When a fiat booking is CANCELLED, mark payment transactions as refunded.
     try {
       if (input.status === BookingStatus.COMPLETED) {
         await this.fiatPaymentService.creditTrainerOnCompletion(input.bookingId);
@@ -355,11 +458,69 @@ export class TrainerService {
         await this.fiatPaymentService.handleFiatBookingCancellation(input.bookingId);
       }
     } catch (err) {
-      // Log but don't fail the booking transition — the booking status is already
-      // updated, and the fiat ledger can be reconciled manually if needed.
       this.logger.error(
         `Fiat payment hook failed for booking ${input.bookingId}: ${(err as Error).message}`,
       );
+    }
+
+    // ─── Notify affected parties of the status change ────────────────────
+    try {
+      const serviceName = updated.service.title;
+      const clientId   = updated.clientId;
+      const trainerUserId = updated.trainer.user.id;
+
+      if (input.status === BookingStatus.ACTIVE) {
+        // Trainer accepted → notify client
+        await this.notificationService.create({
+          userId: clientId,
+          title: '✅ Booking Accepted',
+          body: `Your booking for "${serviceName}" has been accepted. Your session is now active!`,
+          link: '/client/dashboard',
+        });
+      } else if (input.status === BookingStatus.COMPLETED) {
+        // Completed → notify client and trainer
+        await this.notificationService.createMany([
+          {
+            userId: clientId,
+            title: '🎉 Session Completed',
+            body: `Your session for "${serviceName}" has been marked as complete. Thank you for training with us!`,
+            link: '/client/dashboard',
+          },
+          {
+            userId: trainerUserId,
+            title: '💰 Earnings Credited',
+            body: `The session "${serviceName}" is complete and your earnings have been credited to your wallet.`,
+            link: '/trainer/wallet',
+          },
+        ]);
+      } else if (input.status === BookingStatus.CANCELLED) {
+        // Cancelled → notify the other party
+        if (user.role === Role.TRAINER) {
+          await this.notificationService.create({
+            userId: clientId,
+            title: '❌ Booking Cancelled',
+            body: `Your booking for "${serviceName}" was cancelled by the trainer.`,
+            link: '/client/dashboard',
+          });
+        } else {
+          await this.notificationService.create({
+            userId: trainerUserId,
+            title: '❌ Booking Cancelled',
+            body: `A client cancelled their booking for "${serviceName}".`,
+            link: '/trainer/bookings',
+          });
+        }
+      } else if (input.status === BookingStatus.DISPUTED) {
+        // Dispute raised → notify trainer
+        await this.notificationService.create({
+          userId: trainerUserId,
+          title: '⚠️ Dispute Raised',
+          body: `A client has raised a dispute for the session "${serviceName}". Our team will review it shortly.`,
+          link: '/trainer/bookings',
+        });
+      }
+    } catch (err) {
+      this.logger.warn(`Notification hook failed for booking ${input.bookingId}: ${(err as Error).message}`);
     }
 
     return this.sanitizeBooking(updated);

@@ -8,12 +8,19 @@ type GraphqlErrorPayload = {
 export class GraphqlRequestError extends Error {
     responseStatus: number;
     graphqlErrors: GraphqlErrorPayload[];
+    isAuthenticationFailure: boolean;
 
-    constructor(message: string, responseStatus: number, graphqlErrors: GraphqlErrorPayload[]) {
+    constructor(
+        message: string,
+        responseStatus: number,
+        graphqlErrors: GraphqlErrorPayload[],
+        isAuthenticationFailure = false,
+    ) {
         super(message);
         this.name = "GraphqlRequestError";
         this.responseStatus = responseStatus;
         this.graphqlErrors = graphqlErrors;
+        this.isAuthenticationFailure = isAuthenticationFailure;
     }
 }
 
@@ -21,7 +28,16 @@ export function isGraphqlRequestError(error: unknown): error is GraphqlRequestEr
     return error instanceof GraphqlRequestError;
 }
 
-export const fetchGraphql = async <T = any>(query: string, variables?: {}): Promise<T> => {
+export function isAuthenticationGraphqlError(
+    error: unknown,
+): error is GraphqlRequestError {
+    return error instanceof GraphqlRequestError && error.isAuthenticationFailure;
+}
+
+export const fetchGraphql = async <T = unknown>(
+    query: string,
+    variables?: Record<string, unknown>,
+): Promise<T> => {
     let response: Response;
 
     try {
@@ -44,18 +60,33 @@ export const fetchGraphql = async <T = any>(query: string, variables?: {}): Prom
 
     if (!response.ok || result.payload?.errors?.length) {
         const graphqlErrors = result.payload?.errors ?? [];
-        console.error('Graphql Error:', graphqlErrors);
+        const authenticationFailure = isAuthenticationFailure(
+            response.status,
+            graphqlErrors,
+            result.errorMessage,
+        );
+
+        if (authenticationFailure) {
+            console.warn('Graphql Auth Warning:', graphqlErrors);
+        } else {
+            console.error('Graphql Error:', graphqlErrors);
+        }
+
         throw new GraphqlRequestError(
             result.errorMessage ?? `GraphQL request failed with status ${response.status}.`,
             response.status,
             graphqlErrors,
+            authenticationFailure,
         );
     }
 
     return result.payload?.data as T;
 }
 
-export const authFetchGraphql = async <T = any>(query: string, variables?: {}): Promise<T> => {
+export const authFetchGraphql = async <T = unknown>(
+    query: string,
+    variables?: Record<string, unknown>,
+): Promise<T> => {
     // The authenticated helper is server-only because it depends on cookies.
     // We import the session helper lazily so plain client-side GraphQL fetches
     // can still bundle safely.
@@ -84,11 +115,23 @@ export const authFetchGraphql = async <T = any>(query: string, variables?: {}): 
 
     if (!response.ok || result.payload?.errors?.length) {
         const graphqlErrors = result.payload?.errors ?? [];
-        console.error('Graphql Error:', graphqlErrors);
+        const authenticationFailure = isAuthenticationFailure(
+            response.status,
+            graphqlErrors,
+            result.errorMessage,
+        );
+
+        if (authenticationFailure) {
+            console.warn('Graphql Auth Warning:', graphqlErrors);
+        } else {
+            console.error('Graphql Error:', graphqlErrors);
+        }
+
         throw new GraphqlRequestError(
             result.errorMessage ?? `GraphQL request failed with status ${response.status}.`,
             response.status,
             graphqlErrors,
+            authenticationFailure,
         );
     }
 
@@ -134,4 +177,28 @@ function getNetworkErrorMessage(error: unknown) {
     }
 
     return `Unable to reach the backend at ${BACKEND_URL}.`;
+}
+
+function isAuthenticationFailure(
+    responseStatus: number,
+    graphqlErrors: GraphqlErrorPayload[],
+    errorMessage: string | null,
+) {
+    if (responseStatus === 401) {
+        return true;
+    }
+
+    const messages = [
+        errorMessage,
+        ...graphqlErrors.map((error) => error.message),
+    ]
+        .filter((message): message is string => typeof message === "string")
+        .map((message) => message.toLowerCase());
+
+    return messages.some(
+        (message) =>
+            message.includes("not authenticated") ||
+            message.includes("invalid or expired token") ||
+            message.includes("unauthorized"),
+    );
 }

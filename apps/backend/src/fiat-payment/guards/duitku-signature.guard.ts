@@ -1,6 +1,6 @@
 import { Injectable, CanActivate, ExecutionContext, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { generateSignature } from '../fiat-payment.utils';
+import { createHash } from 'crypto';
 
 @Injectable()
 export class DuitkuSignatureGuard implements CanActivate {
@@ -8,22 +8,31 @@ export class DuitkuSignatureGuard implements CanActivate {
 
   canActivate(context: ExecutionContext): boolean {
     const req = context.switchToHttp().getRequest();
-    const body = req.body;
-    //lowercase work katanya sih 
-    const signature = req.headers['x-signature'];
+    const body = req.body as {
+      merchantCode?: string;
+      amount?: string | number;
+      merchantOrderId?: string;
+      signature?: string;
+    };
 
-    if (!signature) {
-      throw new BadRequestException('Missing signature');
+    // Duitku sends the signature inside the request body, not as a header.
+    // Format: MD5(merchantCode + amount + merchantOrderId + apiKey)
+    const incomingSignature = body.signature;
+    if (!incomingSignature) {
+      throw new BadRequestException('Missing webhook signature');
     }
 
     const merchantCode = this.configService.get<string>('DUITKU_MERCHANT_CODE') ?? '';
     const apiKey = this.configService.get<string>('DUITKU_API_KEY') ?? '';
-    const amount = body.amount;
-    const merchantOrderId = body.merchantOrderId;
+    const amount = String(body.amount ?? '');
+    const merchantOrderId = String(body.merchantOrderId ?? '');
 
-    const expectedSignature = generateSignature(merchantCode, amount, merchantOrderId, apiKey);
-    if (signature !== expectedSignature) {
-      throw new BadRequestException('Invalid signature');
+    const expectedSignature = createHash('md5')
+      .update(merchantCode + amount + merchantOrderId + apiKey)
+      .digest('hex');
+
+    if (incomingSignature !== expectedSignature) {
+      throw new BadRequestException('Invalid webhook signature');
     }
     return true;
   }

@@ -10,7 +10,7 @@ import {
   Sparkles,
   Waves,
 } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/Card";
+import { Card, CardContent } from "@/components/ui/card";
 import { formatMetric } from "@/lib/set/forms";
 import type {
   GeneratedWorkoutPlan,
@@ -43,25 +43,25 @@ export function SetResults({
   hasMeaningfulInput: boolean;
 }) {
   return (
-    <Card className="h-full border-stone-200/80 bg-[linear-gradient(180deg,_rgba(255,255,255,0.98)_0%,_rgba(250,245,235,0.98)_100%)]">
+    <Card className="h-full border-sage-100/70 bg-gradient-to-b from-white to-cream-50/90">
       <CardContent className="flex h-full flex-col gap-5 p-6">
-        <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">
-            Live result
+        <div className="space-y-1.5">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-stone-500">
+            Current estimate
           </p>
-          <h3 className="text-2xl font-semibold tracking-tight text-stone-950">
-            {result?.exerciseName ?? "Waiting for a valid set"}
+          <h3 className="font-serif text-2xl font-medium tracking-tight text-olive-900">
+            {result?.exerciseName ?? "Awaiting valid set"}
           </h3>
           <p className="text-sm text-stone-500">
-            {isPending ? "Updating your estimate." : "Your latest result."}
+            {isPending ? "Updating your numbers…" : "Based on your latest input."}
           </p>
         </div>
 
-        {error ? (
-          <div className="rounded-[1.4rem] border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+        {error && (
+          <div className="rounded-xl border border-terracotta-200 bg-terracotta-50 px-4 py-3 text-sm text-terracotta-700">
             {error}
           </div>
-        ) : null}
+        )}
 
         <AnimatePresence mode="wait">
           {result ? (
@@ -77,12 +77,12 @@ export function SetResults({
                 <div className="space-y-4">
                   <PrimaryMetricCard
                     icon={<HeartPulse className="h-5 w-5" />}
-                    label="Conditioning load"
+                    label="Load score"
                     value={formatMetric(result.cardioLoadScore, "score")}
                   />
                   <PrimaryMetricCard
                     icon={<Flame className="h-5 w-5" />}
-                    label="Estimated calories"
+                    label="Est. calories"
                     value={formatMetric(result.estimatedCalories, "kcal")}
                   />
                   <PrimaryMetricCard
@@ -106,13 +106,13 @@ export function SetResults({
                     />
                     <PrimaryMetricCard
                       icon={<BrainCircuit className="h-5 w-5" />}
-                      label="Training max"
+                      label="Training max (90%)"
                       value={formatMetric(result.trainingMaxKg, "kg")}
                     />
                   </div>
 
-                  <div className="rounded-[1.6rem] border border-stone-200/80 bg-white/80 p-4">
-                    <p className="text-sm font-semibold text-stone-950">
+                  <div className="rounded-2xl border border-sage-100/80 bg-white/90 p-4">
+                    <p className="text-sm font-semibold text-olive-900">
                       Suggested working weights
                     </p>
                     <p className="mt-1 text-sm text-stone-500">
@@ -122,12 +122,12 @@ export function SetResults({
                       {result.recommendedLoads.map((load) => (
                         <div
                           key={`${load.repTarget}-${load.intensityPercent}`}
-                          className="rounded-[1.35rem] border border-stone-200 bg-stone-50/80 p-4"
+                          className="rounded-xl border border-sage-100 bg-cream-50/80 p-4"
                         >
-                          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-stone-500">
                             {load.repTarget} reps
                           </p>
-                          <p className="mt-2 text-2xl font-semibold text-stone-950">
+                          <p className="mt-2 text-2xl font-medium text-olive-900">
                             {load.weightKg.toFixed(1)}
                             <span className="ml-1 text-base text-stone-500">kg</span>
                           </p>
@@ -141,39 +141,41 @@ export function SetResults({
                 </>
               )}
 
-              <div className="rounded-[1.6rem] border border-amber-200 bg-amber-50/70 p-4">
-                <p className="text-sm font-semibold text-amber-900">Coaching note</p>
-                <p className="mt-2 text-sm leading-7 text-amber-900/80">
+              <div className="rounded-xl border border-terracotta-100 bg-terracotta-50/70 p-4">
+                <p className="text-sm font-semibold text-terracotta-800">
+                  Coaching note
+                </p>
+                <p className="mt-2 text-sm leading-relaxed text-terracotta-800/80">
                   {result.insightSummary}
                 </p>
               </div>
 
-              {savedPayload ? (
-                <div className="rounded-[1.6rem] border border-emerald-200 bg-emerald-50/80 p-4">
-                  <p className="text-sm font-semibold text-emerald-900">
-                    Saved trend
+              {savedPayload && (
+                <div className="rounded-xl border border-sage-200 bg-sage-50/70 p-4">
+                  <p className="text-sm font-semibold text-sage-800">
+                    Set saved
                   </p>
-                  <div className="mt-3 space-y-3 text-sm text-emerald-900/85">
+                  <div className="mt-3 space-y-3 text-sm text-sage-800/85">
                     <p>
                       Logged set #{savedPayload.loggedSet.id}
                       {savedPayload.loggedSet.isCnsFatigue
-                        ? " was flagged for fatigue."
-                        : " was added to your ledger."}
+                        ? " flagged for fatigue."
+                        : " added to your history."}
                     </p>
                     <p>{savedPayload.analytics.contextSummary}</p>
                     <p>
-                      EMA: {formatMetric(savedPayload.analytics.emaOneRepMaxKg, "kg")}
+                      EMA (1RM): {formatMetric(savedPayload.analytics.emaOneRepMaxKg, "kg")}
                     </p>
                     <p>
                       Baseline:{" "}
                       {formatMetric(
                         savedPayload.analytics.baselineAverageOneRepMaxKg,
-                        "kg",
+                        "kg"
                       )}
                     </p>
                   </div>
                 </div>
-              ) : null}
+              )}
 
               <SetRecommendations
                 plan={recommendation}
@@ -182,30 +184,30 @@ export function SetResults({
                 error={recommendationError}
               />
 
-              <details className="rounded-[1.6rem] border border-stone-200 bg-white/80 p-4">
+              <details className="rounded-xl border border-sage-100 bg-white/80 p-4">
                 <summary className="cursor-pointer list-none text-sm font-semibold text-stone-700">
                   Advanced details
                 </summary>
                 <div className="mt-4 grid gap-3 text-sm text-stone-600">
                   <p>Formula: {result.formulaUsed}</p>
                   <p>Energy system: {result.primaryEnergySystem}</p>
-                  {result.effectiveReps !== null ? (
+                  {result.effectiveReps !== null && (
                     <p>Effective reps: {result.effectiveReps}</p>
-                  ) : null}
-                  {result.boundedEffectiveReps !== null ? (
+                  )}
+                  {result.boundedEffectiveReps !== null && (
                     <p>Bounded effective reps: {result.boundedEffectiveReps}</p>
-                  ) : null}
-                  {result.relativeIntensityPercent !== null ? (
+                  )}
+                  {result.relativeIntensityPercent !== null && (
                     <p>
                       Relative intensity: {result.relativeIntensityPercent.toFixed(1)}%
                     </p>
-                  ) : null}
-                  {result.volumeLoadKg !== null ? (
+                  )}
+                  {result.volumeLoadKg !== null && (
                     <p>Volume load: {result.volumeLoadKg.toFixed(1)} kg</p>
-                  ) : null}
+                  )}
                   <p>Confidence: {Math.round(result.confidenceScore * 100)}%</p>
-                  {result.warnings.length > 0 ? (
-                    <div className="rounded-2xl border border-stone-200 bg-stone-50 p-3">
+                  {result.warnings.length > 0 && (
+                    <div className="rounded-xl border border-sage-200 bg-cream-50 p-3">
                       <p className="font-semibold text-stone-700">Warnings</p>
                       <ul className="mt-2 list-disc space-y-1 pl-5">
                         {result.warnings.map((warning) => (
@@ -213,7 +215,7 @@ export function SetResults({
                         ))}
                       </ul>
                     </div>
-                  ) : null}
+                  )}
                 </div>
               </details>
             </motion.div>
@@ -224,18 +226,20 @@ export function SetResults({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -12 }}
               transition={{ duration: 0.2, ease: "easeOut" }}
-              className="flex min-h-72 flex-col items-center justify-center rounded-[1.8rem] border border-dashed border-stone-200 bg-stone-50/80 px-6 text-center"
+              className="flex min-h-64 flex-col items-center justify-center rounded-2xl border border-dashed border-sage-200 bg-cream-50/80 px-6 text-center"
             >
-              <div className="rounded-full bg-white p-4 shadow-sm">
-                <BrainCircuit className="h-8 w-8 text-stone-500" />
+              <div className="rounded-full bg-white p-3 shadow-sm">
+                <BrainCircuit className="h-8 w-8 text-sage-600" />
               </div>
-              <p className="mt-4 text-lg font-semibold text-stone-900">
+              <p className="mt-4 font-serif text-lg font-medium text-olive-900">
                 {hasMeaningfulInput
-                  ? "Finish the valid set to unlock your estimate."
-                  : "Enter a valid set to see the estimate."}
+                  ? "Complete a valid set to see your estimate"
+                  : "Fill in the fields above"}
               </p>
-              <p className="mt-2 max-w-sm text-sm leading-7 text-stone-500">
-                Add your set details to see your result here.
+              <p className="mt-2 max-w-sm text-sm leading-relaxed text-stone-500">
+                {hasMeaningfulInput
+                  ? "Add weight, reps, and RIR (or duration/RPE for cardio)."
+                  : "Choose an exercise and enter your set details."}
               </p>
             </motion.div>
           )}
@@ -255,12 +259,12 @@ function PrimaryMetricCard({
   value: string;
 }) {
   return (
-    <div className="rounded-[1.5rem] border border-stone-200 bg-white/90 p-4">
+    <div className="rounded-xl border border-sage-100 bg-white/90 p-4">
       <div className="flex items-center gap-3 text-stone-500">
-        <div className="rounded-full bg-stone-100 p-2">{icon}</div>
+        <div className="rounded-full bg-sage-100 p-2 text-sage-700">{icon}</div>
         <p className="text-sm font-medium text-stone-600">{label}</p>
       </div>
-      <p className="mt-4 text-3xl font-semibold tracking-tight text-stone-950">
+      <p className="mt-3 text-3xl font-medium tracking-tight text-olive-900">
         {value}
       </p>
     </div>

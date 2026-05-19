@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import type { Variants } from "framer-motion";
 import { useState } from "react";
 import type { SavedFoodReference } from "@/types/food";
-import { Input } from "@/components/ui/Input";
+import { Input } from "@/components/ui/input";
 
 type FoodSearchProps = {
   query: string;

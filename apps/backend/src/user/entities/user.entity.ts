@@ -11,6 +11,9 @@ export class User {
     @Field()
     email!: string;
 
+    @Field()
+    role!: string;
+
     @Field({ nullable: true })
     bio?: string;
 

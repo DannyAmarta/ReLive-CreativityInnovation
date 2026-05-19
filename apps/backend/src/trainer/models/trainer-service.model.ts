@@ -18,11 +18,14 @@ export class TrainerService {
   @Field()
   description: string;
 
-  @Field(() => Float)
-  priceInLamports: number;
+  @Field(() => Float, { nullable: true })
+  priceInLamports?: number;
 
-  @Field()
-  tokenMintAddress: string;
+  @Field(() => Int, { nullable: true })
+  priceInIdr?: number;
+
+  @Field({ nullable: true })
+  tokenMintAddress?: string;
 
   @Field()
   isActive: boolean;

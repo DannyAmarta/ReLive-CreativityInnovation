@@ -2,7 +2,7 @@ import { BadRequestException, Injectable, Logger, NotFoundException } from '@nes
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { BookingStatus, Role } from '@prisma/client';
-import { calculateDuitkuFee, generateSignature, normalizePhoneNumber } from './fiat-payment.utils';
+import { calculateDuitkuFee, generateInquirySignature, generateCallbackSignature, normalizePhoneNumber } from './fiat-payment.utils';
 import { DuitkuCreateInvoiceResponse, DuitkuDisbursementResponse } from './fiat-payment.types';
 import { DuitkuWebhookPayload } from './dto/duitku-webhook-payload.dto';
 import { CurrentUserPayload } from '../auth/decorators/current-user.decorator';
@@ -22,6 +22,7 @@ export class FiatPaymentService {
     private configService: ConfigService,
   ) {
     this.sandboxMode = this.configService.get<string>('DUITKU_SANDBOX_MODE') === 'true';
+    // Duitku v2 sandbox base URL — append /inquiry for invoice creation, /disbursement for withdrawals
     this.apiUrl = this.sandboxMode
       ? 'https://sandbox.duitku.com/webapi/api/merchant/v2'
       : 'https://passport.duitku.com/webapi/api/merchant/v2';
@@ -35,7 +36,7 @@ export class FiatPaymentService {
   // a raw `userId`. The resolver passes the pre-validated user from @CurrentUser(),
   // so there is zero redundant DB fetching. ────────────────────────────────────
 
-  async createDeposit(user: CurrentUserPayload, bookingId: number) {
+  async createDeposit(user: CurrentUserPayload, bookingId: number, paymentMethodCode?: string) {
     const booking = await this.prisma.booking.findUnique({
       where: { id: bookingId },
       include: { client: true, service: true },
@@ -52,19 +53,24 @@ export class FiatPaymentService {
 
     const clientEmail = booking.client.email;
     const clientPhone = booking.client.phone ? normalizePhoneNumber(booking.client.phone) : '08123456789';
+    // Use provided payment method or fall back to generic Virtual Account
+    const method = paymentMethodCode ?? 'VA';
 
     const requestBody = {
       merchantCode: this.merchantCode,
       paymentAmount: total,
-      paymentMethod: 'VC', // Virtual Account - can be made dynamic later
+      paymentMethod: method,
       merchantOrderId,
       productDetails: `Booking #${bookingId} - ${booking.service.title}`,
       email: clientEmail,
-      phone: clientPhone,
+      phoneNumber: clientPhone,
       callbackUrl: this.callbackUrl,
-      returnUrl: this.returnUrl,
-      signature: generateSignature(this.merchantCode, total, merchantOrderId, this.apiKey),
+      returnUrl: `${this.returnUrl}?booking=${bookingId}&payment=fiat-pending`,
+      expiryPeriod: 60,
+      signature: generateInquirySignature(this.merchantCode, merchantOrderId, total, this.apiKey),
     };
+
+    this.logger.log(`Duitku inquiry request: merchantCode=${this.merchantCode}, amount=${total}, orderId=${merchantOrderId}, sandbox=${this.sandboxMode}`);
 
     const response = await fetch(`${this.apiUrl}/inquiry`, {
       method: 'POST',
@@ -72,9 +78,20 @@ export class FiatPaymentService {
       body: JSON.stringify(requestBody),
     });
 
-    const json = (await response.json()) as DuitkuCreateInvoiceResponse;
-    if (!response.ok || json.resultCode !== '00') {
-      throw new BadRequestException(json.resultMessage || 'Failed to create payment');
+    const rawBody = await response.text();
+    this.logger.log(`Duitku inquiry response: status=${response.status}, body=${rawBody}`);
+
+    let json: DuitkuCreateInvoiceResponse;
+    try {
+      json = JSON.parse(rawBody) as DuitkuCreateInvoiceResponse;
+    } catch {
+      throw new BadRequestException(`Duitku returned non-JSON response: ${rawBody.slice(0, 200)}`);
+    }
+
+    if (!response.ok || json.statusCode !== '00') {
+      throw new BadRequestException(
+        json.statusMessage || `Duitku error ${json.statusCode}: Failed to create payment`,
+      );
     }
 
     // Create payment transaction record
@@ -258,7 +275,8 @@ export class FiatPaymentService {
       bankCode: input.bankCode,
       accountNumber: input.accountNumber,
       accountName: input.accountName,
-      signature: generateSignature(this.merchantCode, input.amountIdr, `WITHDRAW-${withdrawal.id}`, this.apiKey),
+      // Assuming the disbursement signature matches the callback/legacy format: merchantCode + amount + merchantOrderId + apiKey
+      signature: generateCallbackSignature(this.merchantCode, input.amountIdr, `WITHDRAW-${withdrawal.id}`, this.apiKey),
     };
 
     try {
@@ -402,6 +420,17 @@ export class FiatPaymentService {
       where: { trainerId: user.id },
       create: { trainerId: user.id, balanceIdr: 0 },
       update: {}, // No-op update, just return existing
+    });
+  }
+
+  async getWithdrawalRequests(user: CurrentUserPayload) {
+    if (user.role !== Role.TRAINER) {
+      throw new BadRequestException('Only trainers have withdrawal history');
+    }
+
+    return this.prisma.withdrawalRequest.findMany({
+      where: { trainerId: user.id },
+      orderBy: { requestedAt: 'desc' },
     });
   }
 }

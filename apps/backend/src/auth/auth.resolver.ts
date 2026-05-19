@@ -61,6 +61,30 @@ export class AuthResolver {
     return 'Hello World';
   }
 
+  @Mutation(() => AuthPayload)
+  async devRefreshSession(
+    @Context() ctx: { req: { headers: Record<string, string> } },
+  ) {
+    const authHeader = ctx.req?.headers?.authorization ?? '';
+    const token = authHeader.startsWith('Bearer ')
+      ? authHeader.slice(7)
+      : authHeader;
+
+    if (!token) {
+      throw new UnauthorizedException('Not authenticated');
+    }
+
+    try {
+      const payload = this.jwtService.verify<{ sub: number }>(token, {
+        ignoreExpiration: true,
+      });
+      const user = await this.authService.validateJwt(payload.sub);
+      return this.authService.login(user);
+    } catch {
+      throw new UnauthorizedException('Invalid or expired token');
+    }
+  }
+
   private extractUserIdFromContext(ctx: {
     req: { headers: Record<string, string> };
   }): number {

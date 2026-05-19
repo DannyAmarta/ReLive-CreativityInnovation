@@ -1,5 +1,5 @@
 import { Field, InputType, Int } from '@nestjs/graphql';
-import { IsInt } from 'class-validator';
+import { IsInt, IsDateString, IsOptional, IsString } from 'class-validator';
 
 @InputType()
 export class CreateBookingInput {
@@ -11,4 +11,17 @@ export class CreateBookingInput {
   @Field(() => Int)
   serviceId: number;
 
+  @IsDateString()
+  @Field()
+  scheduledStart: string;
+
+  @IsDateString()
+  @Field()
+  scheduledEnd: string;
+
+  @IsOptional()
+  @IsString()
+  @Field({ nullable: true })
+  timezone?: string;
 }
+

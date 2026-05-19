@@ -1,5 +1,4 @@
 import { cn } from "@/lib/utils";
-import type { BookingStatus } from "@/lib/mock-data";
 
 const styles: Record<string, string> = {
   PENDING: "bg-warning/10 text-warning-foreground border-warning/30 [&>span]:bg-warning",
@@ -19,7 +18,7 @@ export function StatusBadge({
   className,
   dot = true,
 }: {
-  status: BookingStatus | "CRYPTO" | "FIAT" | "CREDIT" | "WITHDRAWAL" | "PENDING" | "COMPLETED" | "FAILED" | "ACTIVE";
+  status: string;
   className?: string;
   dot?: boolean;
 }) {

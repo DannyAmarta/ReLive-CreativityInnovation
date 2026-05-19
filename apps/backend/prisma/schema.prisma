@@ -22,11 +22,12 @@ enum Role {
 }
 
 enum BookingStatus {
-  PENDING // Waiting for on-chain confirmation
-  ACTIVE // Funds confirmed in escrow, service in progress
-  COMPLETED // Service delivered, funds released to trainer
-  DISPUTED // Claim raised, locked until admin resolves
-  CANCELLED // Trainer rejected or mutual cancellation (funds refunded)
+  PENDING    // Waiting for trainer acceptance
+  ACTIVE     // Trainer accepted, session in progress
+  COMPLETED  // Service delivered, funds released to trainer
+  DISPUTED   // Claim raised, locked until admin resolves
+  CANCELLED  // Mutual cancellation
+  REJECTED   // Trainer rejected the booking request
 }
 
 enum PaymentType {
@@ -77,6 +78,8 @@ model User {
   clientBookings            Booking[]                  @relation("ClientBookings")
   fiatWallet                FiatWallet?                // One-to-one with trainer
   withdrawalRequests        WithdrawalRequest[]
+  favoriteTrainers          FavoriteTrainer[]
+  notifications             Notification[]
 }
 
 model Exercise {
@@ -201,6 +204,8 @@ model TrainerProfile {
   // Relations
   services         TrainerService[]
   providedBookings Booking[]        @relation("TrainerBookings")
+  favoritedBy      FavoriteTrainer[]
+  availability     TrainerAvailability[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -213,8 +218,8 @@ model TrainerService {
 
   title            String
   description      String
-  priceInLamports  Int // Token amount in smallest on-chain unit (e.g., lamports for SOL)
-  tokenMintAddress String @default("So11111111111111111111111111111111111111112") // Default = native SOL wrapped mint
+  priceInLamports  Int? // Token amount in smallest on-chain unit (optional, if not set fiat-only)
+  tokenMintAddress String? // Mint address (optional)
 
   // New FIAT price
   priceInIdr Int? // IDR price for fiat payments (optional, if not set crypto-only)
@@ -225,6 +230,19 @@ model TrainerService {
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model FavoriteTrainer {
+  id               Int            @id @default(autoincrement())
+  userId           Int
+  trainerProfileId Int
+  createdAt        DateTime       @default(now())
+
+  user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trainer          TrainerProfile @relation(fields: [trainerProfileId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, trainerProfileId])
+  @@index([userId])
 }
 
 model Booking {
@@ -251,13 +269,44 @@ model Booking {
 
   // Dispute resolution
   disputeReason String? // Filled in when status = DISPUTED
-  resolvedBy    Int? // Admin userId who resolved the dispute
+  resolvedBy    Int?    // Admin userId who resolved the dispute
+
+  // Scheduling
+  scheduledStart DateTime? // Session start time (UTC)
+  scheduledEnd   DateTime? // Session end time (UTC)
+  timezone       String?   @default("Asia/Jakarta") // Agreed timezone label
+  meetingLink    String?   // Optional virtual session URL
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   // Relations for fiat payments
   paymentTransactions PaymentTransaction[]
+}
+
+// --- Trainer Availability / Scheduling ---
+
+model TrainerAvailability {
+  id        Int            @id @default(autoincrement())
+  trainerId Int
+  trainer   TrainerProfile @relation(fields: [trainerId], references: [id], onDelete: Cascade)
+
+  // Recurring weekly rule OR date-specific override (one must be set)
+  dayOfWeek    Int?      // 0=Sun…6=Sat — recurring weekly slot
+  specificDate DateTime? // Date-specific override (takes precedence over dayOfWeek)
+
+  startTime   String  // "09:00" HH:mm in trainer's timezone
+  endTime     String  // "17:00" HH:mm in trainer's timezone
+  isAvailable Boolean @default(true) // false = blocked (vacation etc.)
+  title       String? // e.g. "Working Hours", "On Vacation", "Conference"
+  timezone    String  @default("Asia/Jakarta")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([trainerId])
+  @@index([trainerId, specificDate])
+  @@index([trainerId, dayOfWeek])
 }
 
 // --- Fiat Payment Models ---
@@ -297,4 +346,20 @@ model PaymentTransaction {
   rawPayload       Json?    // Store webhook body for debugging
   createdAt        DateTime @default(now())
   booking          Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+}
+
+// --- Notification System ---
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  title     String
+  body      String
+  link      String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
 }
