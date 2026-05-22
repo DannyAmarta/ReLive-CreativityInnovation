@@ -23,12 +23,7 @@ import {
 import { SearchFoods } from "@/lib/foodSearch";
 import type { Food, MealFoodItem, SavedFoodReference } from "@/types/food";
 
-// Lazy-load: tsParticles/slim + sakura assets are heavy. Deferring them
-// lets the hero + search bar render immediately on first paint.
-const FallingSakura = dynamic(
-  () => import("@/components/foods/components/FallingSakura").then((m) => ({ default: m.FallingSakura })),
-  { ssr: false, loading: () => null }
-);
+
 
 const RECENT_SEARCHES_KEY = "food-search-recent-queries";
 const FAVORITE_FOODS_KEY = "food-search-favorite-foods";
@@ -63,7 +58,6 @@ export function FoodMain({
 
   return (
     <>
-      {/* <FallingSakura /> */}
       {/* ── AMBIENT MESH BACKGROUND ── */}
       <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden bg-[#F7F9F7]">
         {/* Top Left Soft Glow */}
@@ -80,21 +74,17 @@ export function FoodMain({
           className="absolute -bottom-[25%] -right-[15%] h-[70vh] w-[70vw] rounded-full bg-gradient-to-tl from-[#FFE4EE] via-[#D1E2C4] to-[#2D4A22] opacity-30 blur-[150px]"
         />
 
-        {/* Center Accent Glow (Follows the search bar area roughly) */}
+        {/* Center Accent Glow */}
         <motion.div
           animate={{
             opacity: [0.15, 0.3, 0.15],
             scale: [1, 1.05, 1],
           }}
           transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-          /* 
-            Updated from Pink to Sage/Evergreen gradient[cite: 4]
-            from-[#E1EDD9] (Light Sage) to-[#D1E2C4] (Soft Sage)
-          */
           className="absolute left-[20%] top-[30%] h-[40vh] w-[60vw] rounded-full bg-gradient-to-r from-[#E1EDD9] to-[#D1E2C4] opacity-20 blur-[110px]"
         />
 
-        {/* Subtle dot matrix pattern (Optional, gives it that tech/macro tracker feel) */}
+        {/* Subtle dot matrix pattern */}
         <div 
           className="absolute inset-0 opacity-[0.03]" 
           style={{ 
@@ -103,6 +93,7 @@ export function FoodMain({
           }} 
         />
       </div>
+
       {/* ── HERO (collapses once user types) ── */}
       <AnimatePresence>
         {!hasQuery && (
@@ -114,7 +105,6 @@ export function FoodMain({
             transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
             className="relative z-10 flex min-h-[62vh] flex-col items-center justify-center overflow-hidden px-6 text-center"
           >
-            {/* Radial glow blobs (Optimized without blur) */}
             <div className="pointer-events-none absolute -top-20 left-1/2 h-[500px] w-[700px] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(209,226,196,0.3)_0%,transparent_70%)]" />
             <div className="pointer-events-none absolute top-1/3 -left-20 h-80 w-80 rounded-full bg-[radial-gradient(circle,rgba(107,142,35,0.2)_0%,transparent_70%)]" />
             <div className="pointer-events-none absolute top-1/3 -right-20 h-80 w-80 rounded-full bg-[radial-gradient(circle,rgba(61,90,53,0.15)_0%,transparent_70%)]" />
@@ -142,19 +132,16 @@ export function FoodMain({
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3, duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-              /* Updated text color to Moss Green */
               className="mt-6 max-w-2xl text-lg leading-relaxed text-[#3D5A35]/80 sm:text-xl font-medium"
               style={{ fontFamily: "'Nunito', var(--font-geist-sans)" }}
             >
               Search any food and get exact macros for your portion size — instantly, without a page reload.
             </motion.p>
 
-            {/* Big arrow pointing down to search */}
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: [0, 8, 0] }}
               transition={{ delay: 0.8, duration: 2, repeat: Infinity, ease: "easeInOut" }}
-              /* Updated arrow color to Olive Green with 50% opacity */
               className="mt-12 text-[#6B8E23]/50"
             >
               <svg width="24" height="36" viewBox="0 0 24 36" fill="none">
@@ -186,8 +173,8 @@ export function FoodMain({
         </motion.div>
       </div>
 
-      {/* ── BENTO RESULTS CANVAS ── */}
-      <main className="relative z-10 mx-auto max-w-4xl px-4 py-6 sm:px-6 lg:px-8">
+      {/* ── TWO‑COLUMN MAIN CONTENT with margin & hidden scrollbars ── */}
+      <main className="relative z-10 mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
         <AnimatePresence>
           {hasQuery && (
             <motion.div
@@ -195,45 +182,46 @@ export function FoodMain({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 20 }}
               transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+              className="grid grid-cols-1 gap-6 lg:grid-cols-2"
             >
-              <FoodResults
-                items={results}
-                meta={meta}
-                isLoading={isLoading}
-                error={error}
-                hasQuery={hasQuery}
-                selectedFoodId={selectedFood?.id ?? null}
-                favoriteIds={favoriteIds}
-                page={page}
-                hasNextPage={hasNextPage}
-                hasPreviousPage={hasPreviousPage}
-                onSelectFood={(food) => {
-                  setSelectedFood(food);
-                  setRecentQueries((cur) => rememberRecentValue(cur, food.name));
-                }}
-                onToggleFavorite={(food) => setFavoriteFoods((cur) => toggleFavoriteFood(cur, food))}
-                onAddToMeal={handleAddToMeal}
-                onNextPage={() => { if (hasNextPage) submitSearch(query, page + 1); }}
-                onPreviousPage={() => { if (hasPreviousPage) submitSearch(query, page - 1); }}
-              />
-            </motion.div>
-          )}
-        </AnimatePresence>
+              {/* LEFT COLUMN: Search results */}
+              <div 
+                className="flex flex-col mt-4 overflow-y-auto max-h-[calc(100vh-280px)] lg:max-h-[calc(100vh-200px)]
+                           [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+              >
+                <FoodResults
+                  items={results}
+                  meta={meta}
+                  isLoading={isLoading}
+                  error={error}
+                  hasQuery={hasQuery}
+                  selectedFoodId={selectedFood?.id ?? null}
+                  favoriteIds={favoriteIds}
+                  page={page}
+                  hasNextPage={hasNextPage}
+                  hasPreviousPage={hasPreviousPage}
+                  onSelectFood={(food) => {
+                    setSelectedFood(food);
+                    setRecentQueries((cur) => rememberRecentValue(cur, food.name));
+                  }}
+                  onToggleFavorite={(food) => setFavoriteFoods((cur) => toggleFavoriteFood(cur, food))}
+                  onAddToMeal={handleAddToMeal}
+                  onNextPage={() => { if (hasNextPage) submitSearch(query, page + 1); }}
+                  onPreviousPage={() => { if (hasPreviousPage) submitSearch(query, page - 1); }}
+                />
+              </div>
 
-        {/* Recipe section — below results */}
-        <AnimatePresence>
-          {hasQuery && (
-            <motion.div
-              initial={{ opacity: 0, y: 24 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.15, duration: 0.45 }}
-              className="mt-6"
-            >
-              <FoodRecipePanel
-                food={selectedFood}
-                fallbackQuery={query}
-                initialRecipeId={initialRecipeId}
-              />
+              {/* RIGHT COLUMN: Recipe panel */}
+              <div 
+                className="flex flex-col mt-4 overflow-y-auto max-h-[calc(100vh-280px)] lg:max-h-[calc(100vh-200px)]
+                           [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+              >
+                <FoodRecipePanel
+                  food={selectedFood}
+                  fallbackQuery={query}
+                  initialRecipeId={initialRecipeId}
+                />
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
@@ -252,23 +240,18 @@ export function FoodMain({
             <button
               type="button"
               onClick={() => setMealOpen(true)}
-              /* 
-                Background: Deep Forest Green
-                Shadow: Large Forest Bloom[cite: 9]
-              */
               className="w-full overflow-hidden rounded-[2rem] border border-white/40 bg-[#1a2e14]/92 px-6 py-4 text-left shadow-[0_24px_80px_rgba(45,74,34,0.45)] backdrop-blur-2xl"
             >
               <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                {/* Swapped Cherry for Leaf in Sage color */}
-                <Leaf className="h-5 w-5 text-[#D1E2C4]" />
-                <div>
-                  <p className="text-xs uppercase tracking-[0.2em] text-[#D1E2C4]/70">Meal tray</p>
-                  <p className="text-base font-semibold text-white">
-                    {mealItems.length} item{mealItems.length !== 1 ? "s" : ""} added
-                  </p>
+                <div className="flex items-center gap-3">
+                  <Leaf className="h-5 w-5 text-[#D1E2C4]" />
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.2em] text-[#D1E2C4]/70">Meal tray</p>
+                    <p className="text-base font-semibold text-white">
+                      {mealItems.length} item{mealItems.length !== 1 ? "s" : ""} added
+                    </p>
+                  </div>
                 </div>
-              </div>
                 <span className="rounded-full bg-[#3D5A35] px-4 py-1.5 text-sm font-bold text-white shadow-[0_4px_16px_rgba(107,142,35,0.4)]">
                   View meal →
                 </span>
@@ -282,7 +265,6 @@ export function FoodMain({
       <AnimatePresence>
         {drawerOpen && selectedFood && (
           <>
-            {/* Backdrop */}
             <motion.div
               key="drawer-backdrop"
               initial={{ opacity: 0 }}
@@ -292,7 +274,6 @@ export function FoodMain({
               className="fixed inset-0 z-40 bg-[#1a0a12]/40 backdrop-blur-sm"
               onClick={() => setDrawerOpen(false)}
             />
-            {/* Drawer panel */}
             <motion.aside
               key="detail-drawer"
               initial={{ x: "100%", opacity: 0 }}
@@ -323,14 +304,12 @@ export function FoodMain({
             </motion.aside>
           </>
         )}
-        
       </AnimatePresence>
 
       {/* ── MEAL SUMMARY MODAL ── */}
       <AnimatePresence>
         {mealOpen && (
           <>
-            {/* Backdrop: Deep Forest tint */}
             <motion.div
               key="meal-backdrop"
               initial={{ opacity: 0 }}
@@ -346,27 +325,19 @@ export function FoodMain({
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: "100%", opacity: 0 }}
               transition={{ type: "spring", stiffness: 300, damping: 35 }}
-              /* 
-                Sidebar Offset: md:left-70 
-                Border: Sage Green
-                Shadow: Large Forest Bloom[cite: 9]
-              */
               className="fixed bottom-0 left-0 right-0 md:left-70 z-50 max-h-[85vh] overflow-y-auto rounded-t-[2.5rem] border-t border-[#D1E2C4]/30 bg-[#F7F9F7]/95 shadow-[0_-40px_100px_rgba(45,74,34,0.25)] backdrop-blur-3xl"
             >
-              {/* Sticky Header: Sage border and Archive background[cite: 4] */}
               <div className="sticky top-0 flex items-center justify-between border-b border-[#D1E2C4]/20 bg-[#F7F9F7]/80 px-6 py-4 backdrop-blur-xl">
                 <span className="text-lg font-bold text-[#1a2e14]" style={{ fontFamily: "'Sora', var(--font-geist-sans)" }}>
                   🍱 Meal Summary
                 </span>
                 <button
                   onClick={() => setMealOpen(false)}
-                  /* Close Button: Sage border with Forest Green text[cite: 4] */
                   className="rounded-full border border-[#D1E2C4]/40 bg-white/60 p-1.5 text-[#3D5A35] hover:bg-[#D1E2C4]/20 transition"
                 >
                   <X className="h-4 w-4" />
                 </button>
               </div>
-
               <div className="p-4 pb-10">
                 <FoodSummary
                   items={mealItems}
@@ -381,16 +352,16 @@ export function FoodMain({
       </AnimatePresence>
 
       {/* Spacer to prevent pagination from being eaten by the fixed Meal Tray */}
-        <AnimatePresence>
-          {mealItems.length > 0 && (
-            <motion.div 
-              initial={{ height: 0 }} 
-              animate={{ height: "100px" }} // Roughly the height of the meal tray + padding
-              exit={{ height: 0 }} 
-              aria-hidden="true" 
-            />
-          )}
-        </AnimatePresence>
+      <AnimatePresence>
+        {mealItems.length > 0 && (
+          <motion.div 
+            initial={{ height: 0 }} 
+            animate={{ height: "100px" }}
+            exit={{ height: 0 }} 
+            aria-hidden="true" 
+          />
+        )}
+      </AnimatePresence>
     </>
   );
 }

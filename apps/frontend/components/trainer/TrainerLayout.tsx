@@ -52,7 +52,7 @@ export function TrainerLayout() {
           </nav>
 
           <div className="flex items-center gap-2 sm:gap-3">
-            <NotificationBell />
+            <NotificationBell initialNotifications={[]} />
             <div className="hidden sm:flex items-center gap-2.5 pl-3 border-l border-border h-8">
               <div className="text-right leading-tight">
                 <p className="text-xs font-semibold">{trainerProfile.displayName}</p>

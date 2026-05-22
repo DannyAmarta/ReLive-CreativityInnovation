@@ -51,8 +51,8 @@ export class UserService {
   }
 
   async changeMyRole(userId: number, nextRole: string) {
-    if (nextRole !== Role.USER && nextRole !== Role.TRAINER) {
-      throw new BadRequestException('Role must be USER or TRAINER');
+    if (nextRole !== Role.USER && nextRole !== Role.TRAINER && nextRole !== Role.ADMIN) {
+      throw new BadRequestException('Role must be USER, TRAINER, or ADMIN');
     }
 
     return this.prisma.$transaction(async (tx) => {

@@ -418,26 +418,30 @@ export class TrainerService {
     const booking = await this.prisma.booking.findUnique({ where: { id: input.bookingId } });
     if (!booking) throw new NotFoundException('Booking not found');
 
-    const allowedForRole = ALLOWED_TRANSITIONS[user.role] ?? {};
+    let contextualRole: Role | null = null;
+
+    if (user.role === Role.ADMIN) {
+      contextualRole = Role.ADMIN;
+    } else if (booking.clientId === userId) {
+      contextualRole = Role.USER;
+    } else {
+      const profile = await this.prisma.trainerProfile.findUnique({ where: { userId } });
+      if (profile && booking.trainerId === profile.id) {
+        contextualRole = Role.TRAINER;
+      }
+    }
+
+    if (!contextualRole) {
+      throw new ForbiddenException('You are not authorized to manage this booking');
+    }
+
+    const allowedForRole = ALLOWED_TRANSITIONS[contextualRole] ?? {};
     const allowedNextStatuses = allowedForRole[booking.status] ?? [];
 
     if (!allowedNextStatuses.includes(input.status)) {
       throw new ForbiddenException(
-        `Role ${user.role} cannot transition booking from ${booking.status} to ${input.status}`,
+        `Role ${contextualRole} cannot transition booking from ${booking.status} to ${input.status}`,
       );
-    }
-
-    // Trainers can only touch their own bookings
-    if (user.role === Role.TRAINER) {
-      const profile = await this.prisma.trainerProfile.findUnique({ where: { userId } });
-      if (!profile || booking.trainerId !== profile.id) {
-        throw new ForbiddenException('You can only manage your own bookings');
-      }
-    }
-
-    // Clients can only touch their own bookings
-    if (user.role === Role.USER && booking.clientId !== userId) {
-      throw new ForbiddenException('You can only manage your own bookings');
     }
 
     const updated = await this.prisma.booking.update({
@@ -478,24 +482,55 @@ export class TrainerService {
           link: '/client/dashboard',
         });
       } else if (input.status === BookingStatus.COMPLETED) {
-        // Completed → notify client and trainer
-        await this.notificationService.createMany([
-          {
-            userId: clientId,
-            title: '🎉 Session Completed',
-            body: `Your session for "${serviceName}" has been marked as complete. Thank you for training with us!`,
-            link: '/client/dashboard',
-          },
-          {
-            userId: trainerUserId,
-            title: '💰 Earnings Credited',
-            body: `The session "${serviceName}" is complete and your earnings have been credited to your wallet.`,
-            link: '/trainer/wallet',
-          },
-        ]);
+        if (booking.status === BookingStatus.DISPUTED) {
+          await this.notificationService.createMany([
+            {
+              userId: clientId,
+              title: '⚖️ Dispute Resolved',
+              body: `The dispute for "${serviceName}" has been resolved. The session was marked as completed.`,
+              link: '/client/dashboard',
+            },
+            {
+              userId: trainerUserId,
+              title: '⚖️ Dispute Resolved',
+              body: `The dispute for "${serviceName}" has been resolved in your favor. Your earnings have been credited.`,
+              link: '/trainer/wallet',
+            },
+          ]);
+        } else {
+          // Completed → notify client and trainer
+          await this.notificationService.createMany([
+            {
+              userId: clientId,
+              title: '🎉 Session Completed',
+              body: `Your session for "${serviceName}" has been marked as complete. Thank you for training with us!`,
+              link: '/client/dashboard',
+            },
+            {
+              userId: trainerUserId,
+              title: '💰 Earnings Credited',
+              body: `The session "${serviceName}" is complete and your earnings have been credited to your wallet.`,
+              link: '/trainer/wallet',
+            },
+          ]);
+        }
       } else if (input.status === BookingStatus.CANCELLED) {
-        // Cancelled → notify the other party
-        if (user.role === Role.TRAINER) {
+        if (booking.status === BookingStatus.DISPUTED) {
+          await this.notificationService.createMany([
+            {
+              userId: clientId,
+              title: '⚖️ Dispute Resolved',
+              body: `The dispute for "${serviceName}" has been resolved in your favor. The booking was cancelled and payment transaction refunded.`,
+              link: '/client/dashboard',
+            },
+            {
+              userId: trainerUserId,
+              title: '⚖️ Dispute Resolved',
+              body: `The dispute for "${serviceName}" has been resolved. The booking was cancelled.`,
+              link: '/trainer/bookings',
+            },
+          ]);
+        } else if (user.role === Role.TRAINER) {
           await this.notificationService.create({
             userId: clientId,
             title: '❌ Booking Cancelled',
@@ -525,4 +560,307 @@ export class TrainerService {
 
     return this.sanitizeBooking(updated);
   }
+
+  async getDisputedBookings() {
+    const bookings = await this.prisma.booking.findMany({
+      where: { status: BookingStatus.DISPUTED },
+      include: { client: true, service: true, trainer: { include: { user: true } } },
+      orderBy: { updatedAt: 'desc' },
+    });
+    return bookings.map(b => this.sanitizeBooking(b));
+  }
+
+  // ─── Reschedule & Cancellation Requests ─────────────────────────────────────
+
+  private async getBookingParties(bookingId: number) {
+    const booking = await this.prisma.booking.findUnique({
+      where: { id: bookingId },
+      include: {
+        service: true,
+        client: true,
+        trainer: { include: { user: true } },
+      },
+    });
+    if (!booking) throw new NotFoundException('Booking not found');
+    return booking;
+  }
+
+  private async assertIsParty(userId: number, booking: { clientId: number; trainer: { userId: number } }) {
+    const isClient = booking.clientId === userId;
+    const isTrainer = booking.trainer.userId === userId;
+    if (!isClient && !isTrainer) {
+      throw new ForbiddenException('You are not a party to this booking');
+    }
+    return { isClient, isTrainer };
+  }
+
+  async proposeReschedule(userId: number, input: { bookingId: number; proposedStart: string; proposedEnd: string; timezone?: string }) {
+    const booking = await this.getBookingParties(input.bookingId);
+    if (booking.status !== BookingStatus.ACTIVE) {
+      throw new BadRequestException('Reschedule can only be proposed for ACTIVE bookings');
+    }
+    const { isClient, isTrainer } = await this.assertIsParty(userId, booking);
+
+    const existing = await this.prisma.bookingRescheduleRequest.findFirst({
+      where: { bookingId: input.bookingId, status: 'PENDING' },
+    });
+    if (existing) {
+      throw new ConflictException('A reschedule proposal is already pending for this booking');
+    }
+
+    const start = new Date(input.proposedStart);
+    const end = new Date(input.proposedEnd);
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+      throw new BadRequestException('Invalid date format — use ISO-8601');
+    }
+    if (end <= start) {
+      throw new BadRequestException('proposedEnd must be after proposedStart');
+    }
+
+    const request = await this.prisma.bookingRescheduleRequest.create({
+      data: {
+        bookingId: input.bookingId,
+        proposedById: userId,
+        originalStart: booking.scheduledStart,
+        originalEnd: booking.scheduledEnd,
+        proposedStart: start,
+        proposedEnd: end,
+        timezone: input.timezone ?? booking.timezone ?? 'Asia/Jakarta',
+        status: 'PENDING',
+      },
+    });
+
+    // Notify the other party
+    const otherUserId = isClient ? booking.trainer.user.id : booking.clientId;
+    const proposerName = isClient ? (booking.client.name ?? 'Your client') : (booking.trainer.user.name ?? 'Your trainer');
+    try {
+      await this.notificationService.create({
+        userId: otherUserId,
+        title: '📅 Reschedule Proposed',
+        body: `${proposerName} has proposed to reschedule the "${booking.service.title}" session. Review it in your bookings.`,
+        link: isClient ? '/trainer/bookings' : '/client/dashboard',
+      });
+    } catch (err) {
+      this.logger.warn(`Notification failed for reschedule proposal on booking ${input.bookingId}: ${(err as Error).message}`);
+    }
+
+    return request;
+  }
+
+  async resolveReschedule(userId: number, input: { requestId: number; action: string }) {
+    const request = await this.prisma.bookingRescheduleRequest.findUnique({
+      where: { id: input.requestId },
+    });
+    if (!request) throw new NotFoundException('Reschedule request not found');
+    if (request.status !== 'PENDING') throw new BadRequestException('This request has already been resolved');
+    if (request.proposedById === userId) throw new ForbiddenException('You cannot respond to your own reschedule proposal');
+
+    const booking = await this.getBookingParties(request.bookingId);
+    await this.assertIsParty(userId, booking);
+
+    const isAccepted = input.action === 'ACCEPT';
+
+    const [updated] = await this.prisma.$transaction([
+      this.prisma.bookingRescheduleRequest.update({
+        where: { id: input.requestId },
+        data: { status: isAccepted ? 'ACCEPTED' : 'REJECTED' },
+      }),
+      ...(isAccepted
+        ? [this.prisma.booking.update({
+            where: { id: request.bookingId },
+            data: {
+              scheduledStart: request.proposedStart,
+              scheduledEnd: request.proposedEnd,
+              timezone: request.timezone,
+            },
+          })]
+        : []),
+    ]);
+
+    // Notify proposer
+    try {
+      await this.notificationService.create({
+        userId: request.proposedById,
+        title: isAccepted ? '✅ Reschedule Accepted' : '❌ Reschedule Declined',
+        body: isAccepted
+          ? `Your reschedule proposal for "${booking.service.title}" has been accepted. Session is now rescheduled.`
+          : `Your reschedule proposal for "${booking.service.title}" was declined. The original schedule remains.`,
+        link: request.proposedById === booking.clientId ? '/client/dashboard' : '/trainer/bookings',
+      });
+    } catch (err) {
+      this.logger.warn(`Notification failed resolving reschedule ${input.requestId}: ${(err as Error).message}`);
+    }
+
+    return updated;
+  }
+
+  async requestCancellation(userId: number, input: { bookingId: number; reason?: string }) {
+    const booking = await this.getBookingParties(input.bookingId);
+    if (booking.status !== BookingStatus.ACTIVE) {
+      throw new BadRequestException('Cancellation can only be requested for ACTIVE bookings');
+    }
+    const { isClient, isTrainer } = await this.assertIsParty(userId, booking);
+
+    const existing = await this.prisma.bookingCancellationRequest.findFirst({
+      where: { bookingId: input.bookingId, status: 'PENDING' },
+    });
+    if (existing) {
+      throw new ConflictException('A cancellation request is already pending for this booking');
+    }
+
+    const request = await this.prisma.bookingCancellationRequest.create({
+      data: {
+        bookingId: input.bookingId,
+        proposedById: userId,
+        reason: input.reason,
+        status: 'PENDING',
+      },
+    });
+
+    const otherUserId = isClient ? booking.trainer.user.id : booking.clientId;
+    const proposerName = isClient ? (booking.client.name ?? 'Your client') : (booking.trainer.user.name ?? 'Your trainer');
+    try {
+      await this.notificationService.create({
+        userId: otherUserId,
+        title: '🚫 Cancellation Requested',
+        body: `${proposerName} has requested to cancel the "${booking.service.title}" session. Please review and respond.`,
+        link: isClient ? '/trainer/bookings' : '/client/dashboard',
+      });
+    } catch (err) {
+      this.logger.warn(`Notification failed for cancellation request on booking ${input.bookingId}: ${(err as Error).message}`);
+    }
+
+    return request;
+  }
+
+  async resolveCancellation(userId: number, input: { requestId: number; action: string }) {
+    const request = await this.prisma.bookingCancellationRequest.findUnique({
+      where: { id: input.requestId },
+    });
+    if (!request) throw new NotFoundException('Cancellation request not found');
+    if (request.status !== 'PENDING') throw new BadRequestException('This request has already been resolved');
+    if (request.proposedById === userId) throw new ForbiddenException('You cannot respond to your own cancellation request');
+
+    const booking = await this.getBookingParties(request.bookingId);
+    await this.assertIsParty(userId, booking);
+
+    const isAccepted = input.action === 'ACCEPT';
+
+    if (isAccepted) {
+      await this.prisma.$transaction([
+        this.prisma.bookingCancellationRequest.update({
+          where: { id: input.requestId },
+          data: { status: 'ACCEPTED' },
+        }),
+        this.prisma.booking.update({
+          where: { id: request.bookingId },
+          data: { status: BookingStatus.CANCELLED },
+        }),
+      ]);
+
+      // Trigger fiat refund if applicable
+      try {
+        await this.fiatPaymentService.handleFiatBookingCancellation(request.bookingId);
+      } catch (err) {
+        this.logger.error(`Fiat refund hook failed for mutual cancellation of booking ${request.bookingId}: ${(err as Error).message}`);
+      }
+
+      // Notify both parties
+      try {
+        await this.notificationService.createMany([
+          {
+            userId: booking.clientId,
+            title: '🤝 Booking Cancelled',
+            body: `Your "${booking.service.title}" session has been mutually cancelled. Any payment will be refunded.`,
+            link: '/client/dashboard',
+          },
+          {
+            userId: booking.trainer.user.id,
+            title: '🤝 Booking Cancelled',
+            body: `The "${booking.service.title}" session has been mutually cancelled.`,
+            link: '/trainer/bookings',
+          },
+        ]);
+      } catch (err) {
+        this.logger.warn(`Notifications failed for mutual cancellation of booking ${request.bookingId}: ${(err as Error).message}`);
+      }
+    } else {
+      await this.prisma.bookingCancellationRequest.update({
+        where: { id: input.requestId },
+        data: { status: 'REJECTED' },
+      });
+
+      try {
+        await this.notificationService.create({
+          userId: request.proposedById,
+          title: '❌ Cancellation Declined',
+          body: `Your cancellation request for "${booking.service.title}" was declined. The session remains active.`,
+          link: request.proposedById === booking.clientId ? '/client/dashboard' : '/trainer/bookings',
+        });
+      } catch (err) {
+        this.logger.warn(`Notification failed resolving cancellation ${input.requestId}: ${(err as Error).message}`);
+      }
+    }
+
+    return this.prisma.bookingCancellationRequest.findUnique({ where: { id: input.requestId } });
+  }
+
+  async getMyRescheduleRequests(userId: number) {
+    // Return all PENDING reschedule requests where user is a party (client or trainer)
+    const asClient = await this.prisma.bookingRescheduleRequest.findMany({
+      where: {
+        booking: { clientId: userId },
+        status: 'PENDING',
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const trainerProfile = await this.prisma.trainerProfile.findUnique({ where: { userId } });
+    const asTrainer = trainerProfile
+      ? await this.prisma.bookingRescheduleRequest.findMany({
+          where: {
+            booking: { trainerId: trainerProfile.id },
+            status: 'PENDING',
+          },
+          orderBy: { createdAt: 'desc' },
+        })
+      : [];
+
+    // Merge and deduplicate
+    const seen = new Set<number>();
+    return [...asClient, ...asTrainer].filter(r => {
+      if (seen.has(r.id)) return false;
+      seen.add(r.id);
+      return true;
+    });
+  }
+
+  async getMyCancellationRequests(userId: number) {
+    const asClient = await this.prisma.bookingCancellationRequest.findMany({
+      where: {
+        booking: { clientId: userId },
+        status: 'PENDING',
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const trainerProfile = await this.prisma.trainerProfile.findUnique({ where: { userId } });
+    const asTrainer = trainerProfile
+      ? await this.prisma.bookingCancellationRequest.findMany({
+          where: {
+            booking: { trainerId: trainerProfile.id },
+            status: 'PENDING',
+          },
+          orderBy: { createdAt: 'desc' },
+        })
+      : [];
+
+    const seen = new Set<number>();
+    return [...asClient, ...asTrainer].filter(r => {
+      if (seen.has(r.id)) return false;
+      seen.add(r.id);
+      return true;
+    });
+  }
 }
+

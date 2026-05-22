@@ -12,6 +12,10 @@ import {
   REQUEST_FIAT_WITHDRAWAL_MUTATION,
   UPDATE_BOOKING_STATUS_MUTATION,
   UPDATE_TRAINER_SERVICE_MUTATION,
+  PROPOSE_RESCHEDULE_MUTATION,
+  RESOLVE_RESCHEDULE_MUTATION,
+  REQUEST_CANCELLATION_MUTATION,
+  RESOLVE_CANCELLATION_MUTATION,
 } from "../gqlQueries";
 
 type CreateBookingResponse = {
@@ -270,4 +274,84 @@ export async function requestFiatWithdrawalAction(formData: FormData) {
   revalidatePath("/trainer/wallet");
   revalidatePath("/trainer");
   redirect("/trainer/wallet?withdrawal=requested");
+}
+
+export async function proposeRescheduleAction(formData: FormData) {
+  const bookingId = parseIntField(formData.get("bookingId"), "bookingId");
+  const proposedStart = formData.get("proposedStart")?.toString();
+  const proposedEnd = formData.get("proposedEnd")?.toString();
+  const timezone = formData.get("timezone")?.toString() || "Asia/Jakarta";
+  const redirectTo = formData.get("redirectTo")?.toString() || "/client/bookings/reschedule";
+
+  if (!proposedStart || !proposedEnd) throw new Error("proposedStart and proposedEnd are required");
+
+  try {
+    await authFetchGraphql(print(PROPOSE_RESCHEDULE_MUTATION), {
+      input: { bookingId, proposedStart, proposedEnd, timezone },
+    });
+  } catch (error) {
+    if (isAuthenticationGraphqlError(error)) redirect(`${redirectTo}?session=expired`);
+    throw error;
+  }
+
+  revalidatePath("/client/bookings/reschedule");
+  revalidatePath("/trainer/bookings");
+  redirect(`${redirectTo}?reschedule=proposed`);
+}
+
+export async function resolveRescheduleAction(formData: FormData) {
+  const requestId = parseIntField(formData.get("requestId"), "requestId");
+  const action = formData.get("action")?.toString();
+  const redirectTo = formData.get("redirectTo")?.toString() || "/client/bookings/reschedule";
+
+  if (!action) throw new Error("action is required");
+
+  try {
+    await authFetchGraphql(print(RESOLVE_RESCHEDULE_MUTATION), { input: { requestId, action } });
+  } catch (error) {
+    if (isAuthenticationGraphqlError(error)) redirect(`${redirectTo}?session=expired`);
+    throw error;
+  }
+
+  revalidatePath("/client/bookings/reschedule");
+  revalidatePath("/client/dashboard");
+  revalidatePath("/trainer/bookings");
+  redirect(`${redirectTo}?reschedule=resolved`);
+}
+
+export async function requestCancellationAction(formData: FormData) {
+  const bookingId = parseIntField(formData.get("bookingId"), "bookingId");
+  const reason = formData.get("reason")?.toString() || undefined;
+  const redirectTo = formData.get("redirectTo")?.toString() || "/client/bookings/cancel";
+
+  try {
+    await authFetchGraphql(print(REQUEST_CANCELLATION_MUTATION), { input: { bookingId, reason } });
+  } catch (error) {
+    if (isAuthenticationGraphqlError(error)) redirect(`${redirectTo}?session=expired`);
+    throw error;
+  }
+
+  revalidatePath("/client/bookings/cancel");
+  revalidatePath("/trainer/bookings");
+  redirect(`${redirectTo}?cancellation=requested`);
+}
+
+export async function resolveCancellationAction(formData: FormData) {
+  const requestId = parseIntField(formData.get("requestId"), "requestId");
+  const action = formData.get("action")?.toString();
+  const redirectTo = formData.get("redirectTo")?.toString() || "/client/bookings/cancel";
+
+  if (!action) throw new Error("action is required");
+
+  try {
+    await authFetchGraphql(print(RESOLVE_CANCELLATION_MUTATION), { input: { requestId, action } });
+  } catch (error) {
+    if (isAuthenticationGraphqlError(error)) redirect(`${redirectTo}?session=expired`);
+    throw error;
+  }
+
+  revalidatePath("/client/bookings/cancel");
+  revalidatePath("/client/dashboard");
+  revalidatePath("/trainer/bookings");
+  redirect(`${redirectTo}?cancellation=resolved`);
 }

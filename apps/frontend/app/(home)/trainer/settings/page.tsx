@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { payoutSettings, trainerProfile } from "@/lib/mock-data";
-import { AlertTriangle, FlaskConical, Save } from "lucide-react";
+import { AlertTriangle, FlaskConical, Save, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 
 export default function Settings() {
@@ -22,7 +22,15 @@ export default function Settings() {
   const [profile, setProfile] = useState(trainerProfile);
 
   return (
-    <div>
+    <div className="space-y-6">
+      <Link
+        href="/trainer"
+        className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+      >
+        <ArrowLeft className="size-4" />
+        Back to Dashboard
+      </Link>
+
       <PageHeader title="Settings" description="Payout destinations and your public trainer profile." />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

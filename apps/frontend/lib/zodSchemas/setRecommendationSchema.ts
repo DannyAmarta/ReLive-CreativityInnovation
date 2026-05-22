@@ -3,7 +3,7 @@ import { z } from "zod";
 const HighRepMessage =
   "High-rep sets degrade 1RM calculation accuracy. Please log sets of 15 reps or fewer.";
 
-const optionalCoercedNumber = (schema: z.ZodTypeAny) =>
+const optionalCoercedNumber = <T extends z.ZodTypeAny>(schema: T) =>
   z.preprocess((value) => {
     if (value === "" || value === null || typeof value === "undefined") {
       return undefined;

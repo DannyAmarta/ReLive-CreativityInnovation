@@ -18,7 +18,9 @@ type FocusField = "none" | "password";
 //// MAIN COMPONENT
 //////////////////////////////////////////////////////////
 
-export default function ResetPassword() {
+import { Suspense } from "react";
+
+function ResetPasswordForm() {
     const [state, action] = useActionState(ResetPasswordQuery, undefined);
 
     const token = useSearchParams().get("token");
@@ -40,22 +42,6 @@ export default function ResetPassword() {
     if (!token) {
         return <Backup />;
     }
-
-    // async function submit() {
-    //     await fetch("http://localhost:8000/auth/forgot-password", {
-    //         method: "POST",
-
-    //         headers: { "Content-Type": "application/json" },
-
-    //         body: JSON.stringify({
-    //             token,
-
-    //             newPassword: password,
-    //         }),
-    //     });
-
-    //     alert("Reset email sent");
-    // }
 
     return (
         <div className="relative w-full h-screen overflow-hidden text-white bg-[#020617]">
@@ -211,7 +197,6 @@ export default function ResetPassword() {
                                 boxShadow: "0px 0px 40px rgba(56,189,248,0.9)",
                             }}
                             whileTap={{ scale: 0.95 }}
-                            // onClick={submit}
                             className="
                           w-full
                           py-3
@@ -229,5 +214,17 @@ export default function ResetPassword() {
                 </GlassCard>
             </div>
         </div>
+    );
+}
+
+export default function ResetPassword() {
+    return (
+        <Suspense fallback={
+            <div className="w-full h-screen flex items-center justify-center text-white bg-[#020617]">
+                <p className="text-lg animate-pulse">Loading Reset Form...</p>
+            </div>
+        }>
+            <ResetPasswordForm />
+        </Suspense>
     );
 }

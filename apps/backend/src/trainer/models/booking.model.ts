@@ -53,6 +53,18 @@ export class Booking {
   @Field({ nullable: true })
   disputeReason?: string;
 
+  @Field({ nullable: true })
+  scheduledStart?: Date;
+
+  @Field({ nullable: true })
+  scheduledEnd?: Date;
+
+  @Field({ nullable: true })
+  timezone?: string;
+
+  @Field({ nullable: true })
+  meetingLink?: string;
+
   @Field()
   createdAt: Date;
 

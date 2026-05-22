@@ -1,5 +1,6 @@
 import { SessionWarning } from "@/components/auth/SessionWarning";
-import { TrendingDown, Wallet, BarChart3 } from "lucide-react";
+import { TrendingDown, Wallet, BarChart3, ArrowLeft } from "lucide-react";
+import Link from "next/link";
 import { isAuthenticationGraphqlError } from "@/lib/fetchGraphQL";
 import { formatIDR } from "@/lib/format";
 import {
@@ -20,6 +21,9 @@ export default async function ClientWalletPage() {
 
   return (
     <div>
+      <Link href="/client" className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors mb-6">
+        <ArrowLeft className="size-4" /> Back to Dashboard
+      </Link>
       {/* Page title */}
       <div className="mb-8">
         <h1 className="font-display text-3xl font-bold tracking-tight text-primary-deep md:text-4xl">

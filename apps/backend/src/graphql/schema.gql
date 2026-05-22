@@ -323,6 +323,34 @@ type Booking {
   processingFeeIdr: Int
   gatewayPaymentMethod: String
   disputeReason: String
+  scheduledStart: DateTime
+  scheduledEnd: DateTime
+  timezone: String
+  meetingLink: String
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type RescheduleRequest {
+  id: Int!
+  bookingId: Int!
+  proposedById: Int!
+  originalStart: DateTime
+  originalEnd: DateTime
+  proposedStart: DateTime!
+  proposedEnd: DateTime!
+  timezone: String!
+  status: String!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type CancellationRequest {
+  id: Int!
+  bookingId: Int!
+  proposedById: Int!
+  reason: String
+  status: String!
   createdAt: DateTime!
   updatedAt: DateTime!
 }
@@ -397,6 +425,9 @@ type Query {
   myTrainerProfile: TrainerProfile!
   myClientBookings: [Booking!]!
   myTrainerBookings: [Booking!]!
+  myRescheduleRequests: [RescheduleRequest!]!
+  myCancellationRequests: [CancellationRequest!]!
+  adminGetDisputedBookings: [Booking!]!
   getTrainerAvailabilityRules(trainerId: Int!): [TrainerAvailabilityModel!]!
   getAvailableSlots(trainerId: Int!, startDate: String!, endDate: String!, slotDurationMinutes: Int! = 60): [AvailableSlot!]!
   myFiatWallet: FiatWalletEntity!
@@ -436,6 +467,10 @@ type Mutation {
   updateTrainerService(input: UpdateTrainerServiceInput!): TrainerService!
   createBooking(input: CreateBookingInput!): Booking!
   updateBookingStatus(input: UpdateBookingStatusInput!): Booking!
+  proposeBookingReschedule(input: ProposeRescheduleInput!): RescheduleRequest!
+  resolveBookingReschedule(input: ResolveRequestInput!): RescheduleRequest!
+  requestBookingCancellation(input: RequestCancellationInput!): CancellationRequest!
+  resolveBookingCancellation(input: ResolveRequestInput!): CancellationRequest!
   createAvailabilityRule(input: CreateAvailabilityRuleInput!): TrainerAvailabilityModel!
   updateAvailabilityRule(input: UpdateAvailabilityRuleInput!): TrainerAvailabilityModel!
   deleteAvailabilityRule(ruleId: Int!): Boolean!
@@ -565,6 +600,23 @@ input UpdateBookingStatusInput {
   bookingId: Int!
   status: String!
   disputeReason: String
+}
+
+input ProposeRescheduleInput {
+  bookingId: Int!
+  proposedStart: String!
+  proposedEnd: String!
+  timezone: String
+}
+
+input ResolveRequestInput {
+  requestId: Int!
+  action: String!
+}
+
+input RequestCancellationInput {
+  bookingId: Int!
+  reason: String
 }
 
 input CreateAvailabilityRuleInput {

@@ -19,7 +19,7 @@ export function buildSetCalculatorRawData(formData: FormData) {
     durationMinutes: readOptionalNumber(formData.get("durationMinutes")),
     distanceMeters:
       formData.get("distanceMeters")?.toString() === ""
-        ? ""
+        ? ("" as const)
         : readOptionalNumber(formData.get("distanceMeters")),
     rpe: readOptionalNumber(formData.get("rpe")),
     notes: formData.get("notes")?.toString() || "",
@@ -36,7 +36,7 @@ export function buildSetEstimateRawData(formData: FormData) {
     durationMinutes: readOptionalNumber(formData.get("durationMinutes")),
     distanceMeters:
       formData.get("distanceMeters")?.toString() === ""
-        ? ""
+        ? ("" as const)
         : readOptionalNumber(formData.get("distanceMeters")),
     rpe: readOptionalNumber(formData.get("rpe")),
   };

@@ -1,61 +1,40 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import dynamic from "next/dynamic";
+import { CookbookMain } from "./CookbookMain";
 
-type CookbookPageClientProps = {
+type CookbookSearchClientProps = {
   initialQuery?: string;
   initialRecipeId?: string;
 };
 
-function CookbookSkeleton() {
-  return (
-    <div className="min-h-screen bg-[#FFFAFB] overflow-hidden">
-      {/* Skeleton Background Blobs (Static) */}
-      <div className="fixed inset-0 -z-10">
-        <div className="absolute -left-[10%] -top-[10%] h-[50vh] w-[50vw] rounded-full bg-[#FFB7C5]/10 blur-[80px]" />
-        <div className="absolute -bottom-[10%] -right-[10%] h-[50vh] w-[50vw] rounded-full bg-[#FFE4EE]/10 blur-[80px]" />
-      </div>
-
-      <div className="flex min-h-[60vh] flex-col items-center justify-center px-6 text-center">
-        {/* Badge Skeleton */}
-        <div className="mb-8 h-10 w-64 animate-pulse rounded-full bg-[#FFB7C5]/20" />
-        {/* Title Skeleton */}
-        <div className="h-16 w-full max-w-2xl animate-pulse rounded-2xl bg-[#1a0a12]/5" />
-        <div className="mt-4 h-16 w-3/4 max-w-xl animate-pulse rounded-2xl bg-[#1a0a12]/5" />
-        {/* Description Skeleton */}
-        <div className="mt-8 h-6 w-full max-w-lg animate-pulse rounded-lg bg-[#6b3550]/10" />
-      </div>
-
-      {/* Search Bar Skeleton */}
-      <div className="mx-auto max-w-3xl px-4">
-        <div className="h-16 w-full animate-pulse rounded-2xl border border-white bg-white/40 shadow-sm" />
-      </div>
-    </div>
-  );
-}
-
-const CookbookExperience = dynamic(
-  () => import("./CookbookMain").then((mod) => mod.CookbookMain),
-  { 
-    ssr: false, 
-    loading: () => <CookbookSkeleton /> 
-  }
-);
-
-export function CookbookPageClient({ initialQuery, initialRecipeId }: CookbookPageClientProps) {
+export function CookbookPageClient({ initialQuery, initialRecipeId }: CookbookSearchClientProps) {
   const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => { setIsMounted(true); }, []);
 
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
+  if (!isMounted) {
+    return (
+      /* Botanical Mesh Background for Skeleton[cite: 3] */
+      <div className="min-h-screen bg-[#F7F9F7]">
+        <div className="flex min-h-[58vh] flex-col items-center justify-center gap-6 px-6">
+          <div className="h-8 w-52 animate-pulse rounded-full bg-[#D1E2C4]/40" />
+          <div className="h-16 w-full max-w-2xl animate-pulse rounded-3xl bg-[#D1E2C4]/30" />
+          <div className="h-7 w-full max-w-xl animate-pulse rounded-2xl bg-[#D1E2C4]/25" />
+        </div>
+        {/* Search Bar Skeleton[cite: 3] */}
+        <div className="mx-auto max-w-3xl px-4">
+          <div className="h-14 animate-pulse rounded-full border border-[#D1E2C4]/30 bg-white/50" />
+        </div>
+        {/* Bento Card Skeleton[cite: 3] */}
+        <div className="mx-auto mt-8 max-w-7xl grid gap-4 sm:grid-cols-2 px-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="h-52 animate-pulse rounded-[1.8rem] border border-[#D1E2C4]/25 bg-white/50" />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
-  if (!isMounted) return <CookbookSkeleton />;
-
-  return (
-    <CookbookExperience 
-      initialQuery={initialQuery} 
-      initialRecipeId={initialRecipeId} 
-    />
-  );
+  return <CookbookMain initialQuery={initialQuery} initialRecipeId={initialRecipeId} />;
 }
+

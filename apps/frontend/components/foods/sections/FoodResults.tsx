@@ -44,18 +44,18 @@ export function FoodResults({
   return (
     <section aria-labelledby="food-results-heading">
 
-      {/* Status bar */}
+      {/* Status bar - updated to green tones */}
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#9B2C5A]/50"
+          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#7B8F6E]"
             style={{ fontFamily: "'Sora', var(--font-geist-sans)" }}>
             Search results
           </p>
-          <h2 id="food-results-heading" className="mt-1 text-2xl font-bold text-[#1a0a12]"
+          <h2 id="food-results-heading" className="mt-1 text-2xl font-bold text-[#1C2E14]"
             style={{ fontFamily: "'Sora', var(--font-geist-sans)" }}>
             Nutrition matches
           </h2>
-          <p className="mt-2 text-sm text-[#6b3550]/70">
+          <p className="mt-2 text-sm text-[#5A6E52]">
             {meta
               ? `${meta.totalReturned} food result${meta.totalReturned === 1 ? "" : "s"}`
               : "Search for a food to begin."}
@@ -63,7 +63,7 @@ export function FoodResults({
         </div>
       </div>
 
-      {/* Error */}
+      {/* Error - green themed */}
       <AnimatePresence>
         {error && (
           <motion.div
@@ -71,14 +71,14 @@ export function FoodResults({
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             role="alert"
-            className="mb-4 rounded-[1.5rem] border border-rose-200/60 bg-rose-50/70 p-4 text-sm text-rose-700 backdrop-blur-sm"
+            className="mb-4 rounded-[1.5rem] border border-[#c5e0b4]/60 bg-[#f1f9eb]/80 p-4 text-sm text-[#3A6B2F] backdrop-blur-sm"
           >
             {error}
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Empty states */}
+      {/* Empty states - updated green border/background */}
       {!hasQuery && !error && <EmptyState title="Start with a food name" description="Try chicken breast, rice, eggs, oats, or banana." />}
       {hasQuery && !isLoading && items.length === 0 && !error && <EmptyState title="No matches found" description="Try a broader term or different spelling." />}
 
@@ -109,22 +109,12 @@ export function FoodResults({
                     ease: [0.22, 1, 0.36, 1],
                   }}
                 >
-                  {/* <FoodCard
-                    food={item}
-                    isSelected={selectedFoodId === item.id}
-                    isFavorite={favoriteIds.includes(item.id)}
-                    onSelect={onSelectFood}
-                    onToggleFavorite={onToggleFavorite}
-                    onAddToMeal={onAddToMeal}
-                  /> */}
                   <FoodCard
                     key={item.id}
                     food={item}
                     isSelected={selectedFoodId === item.id}
                     isFavorite={favoriteIds.includes(item.id)}
-                    // Just pass the function directly! 
-                    // FoodCard will call it with the food object.
-                    onSelect={onSelectFood} 
+                    onSelect={onSelectFood}
                     onToggleFavorite={onToggleFavorite}
                     onAddToMeal={onAddToMeal}
                   />
@@ -135,17 +125,17 @@ export function FoodResults({
         )}
       </div>
 
-      {/* Pagination */}
+      {/* Pagination - updated green theme */}
       <AnimatePresence>
         {hasQuery && !isLoading && (items.length > 0 || hasPreviousPage) && (
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
-            className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-[1.5rem] border border-[#FFB7C5]/25 bg-white/40 px-5 py-3.5 backdrop-blur-xl"
+            className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-[1.5rem] border border-[#cde2c0] bg-white/80 px-5 py-3.5 shadow-sm"
           >
-            <span className="text-sm text-[#6b3550]">
-              Page <span className="font-bold text-[#2d1520]">{page}</span>
+            <span className="text-sm text-[#5A6E52]">
+              Page <span className="font-bold text-[#2C4E1E]">{page}</span>
             </span>
             <div className="flex gap-2">
               <Button
@@ -153,7 +143,7 @@ export function FoodResults({
                 onClick={onPreviousPage}
                 disabled={!hasPreviousPage}
                 aria-label="Previous page"
-                className="rounded-full border-[#FFB7C5]/50 bg-white/70 text-[#9B2C5A] hover:bg-[#FFF0F5] disabled:opacity-30"
+                className="rounded-full border-[#c5e0b4] bg-white text-[#3A6B2F] hover:bg-[#f1f9eb] hover:text-[#2C4E1E] disabled:opacity-30"
               >
                 <ChevronLeft className="h-4 w-4" /> Prev
               </Button>
@@ -161,7 +151,7 @@ export function FoodResults({
                 onClick={onNextPage}
                 disabled={!hasNextPage}
                 aria-label="Next page"
-                className="rounded-full bg-gradient-to-r from-[#C94F7E] to-[#9B2C5A] text-white shadow-[0_6px_20px_rgba(180,50,100,0.4)] hover:opacity-90 disabled:opacity-30"
+                className="rounded-full bg-gradient-to-r from-[#7CB342] to-[#558B2F] text-white shadow-md hover:from-[#8BC34A] hover:to-[#689F38] disabled:opacity-30"
               >
                 Next <ChevronRight className="h-4 w-4" />
               </Button>
@@ -173,36 +163,38 @@ export function FoodResults({
   );
 }
 
+// EmptyState with green border and background
 function EmptyState({ title, description }: { title: string; description: string }) {
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="rounded-[2rem] border border-dashed border-[#FFB7C5]/40 bg-white/35 px-6 py-14 text-center backdrop-blur-sm"
+      className="rounded-[2rem] border border-dashed border-[#bcdd9c] bg-white/60 px-6 py-14 text-center shadow-sm"
     >
-      <h3 className="text-xl font-semibold text-[#2d1520]" style={{ fontFamily: "'Sora', var(--font-geist-sans)" }}>
+      <h3 className="text-xl font-semibold text-[#1C2E14]" style={{ fontFamily: "'Sora', var(--font-geist-sans)" }}>
         {title}
       </h3>
-      <p className="mt-2 text-sm text-[#6b3550]/70" style={{ fontFamily: "'Nunito', var(--font-geist-sans)" }}>
+      <p className="mt-2 text-sm text-[#5A6E52]" style={{ fontFamily: "'Nunito', var(--font-geist-sans)" }}>
         {description}
       </p>
     </motion.div>
   );
 }
 
+// Skeleton with green placeholders
 function FoodCardSkeleton() {
   return (
-    <div className="animate-pulse rounded-[1.6rem] border border-[#FFB7C5]/25 bg-white/50 p-5">
+    <div className="animate-pulse rounded-[1.6rem] border border-[#cde2c0] bg-white p-5 shadow-sm">
       <div className="flex items-start justify-between gap-3">
         <div className="space-y-2 flex-1">
-          <div className="h-5 w-3/4 rounded-full bg-[#FFB7C5]/30" />
-          <div className="h-4 w-1/2 rounded-full bg-[#FFB7C5]/20" />
+          <div className="h-5 w-3/4 rounded-full bg-[#e8f0e1]" />
+          <div className="h-4 w-1/2 rounded-full bg-[#eef5e8]" />
         </div>
-        <div className="h-16 w-20 rounded-[1rem] bg-[#C94F7E]/15" />
+        <div className="h-16 w-20 rounded-[1rem] bg-[#dcf0ce]" />
       </div>
       <div className="mt-4 grid grid-cols-4 gap-2">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="h-16 rounded-[1rem] bg-[#FFB7C5]/20" />
+          <div key={i} className="h-16 rounded-[1rem] bg-[#eef5e8]" />
         ))}
       </div>
     </div>

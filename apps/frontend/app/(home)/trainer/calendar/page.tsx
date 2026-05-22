@@ -1,6 +1,6 @@
 import { getMyTrainerBookings } from "@/lib/marketplace";
 import { TrainerCalendarView } from "@/components/trainer/TrainerCalendarView";
-import { CalendarDays } from "lucide-react";
+import { CalendarDays, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
 export default async function TrainerCalendarPage() {
@@ -8,6 +8,14 @@ export default async function TrainerCalendarPage() {
 
   return (
     <div className="space-y-6">
+      <Link
+        href="/trainer"
+        className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+      >
+        <ArrowLeft className="size-4" />
+        Back to Dashboard
+      </Link>
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-display text-2xl font-bold text-primary-deep">Session Calendar</h1>

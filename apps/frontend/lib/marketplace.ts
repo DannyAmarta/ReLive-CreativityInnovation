@@ -36,6 +36,7 @@ export type TrainerProfileRecord = {
 
 export type BookingRecord = {
   id: number;
+  clientId: number;
   status: string;
   paymentType?: string | null;
   txHash?: string | null;

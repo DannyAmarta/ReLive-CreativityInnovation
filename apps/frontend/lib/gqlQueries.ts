@@ -572,6 +572,7 @@ export const GET_MY_CLIENT_BOOKINGS_QUERY = gql`
     query MyClientBookings {
         myClientBookings {
             id
+            clientId
             status
             paymentType
             txHash
@@ -613,6 +614,7 @@ export const GET_MY_TRAINER_BOOKINGS_QUERY = gql`
     query MyTrainerBookings {
         myTrainerBookings {
             id
+            clientId
             status
             paymentType
             txHash
@@ -839,3 +841,110 @@ export const DELETE_AVAILABILITY_RULE_MUTATION = gql`
     }
 `
 
+export const ADMIN_GET_DISPUTED_BOOKINGS_QUERY = gql`
+    query AdminGetDisputedBookings {
+        adminGetDisputedBookings {
+            id
+            clientId
+            client { id name email }
+            trainerId
+            trainer { id user { id name email } }
+            serviceId
+            service { id title description priceInIdr }
+            status
+            paymentType
+            fiatAmount
+            servicePriceIdr
+            processingFeeIdr
+            gatewayPaymentMethod
+            disputeReason
+            scheduledStart
+            scheduledEnd
+            timezone
+            createdAt
+            updatedAt
+        }
+    }
+`
+
+export const MY_RESCHEDULE_REQUESTS_QUERY = gql`
+    query MyRescheduleRequests {
+        myRescheduleRequests {
+            id
+            bookingId
+            proposedById
+            originalStart
+            originalEnd
+            proposedStart
+            proposedEnd
+            timezone
+            status
+            createdAt
+            updatedAt
+        }
+    }
+`
+
+export const MY_CANCELLATION_REQUESTS_QUERY = gql`
+    query MyCancellationRequests {
+        myCancellationRequests {
+            id
+            bookingId
+            proposedById
+            reason
+            status
+            createdAt
+            updatedAt
+        }
+    }
+`
+
+export const PROPOSE_RESCHEDULE_MUTATION = gql`
+    mutation ProposeBookingReschedule($input: ProposeRescheduleInput!) {
+        proposeBookingReschedule(input: $input) {
+            id
+            bookingId
+            proposedById
+            proposedStart
+            proposedEnd
+            timezone
+            status
+            createdAt
+        }
+    }
+`
+
+export const RESOLVE_RESCHEDULE_MUTATION = gql`
+    mutation ResolveBookingReschedule($input: ResolveRequestInput!) {
+        resolveBookingReschedule(input: $input) {
+            id
+            bookingId
+            status
+            updatedAt
+        }
+    }
+`
+
+export const REQUEST_CANCELLATION_MUTATION = gql`
+    mutation RequestBookingCancellation($input: RequestCancellationInput!) {
+        requestBookingCancellation(input: $input) {
+            id
+            bookingId
+            proposedById
+            reason
+            status
+            createdAt
+        }
+    }
+`
+
+export const RESOLVE_CANCELLATION_MUTATION = gql`
+    mutation ResolveBookingCancellation($input: ResolveRequestInput!) {
+        resolveBookingCancellation(input: $input) {
+            id
+            bookingId
+            status
+            updatedAt
+        }
+    }
+`

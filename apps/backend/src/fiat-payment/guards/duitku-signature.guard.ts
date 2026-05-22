@@ -31,7 +31,7 @@ export class DuitkuSignatureGuard implements CanActivate {
       .update(merchantCode + amount + merchantOrderId + apiKey)
       .digest('hex');
 
-    if (incomingSignature !== expectedSignature) {
+    if (incomingSignature.toLowerCase() !== expectedSignature.toLowerCase()) {
       throw new BadRequestException('Invalid webhook signature');
     }
     return true;

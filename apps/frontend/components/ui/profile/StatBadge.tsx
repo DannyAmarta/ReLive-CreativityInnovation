@@ -29,7 +29,7 @@ export function StatBadge({
       whileHover={{ 
         scale: 1.05, 
         y: -8,
-        shadow: "0 25px 50px -12px rgba(45, 90, 39, 0.25)" 
+        boxShadow: "0 25px 50px -12px rgba(45, 90, 39, 0.25)" 
       }}
       transition={{ type: "spring", stiffness: 400, damping: 25 }}
       

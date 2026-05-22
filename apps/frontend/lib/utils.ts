@@ -5,7 +5,7 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatDate(iso: string, opts?: Intl.DateTimeFormatOptions): string {
+export function formatDate(iso: string | Date, opts?: Intl.DateTimeFormatOptions): string {
   return new Date(iso).toLocaleDateString("en-US", opts ?? { year: "numeric", month: "short", day: "numeric" });
 }
 

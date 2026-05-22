@@ -14,11 +14,11 @@ export default async function FavoriteTrainersPage() {
         {/* ── Header ── */}
         <div className="mb-8">
           <Link
-            href="/client/trainers"
-            className="mb-4 inline-flex items-center gap-1.5 text-sm text-[#67715f] hover:text-primary-deep transition-colors"
+            href="/client"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors mb-6"
           >
-            <ArrowLeft className="h-4 w-4" />
-            Back to all trainers
+            <ArrowLeft className="size-4" />
+            Back to Dashboard
           </Link>
 
           <div className="flex items-center gap-3 mt-2">

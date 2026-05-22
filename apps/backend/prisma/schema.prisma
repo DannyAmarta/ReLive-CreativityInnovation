@@ -42,6 +42,13 @@ enum WithdrawalStatus {
   FAILED
 }
 
+enum RequestStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  EXPIRED
+}
+
 model User {
   id            Int     @id @default(autoincrement())
   email         String  @unique
@@ -281,7 +288,11 @@ model Booking {
   updatedAt DateTime @updatedAt
 
   // Relations for fiat payments
-  paymentTransactions PaymentTransaction[]
+  paymentTransactions  PaymentTransaction[]
+
+  // Relations for reschedule and cancellation requests
+  rescheduleRequests   BookingRescheduleRequest[]   @relation("RescheduleRequests")
+  cancellationRequests BookingCancellationRequest[] @relation("CancellationRequests")
 }
 
 // --- Trainer Availability / Scheduling ---
@@ -363,3 +374,37 @@ model Notification {
 
   @@index([userId, createdAt(sort: Desc)])
 }
+
+// --- Reschedule & Cancellation Requests ---
+
+model BookingRescheduleRequest {
+  id            Int           @id @default(autoincrement())
+  bookingId     Int
+  booking       Booking       @relation("RescheduleRequests", fields: [bookingId], references: [id], onDelete: Cascade)
+  proposedById  Int           // userId of proposer
+  originalStart DateTime?
+  originalEnd   DateTime?
+  proposedStart DateTime
+  proposedEnd   DateTime
+  timezone      String        @default("Asia/Jakarta")
+  status        RequestStatus @default(PENDING)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([bookingId])
+  @@index([proposedById])
+}
+
+model BookingCancellationRequest {
+  id           Int           @id @default(autoincrement())
+  bookingId    Int
+  booking      Booking       @relation("CancellationRequests", fields: [bookingId], references: [id], onDelete: Cascade)
+  proposedById Int           // userId of proposer
+  reason       String?
+  status       RequestStatus @default(PENDING)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([bookingId])
+  @@index([proposedById])
+}

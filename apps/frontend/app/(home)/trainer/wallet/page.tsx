@@ -1,11 +1,12 @@
 import { SessionWarning } from "@/components/auth/SessionWarning";
-import { ArrowDownToLine, Wallet as WalletIcon } from "lucide-react";
+import { ArrowDownToLine, Wallet as WalletIcon, ArrowLeft } from "lucide-react";
 import { PageHeader } from "@/components/trainer/PageHeader";
 import { StatusBadge } from "@/components/trainer/StatusBadge";
 import { WithdrawalForm } from "@/components/trainer/WithdrawalForm";
 import { isAuthenticationGraphqlError } from "@/lib/fetchGraphQL";
 import { formatDateTime, formatIDR } from "@/lib/format";
 import { getMyFiatWallet, getMyTrainerBookings, getMyWithdrawalRequests } from "@/lib/marketplace";
+import Link from "next/link";
 
 type LedgerEntry =
   | {
@@ -79,7 +80,15 @@ export default async function TrainerWalletPage({
   );
 
   return (
-    <div>
+    <div className="space-y-6">
+      <Link
+        href="/trainer"
+        className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+      >
+        <ArrowLeft className="size-4" />
+        Back to Dashboard
+      </Link>
+
       <PageHeader
         title="Wallet"
         description="Real fiat wallet balance plus seeded withdrawal history and booking credits."

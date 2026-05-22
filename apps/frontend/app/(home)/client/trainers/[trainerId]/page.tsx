@@ -1,6 +1,7 @@
 import { SessionWarning } from "@/components/auth/SessionWarning";
-import { CheckCircle2, Star } from "lucide-react";
+import { CheckCircle2, Star, ArrowLeft } from "lucide-react";
 import { ServiceBookingFlow } from "@/components/relive/ServiceBookingFlow";
+import Link from "next/link";
 import { getTrainerProfile } from "@/lib/marketplace";
 import { notFound } from "next/navigation";
 
@@ -29,14 +30,19 @@ export default async function TrainerProfilePage({
 
   return (
     <div className="min-h-screen bg-background">
-      <main className="mx-auto grid max-w-6xl gap-10 px-4 py-10 md:grid-cols-[1.05fr_1fr] md:px-6 md:py-14">
+      <main className="mx-auto max-w-6xl px-4 py-10 md:px-6 md:py-14">
+        <Link href="/client/trainers" className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors mb-6">
+          <ArrowLeft className="size-4" /> Back to trainers
+        </Link>
+
         {query?.session === "expired" && (
-          <div className="md:col-span-2">
+          <div className="mb-6">
             <SessionWarning description="Your Google session needs a refresh before a booking can be created. Trainer details are still visible, but please sign in again before reserving this service." />
           </div>
         )}
 
-        <div>
+        <div className="grid gap-10 md:grid-cols-[1.05fr_1fr]">
+          <div>
           <div className="overflow-hidden rounded-3xl border border-border bg-card">
             {trainer.user.avatar ? (
               <img
@@ -99,7 +105,8 @@ export default async function TrainerProfilePage({
             ))}
           </div>
         </div>
-      </main>
-    </div>
-  );
+      </div>
+    </main>
+  </div>
+);
 }

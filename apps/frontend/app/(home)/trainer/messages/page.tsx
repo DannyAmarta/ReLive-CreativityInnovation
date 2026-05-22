@@ -45,7 +45,15 @@ export default function Messages() {
   };
 
   return (
-    <div>
+    <div className="space-y-6">
+      <Link
+        href="/trainer"
+        className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+      >
+        <ArrowLeft className="size-4" />
+        Back to Dashboard
+      </Link>
+
       <PageHeader title="Messages" description="One conversation per booking. Stay in sync with your clients." />
 
       <div className="glass-card-elevated overflow-hidden grid grid-cols-1 md:grid-cols-[320px_1fr] h-[calc(100dvh-260px)] min-h-[500px]">

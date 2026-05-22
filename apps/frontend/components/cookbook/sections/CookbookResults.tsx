@@ -65,7 +65,6 @@ export function CookbookResults({
           </div>
         ) : (
           <AnimatePresence mode="popLayout">
-            {/* ── THE 3-COLUMN GRID ── */}
             <motion.div
               key={`page-${page}`}
               initial={{ opacity: 0 }}
@@ -97,32 +96,35 @@ export function CookbookResults({
         )}
       </div>
 
-      {/* Pagination - Botanical Style */}
+      {/* Pagination - matching FoodResults green botanical theme */}
       <AnimatePresence>
         {hasQuery && !isLoading && (items.length > 0 || hasPreviousPage) && (
           <motion.div
-            initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mt-16 flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-stone-200/60 bg-white/80 px-8 py-5 backdrop-blur-xl shadow-lg"
+            exit={{ opacity: 0 }}
+            className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-[1.5rem] border border-[#cde2c0] bg-white/80 px-5 py-3.5 shadow-sm"
           >
-            <span className="text-sm font-medium text-stone-500">
-              Archive Page <span className="font-black text-[#2D4A22]">{page}</span>
+            <span className="text-sm text-[#5A6E52]">
+              Page <span className="font-bold text-[#2C4E1E]">{page}</span>
             </span>
-            <div className="flex gap-3">
+            <div className="flex gap-2">
               <Button
                 variant="outline"
                 onClick={onPreviousPage}
                 disabled={!hasPreviousPage}
-                className="rounded-full border-stone-200 text-[#2D4A22] hover:bg-stone-50 disabled:opacity-30"
+                aria-label="Previous page"
+                className="rounded-full border-[#c5e0b4] bg-white text-[#3A6B2F] hover:bg-[#f1f9eb] hover:text-[#2C4E1E] disabled:opacity-30"
               >
-                <ChevronLeft className="h-4 w-4 mr-1" /> Prev
+                <ChevronLeft className="h-4 w-4" /> Prev
               </Button>
               <Button
                 onClick={onNextPage}
                 disabled={!hasNextPage}
-                className="rounded-full bg-[#2D4A22] text-white shadow-md hover:bg-[#243d1c] disabled:opacity-30"
+                aria-label="Next page"
+                className="rounded-full bg-gradient-to-r from-[#7CB342] to-[#558B2F] text-white shadow-md hover:from-[#8BC34A] hover:to-[#689F38] disabled:opacity-30"
               >
-                Next <ChevronRight className="h-4 w-4 ml-1" />
+                Next <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
           </motion.div>
@@ -132,6 +134,7 @@ export function CookbookResults({
   );
 }
 
+// EmptyState and RecipeCardSkeleton remain unchanged
 function EmptyState({ title, description, icon }: { title: string; description: string; icon?: React.ReactNode }) {
   return (
     <motion.div

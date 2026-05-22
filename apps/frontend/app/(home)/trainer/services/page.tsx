@@ -1,11 +1,12 @@
 import { SessionWarning } from "@/components/auth/SessionWarning";
-import { EyeOff, Zap } from "lucide-react";
+import { EyeOff, Zap, ArrowLeft } from "lucide-react";
 import { PageHeader } from "@/components/trainer/PageHeader";
 import { CreateServiceForm, EditServiceForm } from "@/components/trainer/ServiceForms";
 import { toggleTrainerServiceAction } from "@/lib/actions/marketplace";
 import { isAuthenticationGraphqlError } from "@/lib/fetchGraphQL";
 import { formatIDR, formatUSDC } from "@/lib/format";
 import { getMyTrainerProfile, lamportsToTokenUnits } from "@/lib/marketplace";
+import Link from "next/link";
 
 export default async function TrainerServicesPage({
   searchParams,
@@ -25,7 +26,15 @@ export default async function TrainerServicesPage({
       isAuthenticationGraphqlError(trainerProfileResult[0].reason));
 
   return (
-    <div>
+    <div className="space-y-6">
+      <Link
+        href="/trainer"
+        className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+      >
+        <ArrowLeft className="size-4" />
+        Back to Dashboard
+      </Link>
+
       <PageHeader
         title="Services"
         description="Manage trainer services directly from the real service rows used by the client marketplace."

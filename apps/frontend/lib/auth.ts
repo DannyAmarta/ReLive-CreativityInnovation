@@ -50,9 +50,9 @@ export async function Register(
     const { password2, ...userInput } = validatedFields.data;
 
     try {
-        const data = await fetchGraphql(print(CREATE_USER_MUTATION), {
+        const data = (await fetchGraphql(print(CREATE_USER_MUTATION), {
             input: userInput,
-        });
+        })) as any;
 
         return {
             data: {
@@ -96,9 +96,9 @@ export async function Login(
     let data;
 
     try {
-        data = await fetchGraphql(print(SIGN_IN_MUTATION), {
+        data = (await fetchGraphql(print(SIGN_IN_MUTATION), {
             input: validatedFields.data,
-        });
+        })) as any;
     } catch (e: any) {
         return {
             data: rawData,

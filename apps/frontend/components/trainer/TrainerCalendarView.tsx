@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { Calendar, dateFnsLocalizer, Views, View } from "react-big-calendar";
-import { format, parse, startOfWeek, getDay } from "date-fns";
-import { id } from "date-fns/locale";
-import "react-big-calendar/lib/css/react-big-calendar.css";
-import { CheckCircle2, X, AlertTriangle, User, Clock, CreditCard, ChevronLeft, ChevronRight } from "lucide-react";
+import { useState, useCallback, useMemo, useRef } from "react";
+import FullCalendar from "@fullcalendar/react";
+import dayGridPlugin from "@fullcalendar/daygrid";
+import timeGridPlugin from "@fullcalendar/timegrid";
+import listPlugin from "@fullcalendar/list";
+import interactionPlugin from "@fullcalendar/interaction";
+import dayjs from "dayjs";
+import { CheckCircle2, X, AlertTriangle, User, Clock, CreditCard, Filter, CalendarDays, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import type { BookingRecord } from "@/lib/marketplace";
 import { formatIDR, formatDateTime } from "@/lib/format";
@@ -14,47 +16,15 @@ import { print } from "graphql";
 import { UPDATE_BOOKING_STATUS_MUTATION } from "@/lib/gqlQueries";
 import { useRouter } from "next/navigation";
 
-// ─── Localizer ────────────────────────────────────────────────────────────────
-const locales = { id };
-const localizer = dateFnsLocalizer({
-  format,
-  parse,
-  startOfWeek: () => startOfWeek(new Date(), { weekStartsOn: 1 }),
-  getDay,
-  locales,
-});
-
 // ─── Status color map ─────────────────────────────────────────────────────────
 const STATUS_COLORS: Record<string, string> = {
-  PENDING: "#c77a5a",
-  ACTIVE: "#4a5d3e",
-  COMPLETED: "#6c7662",
-  DISPUTED: "#c53030",
-  CANCELLED: "#9ca3af",
-  REJECTED: "#d1d5db",
+  PENDING: "#c77a5a",   // Terracotta
+  ACTIVE: "#4a5d3e",    // Sage
+  COMPLETED: "#6c7662", // Muted Sage
+  DISPUTED: "#c53030",  // Crimson
+  CANCELLED: "#9ca3af", // Gray
+  REJECTED: "#d1d5db",  // Light Gray
 };
-
-type CalendarEvent = {
-  id: number;
-  title: string;
-  start: Date;
-  end: Date;
-  resource: BookingRecord;
-  color: string;
-};
-
-function bookingsToEvents(bookings: BookingRecord[]): CalendarEvent[] {
-  return bookings
-    .filter((b) => b.scheduledStart && b.scheduledEnd)
-    .map((b) => ({
-      id: b.id,
-      title: `${b.client?.name ?? "Client"} — ${b.service?.title ?? "Session"}`,
-      start: new Date((b as any).scheduledStart),
-      end: new Date((b as any).scheduledEnd),
-      resource: b,
-      color: STATUS_COLORS[b.status] ?? "#6c7662",
-    }));
-}
 
 // ─── Event Detail Drawer ──────────────────────────────────────────────────────
 function BookingDrawer({
@@ -79,14 +49,14 @@ function BookingDrawer({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-      <div className="w-full max-w-md rounded-3xl border border-border bg-card shadow-2xl overflow-hidden animate-in slide-in-from-bottom-4">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="w-full max-w-md rounded-3xl border border-border bg-card shadow-2xl overflow-hidden animate-in slide-in-from-bottom-4 duration-300">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border px-6 py-4">
           <div className="flex items-center gap-2">
             <div
               className="size-3 rounded-full"
-              style={{ background: STATUS_COLORS[booking.status] }}
+              style={{ background: STATUS_COLORS[booking.status] ?? "#6c7662" }}
             />
             <span className="text-sm font-semibold text-primary-deep">{booking.status}</span>
           </div>
@@ -110,8 +80,8 @@ function BookingDrawer({
           <div className="space-y-3 rounded-2xl border border-border bg-muted/30 p-4 text-sm">
             <Row icon={<User className="size-4" />} label="Service" value={booking.service?.title ?? "—"} />
             <Row icon={<Clock className="size-4" />} label="Time" value={
-              (booking as any).scheduledStart
-                ? `${formatDateTime((booking as any).scheduledStart)} – ${formatDateTime((booking as any).scheduledEnd)}`
+              booking.scheduledStart
+                ? `${formatDateTime(booking.scheduledStart)} – ${formatDateTime(booking.scheduledEnd ?? "")}`
                 : "Not scheduled"
             } />
             <Row icon={<CreditCard className="size-4" />} label="Payment" value={
@@ -166,9 +136,9 @@ function BookingDrawer({
 function Row({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
     <div className="flex items-center gap-3">
-      <span className="text-muted-foreground">{icon}</span>
+      <span className="text-muted-foreground shrink-0">{icon}</span>
       <span className="text-muted-foreground w-20 shrink-0">{label}</span>
-      <span className="font-medium text-primary-deep flex-1 text-right">{value}</span>
+      <span className="font-medium text-primary-deep flex-1 text-right truncate">{value}</span>
     </div>
   );
 }
@@ -176,15 +146,62 @@ function Row({ icon, label, value }: { icon: React.ReactNode; label: string; val
 // ─── Main Calendar View ───────────────────────────────────────────────────────
 export function TrainerCalendarView({ initialBookings }: { initialBookings: BookingRecord[] }) {
   const router = useRouter();
-  const [bookings, setBookings] = useState(initialBookings);
+  const calendarRef = useRef<FullCalendar>(null);
+
+  const [bookings, setBookings] = useState<BookingRecord[]>(initialBookings);
   const [selectedBooking, setSelectedBooking] = useState<BookingRecord | null>(null);
-  const [view, setView] = useState<View>(Views.WEEK);
-  const [date, setDate] = useState(new Date());
 
-  const events = bookingsToEvents(bookings);
+  // Filters State
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>([
+    "PENDING",
+    "ACTIVE",
+    "COMPLETED",
+    "CANCELLED",
+    "DISPUTED",
+    "REJECTED"
+  ]);
+  const [startDate, setStartDate] = useState<string>("");
+  const [endDate, setEndDate] = useState<string>("");
+  const [statusMenuOpen, setStatusMenuOpen] = useState(false);
 
-  const handleSelectEvent = useCallback((event: CalendarEvent) => {
-    setSelectedBooking(event.resource);
+  // Map and filter bookings to FullCalendar events
+  const filteredEvents = useMemo(() => {
+    return bookings
+      .filter((b) => b.scheduledStart && b.scheduledEnd)
+      .map((b) => {
+        const evStart = dayjs(b.scheduledStart);
+        const evEnd = dayjs(b.scheduledEnd);
+
+        // Status check
+        if (!selectedStatuses.includes(b.status)) return null;
+
+        // Start Date check: event end time must be at or after filter start date
+        if (startDate && evEnd.isBefore(dayjs(startDate).startOf("day"))) return null;
+
+        // End Date check: event start time must be at or before filter end date
+        if (endDate && evStart.isAfter(dayjs(endDate).endOf("day"))) return null;
+
+        return {
+          id: String(b.id),
+          title: `${b.client?.name ?? "Client"} — ${b.service?.title ?? "Session"}`,
+          start: b.scheduledStart!,
+          end: b.scheduledEnd!,
+          backgroundColor: STATUS_COLORS[b.status] ?? "#6c7662",
+          borderColor: "transparent",
+          extendedProps: {
+            booking: b,
+            status: b.status,
+          },
+        };
+      })
+      .filter((e) => e !== null) as any[];
+  }, [bookings, selectedStatuses, startDate, endDate]);
+
+  const handleEventClick = useCallback((info: any) => {
+    const booking = info.event.extendedProps.booking;
+    if (booking) {
+      setSelectedBooking(booking);
+    }
   }, []);
 
   async function handleStatusAction(bookingId: number, status: string) {
@@ -193,29 +210,25 @@ export function TrainerCalendarView({ initialBookings }: { initialBookings: Book
         input: { bookingId, newStatus: status },
       });
       setBookings((prev) =>
-        prev.map((b) => (b.id === bookingId ? { ...b, status } : b)),
+        prev.map((b) => (b.id === bookingId ? { ...b, status } : b))
       );
-      toast.success(`Booking ${status === "ACTIVE" ? "accepted" : status === "REJECTED" ? "rejected" : "completed"} successfully`);
+      toast.success(
+        `Booking ${
+          status === "ACTIVE"
+            ? "accepted"
+            : status === "REJECTED"
+            ? "rejected"
+            : "completed"
+        } successfully`
+      );
       router.refresh();
     } catch (err) {
       toast.error((err as any)?.message ?? "Action failed");
     }
   }
 
-  const eventStyleGetter = useCallback((event: CalendarEvent) => ({
-    style: {
-      backgroundColor: event.color,
-      borderRadius: "10px",
-      border: "none",
-      color: "#fff",
-      fontSize: "12px",
-      fontWeight: 600,
-      padding: "2px 6px",
-    },
-  }), []);
-
   return (
-    <>
+    <div className="space-y-6">
       {selectedBooking && (
         <BookingDrawer
           booking={selectedBooking}
@@ -224,68 +237,311 @@ export function TrainerCalendarView({ initialBookings }: { initialBookings: Book
         />
       )}
 
-      {/* Legend */}
-      <div className="flex flex-wrap gap-3 mb-4">
-        {Object.entries(STATUS_COLORS).map(([status, color]) => (
-          <div key={status} className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <div className="size-2.5 rounded-full" style={{ background: color }} />
-            {status}
+      {/* Scoped CSS styling overrides for FullCalendar elements */}
+      <style>{`
+        .relive-fullcalendar-container .fc {
+          font-family: 'Nunito', sans-serif;
+          border: none;
+          background: transparent;
+        }
+        .relive-fullcalendar-container .fc-theme-standard .fc-scrollgrid,
+        .relive-fullcalendar-container .fc-theme-standard td,
+        .relive-fullcalendar-container .fc-theme-standard th {
+          border: 1px solid rgba(88, 120, 74, 0.1) !important;
+        }
+        .relive-fullcalendar-container .fc-col-header-cell {
+          background: rgba(74, 93, 62, 0.05);
+          font-family: 'Sora', sans-serif;
+          font-weight: 700;
+          font-size: 0.8rem;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          color: #4a5d3e;
+          padding: 10px 0;
+        }
+        .relive-fullcalendar-container .fc-daygrid-day-frame {
+          background: rgba(255, 252, 245, 0.35);
+          border-radius: 14px;
+          margin: 3px;
+          border: 1px solid rgba(88, 120, 74, 0.08);
+          transition: all 0.25s ease;
+          min-height: 105px;
+        }
+        .relive-fullcalendar-container .fc-daygrid-day-frame:hover {
+          background: rgba(255, 252, 245, 0.85);
+          box-shadow: var(--shadow-card);
+          border-color: rgba(88, 120, 74, 0.2);
+        }
+        .relive-fullcalendar-container .fc-day-today .fc-daygrid-day-frame {
+          background: rgba(74, 93, 62, 0.08) !important;
+          border: 1.5px solid #4a5d3e !important;
+          box-shadow: 0 4px 16px rgba(74, 93, 62, 0.1) !important;
+        }
+        .relive-fullcalendar-container .fc-daygrid-day-number {
+          font-family: 'Sora', sans-serif;
+          font-weight: 700;
+          font-size: 0.85rem;
+          color: #233126;
+          margin: 6px;
+        }
+        .relive-fullcalendar-container .fc-day-today .fc-daygrid-day-number {
+          background: #4a5d3e;
+          color: #fff !important;
+          width: 24px;
+          height: 24px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 50%;
+        }
+        .relive-fullcalendar-container .fc-event {
+          border-radius: 8px;
+          border: none !important;
+          background: transparent !important;
+          box-shadow: none !important;
+          cursor: pointer;
+          margin: 1px 3px !important;
+          padding: 0 !important;
+          opacity: 1 !important;
+        }
+        .relive-fullcalendar-container .fc-event:hover .relive-chip {
+          filter: brightness(1.08);
+          box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+        }
+        .relive-fullcalendar-container .fc-daygrid-event-harness {
+          margin: 2px 0 !important;
+        }
+        .relive-chip {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          padding: 3px 7px;
+          border-radius: 7px;
+          box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+          transition: filter 0.15s ease, box-shadow 0.15s ease;
+          overflow: hidden;
+          white-space: nowrap;
+        }
+        .relive-chip-time {
+          font-size: 0.62rem;
+          font-weight: 700;
+          opacity: 0.85;
+          shrink: 0;
+        }
+        .relive-chip-title {
+          font-size: 0.72rem;
+          font-weight: 700;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        .relive-fullcalendar-container .fc-toolbar {
+          margin-bottom: 1.5rem !important;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 10px;
+        }
+        .relive-fullcalendar-container .fc-toolbar-title {
+          font-family: 'Sora', sans-serif;
+          font-size: 1.35rem;
+          font-weight: 800;
+          color: #233126;
+          letter-spacing: -0.02em;
+        }
+        .relive-fullcalendar-container .fc-button {
+          background: rgba(255, 252, 245, 0.9) !important;
+          color: #4a5d3e !important;
+          border: 1px solid rgba(88, 120, 74, 0.2) !important;
+          border-radius: 14px !important;
+          font-family: 'Sora', sans-serif;
+          font-weight: 700;
+          font-size: 0.8rem !important;
+          padding: 7px 14px !important;
+          transition: all 0.2s ease !important;
+          box-shadow: 0 2px 4px rgba(50, 63, 43, 0.04) !important;
+          text-transform: capitalize !important;
+        }
+        .relive-fullcalendar-container .fc-button:hover {
+          background: rgba(74, 93, 62, 0.08) !important;
+          border-color: #4a5d3e !important;
+        }
+        .relive-fullcalendar-container .fc-button-active {
+          background: #4a5d3e !important;
+          color: #fff !important;
+          border-color: #4a5d3e !important;
+        }
+        .relive-fullcalendar-container .fc-button:focus {
+          box-shadow: 0 0 0 3px rgba(74, 93, 62, 0.2) !important;
+        }
+        .relive-fullcalendar-container .fc-scroller {
+          scrollbar-width: thin;
+          scrollbar-color: rgba(88, 120, 74, 0.2) transparent;
+        }
+        .relive-fullcalendar-container .fc-theme-standard .fc-list {
+          border: none !important;
+          background: transparent !important;
+        }
+        .relive-fullcalendar-container .fc-list-day-cushion {
+          background: rgba(74, 93, 62, 0.05) !important;
+        }
+        .relive-fullcalendar-container .fc-list-event:hover td {
+          background: rgba(74, 93, 62, 0.04) !important;
+        }
+      `}</style>
+
+      {/* Filter Section Card */}
+      <div className="glass-card-elevated p-6 space-y-4">
+        <div className="flex flex-wrap gap-5 items-end">
+          {/* Status Multi-Select */}
+          <div className="flex-1 min-w-[220px] space-y-1.5 relative">
+            <label className="text-xs font-bold uppercase tracking-wider text-[#4a5d3e] flex items-center gap-1.5">
+              <Filter className="size-3.5" /> Filter Status
+            </label>
+            <div>
+              <button
+                type="button"
+                onClick={() => setStatusMenuOpen(!statusMenuOpen)}
+                className="w-full flex items-center justify-between rounded-xl border border-border bg-card px-4 py-2.5 text-sm text-left font-medium text-primary-deep outline-none hover:bg-muted/40 transition-colors"
+              >
+                <span className="truncate">
+                  {selectedStatuses.length === 0
+                    ? "None selected"
+                    : selectedStatuses.length === Object.keys(STATUS_COLORS).length
+                    ? "All Statuses"
+                    : `${selectedStatuses.length} Statuses selected`}
+                </span>
+                <ChevronDown className={`size-4 text-muted-foreground transform transition-transform ${statusMenuOpen ? "rotate-180" : ""}`} />
+              </button>
+              
+              {statusMenuOpen && (
+                <>
+                  <div className="fixed inset-0 z-15" onClick={() => setStatusMenuOpen(false)} />
+                  <div className="absolute left-0 mt-2 w-full min-w-[220px] z-20 rounded-2xl border border-border bg-card shadow-xl p-2 space-y-1 animate-in fade-in slide-in-from-top-1 duration-150">
+                    {Object.keys(STATUS_COLORS).map((status) => {
+                      const isSelected = selectedStatuses.includes(status);
+                      return (
+                        <button
+                          key={status}
+                          type="button"
+                          onClick={() => {
+                            setSelectedStatuses((prev) =>
+                              isSelected
+                                ? prev.filter((s) => s !== status)
+                                : [...prev, status]
+                            );
+                          }}
+                          className="w-full flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm text-left hover:bg-muted/60 transition-colors font-medium"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            readOnly
+                            className="rounded border-border text-[#4a5d3e] focus:ring-[#4a5d3e]"
+                          />
+                          <div className="size-2.5 rounded-full shrink-0" style={{ backgroundColor: STATUS_COLORS[status] }} />
+                          <span className="text-primary-deep flex-1 text-xs">{status}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+            </div>
           </div>
-        ))}
-        <span className="ml-auto text-xs text-muted-foreground">Click any session to view details or accept/reject</span>
-      </div>
 
-      {/* Toolbar */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <button onClick={() => setDate(new Date())} className="rounded-xl border border-border px-3 py-1.5 text-xs font-semibold hover:bg-muted transition-colors">Today</button>
-          <button onClick={() => {
-            const d = new Date(date);
-            view === "week" ? d.setDate(d.getDate() - 7) : d.setMonth(d.getMonth() - 1);
-            setDate(d);
-          }} className="rounded-xl border border-border p-1.5 hover:bg-muted transition-colors">
-            <ChevronLeft className="size-4" />
-          </button>
-          <button onClick={() => {
-            const d = new Date(date);
-            view === "week" ? d.setDate(d.getDate() + 7) : d.setMonth(d.getMonth() + 1);
-            setDate(d);
-          }} className="rounded-xl border border-border p-1.5 hover:bg-muted transition-colors">
-            <ChevronRight className="size-4" />
-          </button>
-          <span className="text-sm font-semibold text-primary-deep">
-            {format(date, view === "week" ? "MMMM yyyy" : "MMMM yyyy")}
-          </span>
-        </div>
-        <div className="flex rounded-xl border border-border overflow-hidden text-xs font-semibold">
-          {([Views.WEEK, Views.DAY, Views.MONTH] as View[]).map((v) => (
+          {/* Start Date */}
+          <div className="flex-1 min-w-[160px] space-y-1.5">
+            <label className="text-xs font-bold uppercase tracking-wider text-[#4a5d3e] flex items-center gap-1.5">
+              <CalendarDays className="size-3.5" /> Start Date
+            </label>
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="w-full rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-medium text-primary-deep outline-none focus:border-[#4a5d3e] focus:ring-2 focus:ring-[rgba(74,93,62,0.2)] transition-all"
+            />
+          </div>
+
+          {/* End Date */}
+          <div className="flex-1 min-w-[160px] space-y-1.5">
+            <label className="text-xs font-bold uppercase tracking-wider text-[#4a5d3e] flex items-center gap-1.5">
+              <CalendarDays className="size-3.5" /> End Date
+            </label>
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="w-full rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-medium text-primary-deep outline-none focus:border-[#4a5d3e] focus:ring-2 focus:ring-[rgba(74,93,62,0.2)] transition-all"
+            />
+          </div>
+
+          {/* Reset Filters */}
+          {(selectedStatuses.length !== Object.keys(STATUS_COLORS).length || startDate || endDate) && (
             <button
-              key={v}
-              onClick={() => setView(v)}
-              className={`px-3 py-1.5 capitalize transition-colors ${view === v ? "bg-[#4a5d3e] text-white" : "hover:bg-muted text-muted-foreground"}`}
+              onClick={() => {
+                setSelectedStatuses(Object.keys(STATUS_COLORS));
+                setStartDate("");
+                setEndDate("");
+              }}
+              className="rounded-xl border border-border px-4 py-2.5 text-xs font-semibold hover:bg-muted text-muted-foreground transition-colors self-end h-[44px]"
             >
-              {v}
+              Reset Filters
             </button>
+          )}
+        </div>
+
+        {/* Color Legend */}
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pt-2 border-t border-border/60">
+          <span className="text-xs font-semibold text-muted-foreground">Legend:</span>
+          {Object.entries(STATUS_COLORS).map(([status, color]) => (
+            <div key={status} className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
+              <div className="size-2.5 rounded-full" style={{ background: color }} />
+              {status}
+            </div>
           ))}
+          <span className="ml-auto text-xs text-muted-foreground hidden sm:inline">Click any session to manage status</span>
         </div>
       </div>
 
-      {/* Calendar */}
-      <div className="rounded-2xl border border-border bg-card overflow-hidden" style={{ height: 620 }}>
-        <Calendar
-          localizer={localizer}
-          events={events}
-          view={view}
-          date={date}
-          onView={setView}
-          onNavigate={setDate}
-          onSelectEvent={handleSelectEvent}
-          eventPropGetter={eventStyleGetter}
-          toolbar={false}
-          startAccessor="start"
-          endAccessor="end"
+      {/* Calendar Wrapper */}
+      <div className="relive-panel p-6 relive-fullcalendar-container">
+        <FullCalendar
+          ref={calendarRef}
+          plugins={[dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin]}
+          initialView="dayGridMonth"
+          headerToolbar={{
+            left: "prev,next today",
+            center: "title",
+            right: "dayGridMonth,timeGridWeek,listWeek",
+          }}
+          events={filteredEvents}
+          eventClick={handleEventClick}
+          editable={false}
+          dayMaxEvents={true}
+          height="auto"
+          eventContent={(arg) => {
+            const status: string = arg.event.extendedProps.status ?? "ACTIVE";
+            const color = STATUS_COLORS[status] ?? "#4a5d3e";
+            const textColor = ["CANCELLED", "REJECTED"].includes(status) ? "#374151" : "#ffffff";
+            const timeText = arg.timeText;
+            const title = arg.event.title;
+            return (
+              <div
+                className="relive-chip"
+                style={{ backgroundColor: color, color: textColor }}
+                title={title}
+              >
+                {timeText && (
+                  <span className="relive-chip-time">{timeText}</span>
+                )}
+                <span className="relive-chip-title">{title}</span>
+              </div>
+            );
+          }}
         />
       </div>
-    </>
+    </div>
   );
 }

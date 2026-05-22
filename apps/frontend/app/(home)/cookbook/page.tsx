@@ -13,12 +13,10 @@ export default async function CookbookPage({
 }) {
   const resolvedSearchParams = await searchParams;
   return (
-    <div className="relative min-h-screen overflow-x-hidden bg-[#fffaf4]">
-      <CookbookPageClient
-        initialQuery={resolvedSearchParams?.query}
-        initialRecipeId={resolvedSearchParams?.recipe}
-      />
-    </div>
+    <CookbookPageClient
+      initialQuery={resolvedSearchParams?.query}
+      initialRecipeId={resolvedSearchParams?.recipe}
+    />
   );
 }
 

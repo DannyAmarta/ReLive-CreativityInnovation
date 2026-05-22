@@ -17,13 +17,13 @@ export function useOnboarding() {
     try {
       // We use authFetchGraphql because we need the Bearer token!
       // Inside useOnboarding.ts
-        const data = await authFetchGraphql(UPDATE_PROFILE_MUTATION.loc!.source.body, {
+        const data = (await authFetchGraphql(UPDATE_PROFILE_MUTATION.loc!.source.body, {
         input: {
             ...selections,
             profileCompleted: true,
             vitalityScore: 15,
         },
-        });
+        })) as any;
 
       return data.updateProfile;
     } catch (err: any) {

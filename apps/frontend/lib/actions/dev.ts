@@ -18,7 +18,7 @@ export async function changeRoleAction(formData: FormData) {
     await authFetchGraphql(print(CHANGE_MY_ROLE_MUTATION), { role });
     
     // Refresh the session so the warning banner goes away immediately
-    const refreshData = await authFetchGraphql(print(DEV_REFRESH_SESSION_MUTATION));
+    const refreshData = (await authFetchGraphql(print(DEV_REFRESH_SESSION_MUTATION))) as any;
     if (refreshData?.devRefreshSession) {
       await createSession({
         user: {

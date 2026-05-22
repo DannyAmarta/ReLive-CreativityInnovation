@@ -172,14 +172,14 @@ export function AvailabilityManager({ initialRules }: { initialRules: Availabili
     (a, b) => new Date(a.specificDate!).getTime() - new Date(b.specificDate!).getTime(),
   );
 
-  async function handleToggle(dow: number, existing: AvailabilityRule | null) {
+  async function handleToggle(dow: number, existing: AvailabilityRule | null): Promise<void> {
     if (existing) {
       const res = await updateAvailabilityRuleAction({ id: existing.id, isAvailable: !existing.isAvailable });
-      if (!res.success) return toast.error(res.error);
+      if (!res.success) { toast.error(res.error); return; }
       setRules((prev) => prev.map((r) => r.id === existing.id ? { ...r, isAvailable: !r.isAvailable } : r));
     } else {
       const res = await createAvailabilityRuleAction({ dayOfWeek: dow, startTime: "09:00", endTime: "17:00", isAvailable: true });
-      if (!res.success) return toast.error((res as any).error);
+      if (!res.success) { toast.error((res as any).error); return; }
       // Refresh rules (simple approach: reload)
       window.location.reload();
     }
