@@ -8,6 +8,7 @@ import { GET_ME_QUERY } from "@/lib/gqlQueries";
 import { print } from "graphql";
 import { OnboardingLayout } from "@/components/profile/onboarding/OnboardingLayout";
 import { SageChat } from "@/components/chat/SageChat";
+import { SessionExpiryWatcher } from "@/components/auth/SessionExpiryWatcher";
 
 export default async function HomeLayout({
   children,
@@ -40,17 +41,24 @@ export default async function HomeLayout({
     }
   }
 
+  const expiryTimeStr = sessionState.accessTokenExpiryDate?.toISOString() || null;
+
   // 3. THE GATEKEEPER
   // If the user exists but hasn't completed their profile,
   // we show ONLY the onboarding, hiding the Sidebar and children.
   if ("profileCompleted" in user && user.profileCompleted === false) {
-    return <OnboardingLayout initialUser={user} />;
+    return (
+      <>
+        <OnboardingLayout initialUser={user} />
+        <SessionExpiryWatcher expiryTime={expiryTimeStr} />
+      </>
+    );
   }
 
   // 4. THE NORMAL APP
   return (
     <div className="flex h-screen w-full bg-[#f6f1e7] text-[#233126] font-sans overflow-hidden">
-      <Sidebar />
+      {/* <Sidebar /> */}
       <main className="flex-1 overflow-y-auto relative z-0">
         {sessionWarning && (
           <div className="sticky top-0 z-30 px-4 pt-4 md:px-6">
@@ -59,6 +67,7 @@ export default async function HomeLayout({
         )}
         {children}
         <SageChat user={user} /> {/* <--- SAGE LIVES HERE */}
+        <SessionExpiryWatcher expiryTime={expiryTimeStr} />
       </main>
     </div>
   );

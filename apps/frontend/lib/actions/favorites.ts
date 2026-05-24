@@ -125,14 +125,12 @@ export async function toggleFavoriteTrainerAction(
       where: { userId_trainerProfileId: { userId, trainerProfileId } },
     });
     revalidatePath("/client/trainers");
-    revalidatePath("/client/trainers/favorites");
     return { isFavorited: false };
   } else {
     await prisma.favoriteTrainer.create({
       data: { userId, trainerProfileId },
     });
     revalidatePath("/client/trainers");
-    revalidatePath("/client/trainers/favorites");
     return { isFavorited: true };
   }
 }

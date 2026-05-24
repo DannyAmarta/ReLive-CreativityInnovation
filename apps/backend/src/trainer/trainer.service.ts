@@ -17,6 +17,7 @@ import { UpgradeToTrainerInput } from './dto/upgrade-to-trainer.input';
 import { UpdateTrainerServiceInput } from './dto/update-trainer-service.input';
 import { UpdateBookingStatusInput } from './dto/update-booking-status.input';
 import { RegisterTrainerFiatInput } from './dto/register-trainer-fiat.input';
+import { CreateReviewInput } from './dto/create-review.input';
 import { Role, BookingStatus } from '@prisma/client';
 import { FiatPaymentService } from '../fiat-payment/fiat-payment.service';
 import { NotificationService } from '../core/notification.service';
@@ -33,6 +34,7 @@ const ALLOWED_TRANSITIONS: Record<Role, Partial<Record<BookingStatus, BookingSta
     [BookingStatus.ACTIVE]: [BookingStatus.COMPLETED],
   },
   [Role.USER]: {
+    [BookingStatus.PENDING]: [BookingStatus.CANCELLED],
     [BookingStatus.ACTIVE]: [BookingStatus.DISPUTED],
   },
   [Role.ADMIN]: {
@@ -80,7 +82,7 @@ export class TrainerService {
   // ─── Trainer Profile ──────────────────────────────────────────────────────
   async getTrainerProfiles() {
     const profiles = await this.prisma.trainerProfile.findMany({
-      include: { user: true, services: true },
+      include: { user: true, services: true, reviews: { include: { client: true }, orderBy: { createdAt: 'desc' } } },
     });
     return profiles.map(p => this.sanitizeProfile(p));
   }
@@ -88,7 +90,7 @@ export class TrainerService {
   async getTrainerProfile(id: number) {
     const profile = await this.prisma.trainerProfile.findUnique({
       where: { id },
-      include: { user: true, services: true },
+      include: { user: true, services: true, reviews: { include: { client: true }, orderBy: { createdAt: 'desc' } } },
     });
     if (!profile) throw new NotFoundException('Trainer profile not found');
     return this.sanitizeProfile(profile);
@@ -97,7 +99,7 @@ export class TrainerService {
   async getMyTrainerProfile(userId: number) {
     const profile = await this.prisma.trainerProfile.findUnique({
       where: { userId },
-      include: { user: true, services: true },
+      include: { user: true, services: true, reviews: { include: { client: true }, orderBy: { createdAt: 'desc' } } },
     });
     if (!profile) throw new NotFoundException('Trainer profile not found');
     return this.sanitizeProfile(profile);
@@ -394,7 +396,7 @@ export class TrainerService {
   async getClientBookings(clientId: number) {
     const bookings = await this.prisma.booking.findMany({
       where: { clientId },
-      include: { trainer: { include: { user: true } }, service: true },
+      include: { trainer: { include: { user: true } }, service: true, review: true },
     });
     return bookings.map(b => this.sanitizeBooking(b));
   }
@@ -442,6 +444,24 @@ export class TrainerService {
       throw new ForbiddenException(
         `Role ${contextualRole} cannot transition booking from ${booking.status} to ${input.status}`,
       );
+    }
+
+    // Security: Prevent trainer from manually activating/approving an unpaid booking
+    if (input.status === BookingStatus.ACTIVE && contextualRole === Role.TRAINER) {
+      if (booking.paymentType === 'FIAT') {
+        const successTx = await this.prisma.paymentTransaction.findFirst({
+          where: { bookingId: booking.id, status: 'SUCCESS' },
+        });
+        if (!successTx) {
+          throw new BadRequestException('Cannot approve booking: payment has not been completed');
+        }
+      } else if (booking.paymentType === 'CRYPTO') {
+        if (!booking.txHash) {
+          throw new BadRequestException('Cannot approve booking: on-chain transaction has not been confirmed');
+        }
+      } else {
+        throw new BadRequestException('Cannot approve booking: no payment method selected or payment not initiated');
+      }
     }
 
     const updated = await this.prisma.booking.update({
@@ -861,6 +881,64 @@ export class TrainerService {
       seen.add(r.id);
       return true;
     });
+  }
+
+  // ─── Reviews ──────────────────────────────────────────────────────────────
+  async createReview(userId: number, input: CreateReviewInput) {
+    // Validate rating range
+    if (input.rating < 1 || input.rating > 5) {
+      throw new BadRequestException('Rating must be between 1 and 5');
+    }
+
+    // Verify booking exists and belongs to this client
+    const booking = await this.prisma.booking.findUnique({
+      where: { id: input.bookingId },
+      include: { review: true },
+    });
+    if (!booking) throw new NotFoundException('Booking not found');
+    if (booking.clientId !== userId) {
+      throw new ForbiddenException('You can only review your own sessions');
+    }
+    if (booking.status !== BookingStatus.COMPLETED) {
+      throw new BadRequestException('You can only review completed sessions');
+    }
+    if (booking.review) {
+      throw new ConflictException('You have already reviewed this session');
+    }
+
+    // Create review and recalculate trainer rating atomically
+    const review = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.review.create({
+        data: {
+          bookingId: input.bookingId,
+          clientId: userId,
+          trainerProfileId: booking.trainerId,
+          rating: input.rating,
+          comment: input.comment ?? null,
+          isAnonymous: input.isAnonymous ?? false,
+        },
+        include: { client: true },
+      });
+
+      // Recalculate trainer's average rating
+      const allReviews = await tx.review.findMany({
+        where: { trainerProfileId: booking.trainerId },
+        select: { rating: true },
+      });
+      const avgRating = allReviews.reduce((sum, r) => sum + r.rating, 0) / allReviews.length;
+
+      await tx.trainerProfile.update({
+        where: { id: booking.trainerId },
+        data: { rating: Math.round(avgRating * 10) / 10 },
+      });
+
+      return created;
+    });
+
+    return {
+      ...review,
+      client: review.client ? this.sanitizeUser(review.client) : null,
+    };
   }
 }
 

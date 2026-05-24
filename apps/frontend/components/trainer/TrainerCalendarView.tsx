@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useCallback, useMemo, useRef } from "react";
+import { useState, useCallback, useMemo, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
@@ -37,6 +38,10 @@ function BookingDrawer({
   onAction: (id: number, status: string) => Promise<void>;
 }) {
   const [loading, setLoading] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   async function handle(status: string) {
     setLoading(true);
@@ -48,7 +53,9 @@ function BookingDrawer({
     }
   }
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="w-full max-w-md rounded-3xl border border-border bg-card shadow-2xl overflow-hidden animate-in slide-in-from-bottom-4 duration-300">
         {/* Header */}
@@ -129,7 +136,8 @@ function BookingDrawer({
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
@@ -207,7 +215,7 @@ export function TrainerCalendarView({ initialBookings }: { initialBookings: Book
   async function handleStatusAction(bookingId: number, status: string) {
     try {
       await authFetchGraphql(print(UPDATE_BOOKING_STATUS_MUTATION), {
-        input: { bookingId, newStatus: status },
+        input: { bookingId, status },
       });
       setBookings((prev) =>
         prev.map((b) => (b.id === bookingId ? { ...b, status } : b))

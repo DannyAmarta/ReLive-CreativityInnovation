@@ -138,14 +138,17 @@ export class TrainerAvailabilityService {
       const dow = dayOfWeekFrom(dateStr);
 
       // 1. Check specificDate rules (override)
-      const specificRule = rules.find(
+      const specificRules = rules.filter(
         (r) => r.specificDate && toDateStr(r.specificDate) === dateStr,
       );
-      // 2. Fall back to weekly dayOfWeek rule
-      const weeklyRule = rules.find((r) => r.dayOfWeek === dow && !r.specificDate);
-      const activeRule = specificRule ?? weeklyRule;
+      // 2. Fall back to weekly dayOfWeek rules
+      const weeklyRules = rules.filter((r) => r.dayOfWeek === dow && !r.specificDate);
+      const activeRules = specificRules.length > 0 ? specificRules : weeklyRules;
 
-      if (activeRule && activeRule.isAvailable) {
+      const allowedRules = activeRules.filter((r) => r.isAvailable);
+      const blockedRules = activeRules.filter((r) => !r.isAvailable);
+
+      for (const activeRule of allowedRules) {
         const dayStart = toMinutes(activeRule.startTime);
         const dayEnd   = toMinutes(activeRule.endTime);
 
@@ -153,6 +156,15 @@ export class TrainerAvailabilityService {
         for (let t = dayStart; t + slotDurationMinutes <= dayEnd; t += slotDurationMinutes) {
           const slotStart = buildUtcDate(dateStr, minutesToLabel(t));
           const slotEnd   = buildUtcDate(dateStr, minutesToLabel(t + slotDurationMinutes));
+
+          // Check if this slot overlaps with any blocked rule for the day
+          const isBlockedByRule = blockedRules.some((br) => {
+            const brStart = toMinutes(br.startTime);
+            const brEnd   = toMinutes(br.endTime);
+            return t < brEnd && (t + slotDurationMinutes) > brStart;
+          });
+
+          if (isBlockedByRule) continue;
 
           // Check no existing booking overlaps this slot
           const isBooked = existingBookings.some((b) => {

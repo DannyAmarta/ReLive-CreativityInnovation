@@ -1,3 +1,4 @@
 // "dev": "pnpm -r --parallel dev",
 
 //ngrok http 8000
+// npx prisma db seed

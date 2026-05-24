@@ -11,6 +11,7 @@ import { Role } from '@prisma/client';
 
 import * as fs from 'fs';
 import * as path from 'path';
+import * as crypto from 'crypto';
 
 type ActivationTokenPayload = {
   purpose: 'account_activation';
@@ -399,5 +400,80 @@ export class UserService {
       
       throw new BadRequestException(`Archive Update Failed: User ID ${userId} not found.`);
     }
+  }
+
+  async requestAccountDeletionCode(userId: number) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new BadRequestException('User not found');
+
+    // Generate a 6-digit random code
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Hash the code
+    const salt = this.configService.getOrThrow<string>('JWT_SECRET');
+    const codeHash = crypto.createHmac('sha256', salt).update(code).digest('hex');
+
+    // Create the token payload
+    const tokenPayload = {
+      purpose: 'account_deletion',
+      sub: userId,
+      codeHash,
+    };
+
+    // Sign the token (expires in 10 minutes)
+    const verifyToken = await this.jwtService.signAsync(tokenPayload, {
+      secret: this.getEmailChangeSecret(),
+      expiresIn: '10m',
+    });
+
+    const templatePath = path.join(
+      process.cwd(),
+      'src/mail/templates/accountDeletion.html',
+    );
+    let html = fs.readFileSync(templatePath, 'utf8');
+    html = html.replace(/{{code}}/g, code);
+    html = html.replace(/{{year}}/g, new Date().getFullYear().toString());
+
+    this.eventEmitter.emit('user.delete-request', {
+      email: user.email,
+      html,
+    });
+
+    return {
+      success: true,
+      verifyToken,
+      message: `A 6-digit verification code has been sent to ${user.email}. It will expire in 10 minutes.`,
+    };
+  }
+
+  async confirmAccountDeletion(userId: number, verifyToken: string, code: string) {
+    let payload: { purpose: string; sub: number; codeHash: string };
+    try {
+      payload = await this.jwtService.verifyAsync(verifyToken, {
+        secret: this.getEmailChangeSecret(),
+      });
+    } catch {
+      throw new BadRequestException('Invalid or expired deletion token. Please request a new code.');
+    }
+
+    if (payload.purpose !== 'account_deletion' || payload.sub !== userId) {
+      throw new BadRequestException('Invalid verification token');
+    }
+
+    const salt = this.configService.getOrThrow<string>('JWT_SECRET');
+    const computedHash = crypto.createHmac('sha256', salt).update(code).digest('hex');
+
+    if (computedHash !== payload.codeHash) {
+      throw new BadRequestException('Invalid verification code');
+    }
+
+    await this.prisma.user.delete({
+      where: { id: userId },
+    });
+
+    return {
+      success: true,
+      message: 'Account deleted successfully.',
+    };
   }
 }

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   User,
   CalendarDays,
-  Heart,
+  Utensils,
   Target,
   Bot,
   Wallet,
@@ -161,7 +161,7 @@ export function UserProfileDropdown({
           <MenuItemLink href="/profile" icon={<User className="size-4" />} label="Profile" />
           <MenuItemLink href={sessionsHref} icon={<CalendarDays className="size-4" />} label="My Sessions" />
           {currentMode === "client" && (
-            <MenuItemLink href="/client/trainers/favorites" icon={<Heart className="size-4" />} label="Favourite Trainers" />
+            <MenuItemLink href="/foods" icon={<Utensils className="size-4" />} label="Food Calculator" />
           )}
           <MenuItemLink href="/fitness-goals" icon={<Target className="size-4" />} label="Fitness Goals" />
           <DropdownMenuItem

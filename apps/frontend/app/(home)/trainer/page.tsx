@@ -5,18 +5,25 @@ import { BalanceWidget } from "@/components/trainer/BalanceWidget";
 import { PendingRequestsCard } from "@/components/trainer/PendingRequestsCard";
 import { ActiveServicesStrip } from "@/components/trainer/ActiveServicesStrip";
 import { SetCalculatorWidget } from "@/components/trainer/SetCalculatorWidget";
+import { NutritionHubWidget } from "@/components/trainer/NutritionHubWidget";
 import { PageHeader } from "@/components/trainer/PageHeader";
 import { ScheduleAdjustmentsCard } from "@/components/trainer/ScheduleAdjustmentsCard";
+import { PastSessionsDecisionCard } from "@/components/trainer/PastSessionsDecisionCard";
 import { authFetchGraphql, isAuthenticationGraphqlError } from "@/lib/fetchGraphQL";
 import { MY_RESCHEDULE_REQUESTS_QUERY, MY_CANCELLATION_REQUESTS_QUERY } from "@/lib/gqlQueries";
 import { print } from "graphql";
-import { Eye } from "lucide-react";
+import { Eye, AlertTriangle } from "lucide-react";
 import Link from "next/link";
 import {
   getMyFiatWallet,
   getMyTrainerBookings,
   getMyTrainerProfile,
 } from "@/lib/marketplace";
+import MessagesWidget from "@/components/trainer/MessagesWidget";
+import { getTrainerAvailabilityRules } from "@/lib/actions/availability";
+import { AvailabilityWidget } from "@/components/trainer/AvailabilityWidget";
+
+
 
 type RescheduleRequest = {
   id: number;
@@ -45,7 +52,14 @@ type CancellationRequest = {
 type RescheduleRequestsResponse = { myRescheduleRequests: RescheduleRequest[] };
 type CancellationRequestsResponse = { myCancellationRequests: CancellationRequest[] };
 
-export default async function TrainerDashboardPage() {
+export default async function TrainerDashboardPage({
+  searchParams,
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = searchParams ? await searchParams : {};
+  const error = typeof params?.error === "string" ? params.error : undefined;
+
   const [
     bookingsResult,
     walletResult,
@@ -81,8 +95,18 @@ export default async function TrainerDashboardPage() {
   const trainerName = profile?.user?.name ?? null;
   const services = profile?.services ?? [];
 
+  const availabilityRules = profile ? await getTrainerAvailabilityRules(profile.id).catch(() => []) : [];
+  const hasNoAvailability = availabilityRules.length === 0 || !availabilityRules.some(r => r.isAvailable);
+
   return (
     <div className="space-y-6">
+      {error && (
+        <div className="flex items-start gap-3 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive font-medium">
+          <AlertTriangle className="size-4.5 text-destructive shrink-0 mt-0.5" />
+          <p>{error}</p>
+        </div>
+      )}
+
       {hasAuthWarning && (
         <SessionWarning description="Your trainer dashboard is running in fallback mode because the backend asked for a fresh Google sign-in. You can still review the layout, but wallet and booking updates should wait until you sign in again." />
       )}
@@ -100,25 +124,46 @@ export default async function TrainerDashboardPage() {
         }
       />
 
+      {hasNoAvailability && (
+        <div className="flex items-start gap-3 rounded-xl border border-amber-300/40 bg-amber-50/50 dark:bg-amber-900/20 px-4 py-3 text-sm text-amber-700 dark:text-amber-400">
+          <AlertTriangle className="size-4.5 text-amber-600 shrink-0 mt-0.5" />
+          <p>
+            <strong>No availability set:</strong> You haven&apos;t configured your weekly
+            availability yet. Clients will not be able to book sessions with you until you set your
+            working hours.{" "}
+            <Link
+              href="/trainer/availability"
+              className="font-semibold underline hover:text-amber-900 dark:hover:text-amber-200 transition-colors"
+            >
+              Set Working Hours
+            </Link>
+          </p>
+        </div>
+      )}
+
       {/* ── Main grid ── */}
       <div className="grid grid-cols-1 lg:grid-cols-[1.45fr_1fr] gap-6 items-start">
         {/* ── Left column ── */}
         <div className="flex flex-col gap-6">
           <HeroSessionBanner bookings={bookings} trainerName={trainerName} />
+          <PastSessionsDecisionCard bookings={bookings} />
           <TodayScheduleCard bookings={bookings} />
           <ScheduleAdjustmentsCard
             bookings={bookings}
             rescheduleRequests={rescheduleRequests}
             cancellationRequests={cancellationRequests}
           />
+          <SetCalculatorWidget />
+          <NutritionHubWidget />
         </div>
 
         {/* ── Right column ── */}
         <div className="flex flex-col gap-5">
           <BalanceWidget wallet={wallet} bookings={bookings} />
+          <MessagesWidget />
+          <AvailabilityWidget rules={availabilityRules} isEditable={true} />
           <PendingRequestsCard bookings={bookings} />
           <ActiveServicesStrip services={services} />
-          <SetCalculatorWidget />
         </div>
       </div>
     </div>

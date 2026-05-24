@@ -2,6 +2,17 @@ import { NextConfig } from "next";
 
 /** @type {import('next').NextConfig} */
 const nextConfig: NextConfig = {
+  // 0. Redirects: legacy routes that have been merged or removed
+  async redirects() {
+    return [
+      {
+        source: '/client/calendar',
+        destination: '/client/dashboard',
+        permanent: true,
+      },
+    ];
+  },
+
   // 1. Add your Image Domains here
   images: {
     remotePatterns: [

@@ -68,6 +68,9 @@ import { AccountEmailField } from "./components/AccountEmailField";
 /* ── Glowing Change Password button ── */
 import { AccountPasswordAction } from "./components/AccountPasswordAction";
 
+/* ── Permanent Account Deletion button ── */
+import { AccountDeletionAction } from "./components/AccountDeletionAction";
+
 /* ── Section label ── */
 import { SectionLabel } from "../ui/profile/SectionLabel";
 
@@ -298,6 +301,26 @@ export function ProfilePageClient({ user: initialUser }: ProfilePageClientProps)
                   onToast={(msg, kind) => setToast({ msg, kind })}
                 />
                 <AccountPasswordAction />
+              </div>
+            </div>
+          </motion.div>
+
+          {/* ── Danger Zone Section ── */}
+          <motion.div variants={itemVariants}>
+            <div
+              className="relative rounded-3xl border border-red-200 bg-red-50/5 p-8 shadow-[0_8px_30px_rgb(0,0,0,0.01)]"
+            >
+              <SectionLabel>
+                <span className="text-red-600">
+                  Danger Zone
+                </span>
+              </SectionLabel>
+              <p className="mb-6 mt-2 text-xs text-[#2C2E2C]/50 leading-relaxed max-w-md">
+                Irreversible actions for your ReLive account. Once you delete your account, there is no going back.
+              </p>
+              
+              <div className="space-y-4">
+                <AccountDeletionAction onToast={(msg, kind) => setToast({ msg, kind })} />
               </div>
             </div>
           </motion.div>

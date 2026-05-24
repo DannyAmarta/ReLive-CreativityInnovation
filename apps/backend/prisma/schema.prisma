@@ -87,6 +87,11 @@ model User {
   withdrawalRequests        WithdrawalRequest[]
   favoriteTrainers          FavoriteTrainer[]
   notifications             Notification[]
+  clientReviews             Review[]                   @relation("ClientReviews")
+  // Chat relations
+  trainerConversations Conversation[] @relation("TrainerConversations")
+  clientConversations Conversation[] @relation("ClientConversations")
+  sentMessages ChatMessage[] @relation("SentMessages")
 }
 
 model Exercise {
@@ -213,6 +218,7 @@ model TrainerProfile {
   providedBookings Booking[]        @relation("TrainerBookings")
   favoritedBy      FavoriteTrainer[]
   availability     TrainerAvailability[]
+  reviews          Review[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -293,6 +299,10 @@ model Booking {
   // Relations for reschedule and cancellation requests
   rescheduleRequests   BookingRescheduleRequest[]   @relation("RescheduleRequests")
   cancellationRequests BookingCancellationRequest[] @relation("CancellationRequests")
+
+  // Review for this completed session (one per booking)
+  review               Review?
+  conversation Conversation?
 }
 
 // --- Trainer Availability / Scheduling ---
@@ -407,4 +417,117 @@ model BookingCancellationRequest {
 
   @@index([bookingId])
   @@index([proposedById])
-}
+}
+
+// --- Review / Rating System ---
+
+model Review {
+  id               Int            @id @default(autoincrement())
+  bookingId        Int            @unique // one review per booking
+  booking          Booking        @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  clientId         Int
+  client           User           @relation("ClientReviews", fields: [clientId], references: [id], onDelete: Cascade)
+
+  trainerProfileId Int
+  trainerProfile   TrainerProfile @relation(fields: [trainerProfileId], references: [id], onDelete: Cascade)
+
+  rating           Int            // 1 to 5 stars
+  comment          String?        // Optional text description
+  isAnonymous      Boolean        @default(false)
+
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@index([trainerProfileId])
+  @@index([clientId])
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  FILE
+  SYSTEM
+  AUDIO
+}
+
+model Conversation {
+  id Int @id @default(autoincrement())
+
+  // Optional booking link
+  // One booking → one chat
+  bookingId Int? @unique
+  booking   Booking? @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  // Store USER ids directly
+  trainerUserId Int
+  clientUserId  Int
+
+  trainerUser User @relation("TrainerConversations", fields: [trainerUserId], references: [id], onDelete: Cascade)
+  clientUser User @relation("ClientConversations", fields: [clientUserId], references: [id], onDelete: Cascade)
+
+  // Metadata
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Last message preview
+  lastMessageId Int?
+  lastMessageAt DateTime?
+
+  // Soft archive
+  archivedByTrainer Boolean @default(false)
+  archivedByClient Boolean @default(false)
+
+  // Relations
+  messages ChatMessage[]
+
+  @@unique([trainerUserId, clientUserId])
+
+  @@index([trainerUserId])
+  @@index([clientUserId])
+  @@index([lastMessageAt(sort: Desc)])
+}
+
+
+
+model ChatMessage {
+  id Int @id @default(autoincrement())
+  conversationId Int
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  // Sender
+  senderId Int
+  sender User @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+
+  // Message type
+  type MessageType @default(TEXT)
+
+  // Text
+  content String?
+
+  // Media
+  imageUrl String?
+  fileUrl String?
+
+  // Voice note
+  audioUrl String?
+  audioDurationSeconds Int?
+
+  // Delivery state
+  isRead Boolean @default(false)
+  deliveredAt DateTime?
+  readAt DateTime?
+
+  // Edit / delete
+  editedAt DateTime?
+  deletedAt DateTime?
+
+  // System metadata
+  metadata Json?
+  createdAt DateTime @default(now())
+
+  @@index([conversationId, createdAt(sort: Desc)])
+  @@index([senderId])
+  @@index([conversationId, isRead])
+  @@index([createdAt(sort: Desc)])
+}

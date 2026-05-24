@@ -538,6 +538,18 @@ export const GET_TRAINER_PROFILE_QUERY = gql`
                 tokenMintAddress
                 isActive
             }
+            reviews {
+                id
+                rating
+                comment
+                isAnonymous
+                createdAt
+                client {
+                    id
+                    name
+                    avatar
+                }
+            }
         }
     }
 `
@@ -605,6 +617,13 @@ export const GET_MY_CLIENT_BOOKINGS_QUERY = gql`
                 priceInIdr
                 tokenMintAddress
                 isActive
+            }
+            review {
+                id
+                rating
+                comment
+                isAnonymous
+                createdAt
             }
         }
     }
@@ -945,6 +964,38 @@ export const RESOLVE_CANCELLATION_MUTATION = gql`
             bookingId
             status
             updatedAt
+        }
+    }
+`
+
+export const CREATE_REVIEW_MUTATION = gql`
+    mutation CreateReview($input: CreateReviewInput!) {
+        createReview(input: $input) {
+            id
+            bookingId
+            rating
+            comment
+            isAnonymous
+            createdAt
+        }
+    }
+`
+
+export const REQUEST_ACCOUNT_DELETION_CODE_MUTATION = gql`
+    mutation RequestAccountDeletionCode {
+        requestAccountDeletionCode {
+            success
+            verifyToken
+            message
+        }
+    }
+`
+
+export const CONFIRM_ACCOUNT_DELETION_MUTATION = gql`
+    mutation ConfirmAccountDeletion($verifyToken: String!, $code: String!) {
+        confirmAccountDeletion(verifyToken: $verifyToken, code: $code) {
+            success
+            message
         }
     }
 `

@@ -35,6 +35,7 @@ export function CreateServiceForm() {
             name="title"
             required
             disabled={isPending}
+            defaultValue={state.fields?.title ?? ""}
             className="h-11 w-full rounded-xl border border-border bg-background px-3 outline-none focus:border-primary disabled:opacity-50"
           />
         </label>
@@ -45,6 +46,7 @@ export function CreateServiceForm() {
             required
             rows={3}
             disabled={isPending}
+            defaultValue={state.fields?.description ?? ""}
             className="w-full rounded-xl border border-border bg-background px-3 py-2.5 outline-none focus:border-primary disabled:opacity-50"
           />
         </label>
@@ -59,6 +61,7 @@ export function CreateServiceForm() {
             step="1"
             placeholder="e.g. 150000"
             disabled={isPending}
+            defaultValue={state.fields?.priceInIdr ?? ""}
             className="h-11 w-full rounded-xl border border-border bg-background px-3 outline-none focus:border-primary disabled:opacity-50"
           />
         </label>
@@ -73,6 +76,7 @@ export function CreateServiceForm() {
             step="0.01"
             placeholder="e.g. 2.5"
             disabled={isPending}
+            defaultValue={state.fields?.priceInTokenUnits ?? ""}
             className="h-11 w-full rounded-xl border border-border bg-background px-3 outline-none focus:border-primary disabled:opacity-50"
           />
         </label>
@@ -122,7 +126,7 @@ export function EditServiceForm({
         <input
           name="title"
           required
-          defaultValue={service.title}
+          defaultValue={state.fields?.title ?? service.title}
           disabled={isPending}
           className="h-11 w-full rounded-xl border border-border bg-card px-3 outline-none focus:border-primary disabled:opacity-50"
         />
@@ -132,7 +136,7 @@ export function EditServiceForm({
         <textarea
           name="description"
           required
-          defaultValue={service.description}
+          defaultValue={state.fields?.description ?? service.description}
           rows={3}
           disabled={isPending}
           className="w-full rounded-xl border border-border bg-card px-3 py-2.5 outline-none focus:border-primary disabled:opacity-50"
@@ -149,7 +153,7 @@ export function EditServiceForm({
             min="50000"
             step="1"
             placeholder="Leave empty to remove IDR option"
-            defaultValue={service.priceInIdr ?? undefined}
+            defaultValue={state.fields?.priceInIdr !== undefined ? state.fields.priceInIdr : (service.priceInIdr ?? "")}
             disabled={isPending}
             className="h-11 w-full rounded-xl border border-border bg-card px-3 outline-none focus:border-primary disabled:opacity-50"
           />
@@ -164,7 +168,7 @@ export function EditServiceForm({
             min="0.01"
             step="0.01"
             placeholder="Leave empty to remove Crypto option"
-            defaultValue={tokenUnits}
+            defaultValue={state.fields?.priceInTokenUnits !== undefined ? state.fields.priceInTokenUnits : (tokenUnits ?? "")}
             disabled={isPending}
             className="h-11 w-full rounded-xl border border-border bg-card px-3 outline-none focus:border-primary disabled:opacity-50"
           />

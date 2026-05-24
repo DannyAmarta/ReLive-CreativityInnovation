@@ -76,10 +76,13 @@ export type CreateRuleInput = {
 
 export async function createAvailabilityRuleAction(input: CreateRuleInput) {
   try {
-    await authFetchGraphql(print(CREATE_AVAILABILITY_RULE_MUTATION), { input });
+    const data = await authFetchGraphql<{ createAvailabilityRule: AvailabilityRule }>(
+      print(CREATE_AVAILABILITY_RULE_MUTATION),
+      { input }
+    );
     revalidatePath("/trainer/availability");
     revalidatePath("/trainer/calendar");
-    return { success: true };
+    return { success: true, rule: data.createAvailabilityRule };
   } catch (err) {
     return { success: false, error: (err as any)?.message ?? "Failed to create rule" };
   }
@@ -93,10 +96,13 @@ export async function updateAvailabilityRuleAction(input: {
   title?: string;
 }) {
   try {
-    await authFetchGraphql(print(UPDATE_AVAILABILITY_RULE_MUTATION), { input });
+    const data = await authFetchGraphql<{ updateAvailabilityRule: AvailabilityRule }>(
+      print(UPDATE_AVAILABILITY_RULE_MUTATION),
+      { input }
+    );
     revalidatePath("/trainer/availability");
     revalidatePath("/trainer/calendar");
-    return { success: true };
+    return { success: true, rule: data.updateAvailabilityRule };
   } catch (err) {
     return { success: false, error: (err as any)?.message ?? "Failed to update rule" };
   }

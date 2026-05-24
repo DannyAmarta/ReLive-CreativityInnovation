@@ -63,4 +63,18 @@ export class MailListener {
       this.logger.error('Failed to send security alert in background', e);
     }
   }
+
+  @OnEvent('user.delete-request', { async: true })
+  async handleUserDeleteRequestEvent(payload: { email: string; html: string }) {
+    this.logger.log(`[Event] Sending account deletion verification to ${payload.email}`);
+    try {
+      await this.mailerService.sendMail({
+        to: payload.email,
+        subject: 'Verify Account Deletion – ReLive',
+        html: payload.html,
+      });
+    } catch (e) {
+      this.logger.error('Failed to send account deletion verification in background', e);
+    }
+  }
 }

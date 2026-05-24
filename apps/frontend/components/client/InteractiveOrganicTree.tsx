@@ -16,18 +16,19 @@ import {
   CalendarClock,
   CircleSlash,
   CalendarDays,
-  Dumbbell
+  Dumbbell,
+  BookOpen,
+  Utensils,
+  MessageSquare
 } from "lucide-react";
 import Link from "next/link";
 import type { BookingRecord } from "@/lib/marketplace";
-import type { FavoriteTrainerRecord } from "@/lib/actions/favorites";
 
 interface InteractiveOrganicTreeProps {
   trainersCount: number;
   servicesCount: number;
   averageRating: number;
   bookingsCount: number;
-  favorites?: FavoriteTrainerRecord[];
   lifetimeSpent?: number;
   recentBookings?: BookingRecord[];
   trainerAvatars?: (string | null)[];
@@ -96,7 +97,6 @@ export default function InteractiveOrganicTree({
   servicesCount,
   averageRating,
   bookingsCount,
-  favorites = [],
   lifetimeSpent = 0,
   recentBookings = [],
   trainerAvatars = [],
@@ -177,44 +177,44 @@ export default function InteractiveOrganicTree({
   const leaves = [
     {
       id: "catalog",
-      title: "Browse Trainers",
-      body: "Trainer Listings now com sornm seeded profiles and service records.",
-      icon: Sparkles,
-      x: 280,
-      y: 120,
+      title: "Search Cookbook",
+      body: "Being starve?",
+      icon: BookOpen,
+      x: 240,
+      y: 110,
       borderRadius: "15px 120px 120px 120px",
       rotate: "rotate-[-4deg]",
-      href: "/client/trainers"
+      href: "/cookbook"
     },
     {
       id: "favorites",
-      title: "Favorite Trainers",
-      body: "Access your saved and preferred trainer profiles.",
-      icon: Heart,
+      title: "Food Calculator",
+      body: "Calculate your food material!",
+      icon: Utensils,
       x: 560,
-      y: 130,
+      y: 110,
       borderRadius: "120px 15px 120px 120px",
       rotate: "rotate-[6deg]",
-      href: "/client/trainers/favorites"
+      href: "/foods"
     },
     {
-      id: "calendar",
-      title: "Session Calendar",
-      body: "View your calendar grid, join active video links, and manage your booked timings.",
-      icon: CalendarDays,
-      x: 710,
-      y: 330,
+      id: "chat",
+      title: "Trainer Chat",
+      body: "Connect with your trainer.",
+      icon: MessageSquare,
+      x: 720,
+      y: 310,
       borderRadius: "120px 120px 15px 120px",
       rotate: "rotate-[2deg]",
-      href: "/client/calendar"
+      href: "/client/messages"
     },
     {
       id: "bookings",
       title: "My Bookings",
       body: "Your dashboard now reflects seal seaded booking instead of local browser state.",
       icon: CalendarCheck,
-      x: 680,
-      y: 570,
+      x: 700,
+      y: 550,
       borderRadius: "120px 120px 120px 15px",
       rotate: "rotate-[8deg]",
       href: "/client/dashboard"
@@ -222,10 +222,10 @@ export default function InteractiveOrganicTree({
     {
       id: "cancel-session",
       title: "Cancel Session",
-      body: "Request mutual cancellation and refund for active sessions.",
+      body: "Cancellation and refund for active sessions.",
       icon: CircleSlash,
-      x: 490,
-      y: 710,
+      x: 480,
+      y: 730,
       borderRadius: "120px 120px 120px 15px",
       rotate: "rotate-[4deg]",
       href: "/client/bookings/cancel"
@@ -235,8 +235,8 @@ export default function InteractiveOrganicTree({
       title: "Wallet & Spending",
       body: "Track your fiat payments and fitness investments.",
       icon: Coins,
-      x: 260,
-      y: 690,
+      x: 200,
+      y: 700,
       borderRadius: "120px 120px 15px 120px",
       rotate: "rotate-[-6deg]",
       href: "/client/wallet"
@@ -244,9 +244,9 @@ export default function InteractiveOrganicTree({
     {
       id: "wallet",
       title: "Set Lab",
-      body: "Estimate training maxes, calculate 1RM, and plan routines.",
+      body: "Make your own plan routines.",
       icon: Dumbbell,
-      x: 100,
+      x: 80,
       y: 510,
       borderRadius: "15px 120px 120px 120px",
       rotate: "rotate-[-8deg]",
@@ -257,8 +257,8 @@ export default function InteractiveOrganicTree({
       title: "Reschedule",
       body: "Propose new times for your active sessions.",
       icon: CalendarClock,
-      x: 130,
-      y: 310,
+      x: 100,
+      y: 300,
       borderRadius: "120px 15px 120px 120px",
       rotate: "rotate-[-2deg]",
       href: "/client/bookings/reschedule"
@@ -267,7 +267,7 @@ export default function InteractiveOrganicTree({
 
   const renderLeafInner = (leaf: typeof leaves[0]) => {
     const isWallet = leaf.id === "wallet";
-    const isCalendar = leaf.id === "calendar";
+    const isChat = leaf.id === "chat";
     const isCatalog = leaf.id === "catalog";
     const isFavorites = leaf.id === "favorites";
     const isBookings = leaf.id === "bookings";
@@ -298,7 +298,7 @@ export default function InteractiveOrganicTree({
       );
     }
 
-    if (isCalendar) {
+    if (isChat) {
       return (
         <div className="space-y-3 text-left flex-1 flex flex-col justify-between">
           <div>
@@ -316,8 +316,8 @@ export default function InteractiveOrganicTree({
               {leaf.body}
             </p>
           </div>
-          <div className="text-[9px] font-bold text-[#4a5d3e] flex items-center gap-0.5 mt-1 group-hover:translate-x-0.5 transition-transform">
-            Go to Calendar <ArrowRight className="h-2.5 w-2.5" />
+          <div className="text-[9px] font-bold text-[#4a5d3e] flex items-center gap-0.5 mt-1.5 group-hover:translate-x-0.5 transition-transform">
+            Go to Chat <ArrowRight className="h-2.5 w-2.5" />
           </div>
         </div>
       );
@@ -325,39 +325,24 @@ export default function InteractiveOrganicTree({
 
     if (isCatalog) {
       return (
-        <div className="space-y-3 text-left flex-1">
-          <div className="flex items-center gap-2">
-            {leaf.icon && (
-              <span className="grid h-7 w-7 place-items-center rounded-lg bg-[rgba(74,93,62,0.08)] text-[#4a5d3e] group-hover:bg-[#4a5d3e] group-hover:text-[#f8f6ef] transition-colors">
-                <leaf.icon className="h-3.5 w-3.5" />
-              </span>
-            )}
-            <span className="text-[10px] font-bold uppercase tracking-wider text-[#6c7662]">
-              {leaf.title}
-            </span>
-          </div>
-          
-          <div className="space-y-2">
+        <div className="space-y-3 text-left flex-1 flex flex-col justify-between">
+          <div>
             <div className="flex items-center gap-2">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-              </span>
-              <span className="text-xs font-bold text-primary-deep">
-                {trainersCount} Trainers Active
+              {leaf.icon && (
+                <span className="grid h-7 w-7 place-items-center rounded-lg bg-[rgba(74,93,62,0.08)] text-[#4a5d3e] group-hover:bg-[#4a5d3e] group-hover:text-[#f8f6ef] transition-colors">
+                  <leaf.icon className="h-3.5 w-3.5" />
+                </span>
+              )}
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[#6c7662]">
+                {leaf.title}
               </span>
             </div>
-            
-            {trainerAvatars && trainerAvatars.length > 0 && (
-              <div className="flex items-center pt-1">
-                <div className="flex -space-x-1.5 overflow-hidden">
-                  {trainerAvatars.map((avatar, idx) => renderAvatar(avatar, undefined, idx))}
-                </div>
-                <span className="text-[9px] text-[#828d77] ml-2 font-medium">
-                  Top rated profiles
-                </span>
-              </div>
-            )}
+            <p className="text-[10px] leading-relaxed text-[#67715f] mt-2.5">
+              {leaf.body}
+            </p>
+          </div>
+          <div className="text-[9px] font-bold text-[#4a5d3e] flex items-center gap-0.5 mt-1.5 group-hover:translate-x-0.5 transition-transform">
+            Browse Recipes <ArrowRight className="h-2.5 w-2.5" />
           </div>
         </div>
       );
@@ -365,42 +350,24 @@ export default function InteractiveOrganicTree({
 
     if (isFavorites) {
       return (
-        <div className="space-y-3 text-left flex-1">
-          <div className="flex items-center gap-2">
-            <span className="grid h-7 w-7 place-items-center rounded-lg bg-[rgba(244,63,94,0.1)] text-rose-500 group-hover:bg-rose-500 group-hover:text-white transition-colors">
-              <Heart className="h-3.5 w-3.5 fill-current" />
-            </span>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-rose-700/80">
-              {leaf.title}
-            </span>
-          </div>
-          
-          <div className="space-y-2">
-            <div className="flex items-center gap-1">
-              <span className="text-xs font-extrabold text-rose-600">
-                {favorites.length} Saved
+        <div className="space-y-3 text-left flex-1 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center gap-2">
+              {leaf.icon && (
+                <span className="grid h-7 w-7 place-items-center rounded-lg bg-[rgba(244,63,94,0.1)] text-rose-500 group-hover:bg-rose-500 group-hover:text-white transition-colors">
+                  <leaf.icon className="h-3.5 w-3.5" />
+                </span>
+              )}
+              <span className="text-[10px] font-bold uppercase tracking-wider text-rose-700/80">
+                {leaf.title}
               </span>
-              <span className="text-[10px] text-rose-500/80">trainers</span>
             </div>
-            
-            {favorites && favorites.length > 0 ? (
-              <div className="flex items-center pt-1">
-                <div className="flex -space-x-1.5 overflow-hidden">
-                  {favorites.slice(0, 3).map((fav, idx) => 
-                    renderAvatar(fav.trainer.user.avatar, fav.trainer.user.name, idx)
-                  )}
-                </div>
-                {favorites.length > 3 && (
-                  <span className="text-[9px] text-rose-500 ml-1.5 font-bold">
-                    +{favorites.length - 3} more
-                  </span>
-                )}
-              </div>
-            ) : (
-              <p className="text-[9px] text-rose-400 font-medium italic">
-                Click ❤️ to add favorites
-              </p>
-            )}
+            <p className="text-[10px] leading-relaxed text-[#67715f] mt-2.5">
+              {leaf.body}
+            </p>
+          </div>
+          <div className="text-[9px] font-bold text-rose-600 flex items-center gap-0.5 mt-1.5 group-hover:translate-x-0.5 transition-transform">
+            Calculate Macros <ArrowRight className="h-2.5 w-2.5" />
           </div>
         </div>
       );
@@ -408,51 +375,53 @@ export default function InteractiveOrganicTree({
 
     if (isBookings) {
       return (
-        <div className="space-y-3 text-left flex-1">
-          <div className="flex items-center gap-2">
-            {leaf.icon && (
-              <span className="grid h-7 w-7 place-items-center rounded-lg bg-[rgba(74,93,62,0.08)] text-[#4a5d3e] group-hover:bg-[#4a5d3e] group-hover:text-[#f8f6ef] transition-colors">
-                <leaf.icon className="h-3.5 w-3.5" />
+        <div className="space-y-3 text-left flex-1 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center gap-2">
+              {leaf.icon && (
+                <span className="grid h-7 w-7 place-items-center rounded-lg bg-[rgba(74,93,62,0.08)] text-[#4a5d3e] group-hover:bg-[#4a5d3e] group-hover:text-[#f8f6ef] transition-colors">
+                  <leaf.icon className="h-3.5 w-3.5" />
+                </span>
+              )}
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[#6c7662]">
+                {leaf.title}
               </span>
-            )}
-            <span className="text-[10px] font-bold uppercase tracking-wider text-[#6c7662]">
-              {leaf.title}
-            </span>
-          </div>
-          
-          <div className="space-y-1.5">
-            {recentBookings && recentBookings.length > 0 ? (
-              (() => {
-                const activeBooking = recentBookings[0];
-                const serviceTitle = activeBooking.service?.title || "Training Session";
-                const status = activeBooking.status;
-                const isConfirmed = status.toUpperCase() === "CONFIRMED";
-                
-                return (
-                  <>
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-primary-deep truncate max-w-[110px]" title={serviceTitle}>
-                        {serviceTitle}
-                      </span>
-                      <span className={`text-[8px] font-extrabold px-1.5 py-0.5 rounded-full uppercase tracking-wider ${
-                        isConfirmed 
-                          ? "bg-emerald-100 text-emerald-800 border border-emerald-200" 
-                          : "bg-amber-100 text-amber-800 border border-amber-200"
-                      }`}>
-                        {status}
-                      </span>
-                    </div>
-                    <p className="text-[9px] text-[#828d77] font-medium leading-none">
-                      {formatBookingDate(activeBooking.scheduledStart)}
-                    </p>
-                  </>
-                );
-              })()
-            ) : (
-              <p className="text-[10px] text-[#828d77] italic leading-normal">
-                No upcoming sessions
-              </p>
-            )}
+            </div>
+            
+            <div className="space-y-1.5 mt-2.5">
+              {recentBookings && recentBookings.length > 0 ? (
+                (() => {
+                  const activeBooking = recentBookings[0];
+                  const serviceTitle = activeBooking.service?.title || "Training Session";
+                  const status = activeBooking.status;
+                  const isConfirmed = status.toUpperCase() === "CONFIRMED";
+                  
+                  return (
+                    <>
+                      <div className="flex items-center justify-between gap-1">
+                        <span className="text-[11px] font-bold text-primary-deep truncate max-w-[55%]" title={serviceTitle}>
+                          {serviceTitle}
+                        </span>
+                        <span className={`text-[9px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${
+                          isConfirmed 
+                            ? "bg-emerald-100 text-emerald-800 border border-emerald-200" 
+                            : "bg-amber-100 text-amber-800 border border-amber-200"
+                        }`}>
+                          {status}
+                        </span>
+                      </div>
+                      <p className="text-[9px] text-[#828d77] font-medium leading-none">
+                        {formatBookingDate(activeBooking.scheduledStart)}
+                      </p>
+                    </>
+                  );
+                })()
+              ) : (
+                <p className="text-[10px] text-[#828d77] italic leading-normal">
+                  No upcoming sessions
+                </p>
+              )}
+            </div>
           </div>
         </div>
       );
@@ -460,24 +429,26 @@ export default function InteractiveOrganicTree({
 
     if (isWalletFiat) {
       return (
-        <div className="space-y-3 text-left flex-1">
-          <div className="flex items-center gap-2">
-            {leaf.icon && (
-              <span className="grid h-7 w-7 place-items-center rounded-lg bg-[rgba(74,93,62,0.08)] text-[#4a5d3e] group-hover:bg-[#4a5d3e] group-hover:text-[#f8f6ef] transition-colors">
-                <leaf.icon className="h-3.5 w-3.5" />
+        <div className="space-y-3 text-left flex-1 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center gap-2">
+              {leaf.icon && (
+                <span className="grid h-7 w-7 place-items-center rounded-lg bg-[rgba(74,93,62,0.08)] text-[#4a5d3e] group-hover:bg-[#4a5d3e] group-hover:text-[#f8f6ef] transition-colors">
+                  <leaf.icon className="h-3.5 w-3.5" />
+                </span>
+              )}
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[#6c7662]">
+                {leaf.title}
               </span>
-            )}
-            <span className="text-[10px] font-bold uppercase tracking-wider text-[#6c7662]">
-              {leaf.title}
-            </span>
-          </div>
-          
-          <div className="space-y-1">
-            <div className="text-[10px] text-[#828d77] font-medium">
-              Lifetime Spent
             </div>
-            <div className="font-display text-sm font-extrabold text-primary-deep tracking-tight">
-              {formatIDR(lifetimeSpent)}
+            
+            <div className="space-y-1 mt-2.5">
+              <div className="text-[10px] text-[#828d77] font-medium">
+                Lifetime Spent
+              </div>
+              <div className="font-display text-sm font-extrabold text-primary-deep tracking-tight">
+                {formatIDR(lifetimeSpent)}
+              </div>
             </div>
           </div>
         </div>
@@ -501,7 +472,7 @@ export default function InteractiveOrganicTree({
             <div className="mt-2.5">
               {hasPending ? (
                 <div className="space-y-1.5">
-                  <div className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 text-[9px] font-bold text-amber-700">
+                  <div className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 border border-amber-500/20 px-2.5 py-0.5 text-[9px] font-bold text-amber-700">
                     <span className="h-1 w-1 rounded-full bg-amber-500 animate-pulse" />
                     {pendingRescheduleCount} pending
                   </div>
@@ -511,7 +482,7 @@ export default function InteractiveOrganicTree({
                 </div>
               ) : (
                 <div className="space-y-0.5">
-                  <p className="text-xs font-bold text-primary-deep">
+                  <p className="text-[11px] font-bold text-primary-deep">
                     Adjust Timings
                   </p>
                   <p className="text-[9px] text-[#828d77] leading-relaxed">
@@ -521,7 +492,7 @@ export default function InteractiveOrganicTree({
               )}
             </div>
           </div>
-          <div className="text-[9px] font-bold text-primary flex items-center gap-0.5 mt-1 group-hover:translate-x-0.5 transition-transform">
+          <div className="text-[9px] font-bold text-primary flex items-center gap-0.5 mt-1.5 group-hover:translate-x-0.5 transition-transform">
             Go to Reschedule <ArrowRight className="h-2.5 w-2.5" />
           </div>
         </div>
@@ -545,7 +516,7 @@ export default function InteractiveOrganicTree({
             <div className="mt-2.5">
               {hasPending ? (
                 <div className="space-y-1.5">
-                  <div className="inline-flex items-center gap-1 rounded-full bg-rose-500/10 border border-rose-500/20 px-2 py-0.5 text-[9px] font-bold text-rose-700">
+                  <div className="inline-flex items-center gap-1 rounded-full bg-rose-500/10 border border-rose-500/20 px-2.5 py-0.5 text-[9px] font-bold text-rose-700">
                     <span className="h-1 w-1 rounded-full bg-rose-500 animate-pulse" />
                     {pendingCancellationCount} requested
                   </div>
@@ -555,7 +526,7 @@ export default function InteractiveOrganicTree({
                 </div>
               ) : (
                 <div className="space-y-0.5">
-                  <p className="text-xs font-bold text-primary-deep">
+                  <p className="text-[11px] font-bold text-primary-deep">
                     Mutual Refund
                   </p>
                   <p className="text-[9px] text-[#828d77] leading-relaxed">
@@ -565,29 +536,31 @@ export default function InteractiveOrganicTree({
               )}
             </div>
           </div>
-          <div className="text-[9px] font-bold text-rose-600 flex items-center gap-0.5 mt-1 group-hover:translate-x-0.5 transition-transform">
+          <div className="text-[9px] font-bold text-rose-600 flex items-center gap-0.5 mt-1.5 group-hover:translate-x-0.5 transition-transform">
             Go to Cancel <ArrowRight className="h-2.5 w-2.5" />
           </div>
         </div>
       );
     }
 
-    // Default fallback (e.g. ready, rbac, etc.)
+    // Default fallback
     return (
-      <div className="space-y-2 text-left flex-1">
-        <div className="flex items-center gap-2">
-          {leaf.icon && (
-            <span className="grid h-7 w-7 place-items-center rounded-lg bg-[rgba(74,93,62,0.08)] text-[#4a5d3e] group-hover:bg-[#4a5d3e] group-hover:text-[#f8f6ef] transition-colors">
-              <leaf.icon className="h-3.5 w-3.5" />
+      <div className="space-y-2 text-left flex-1 flex flex-col justify-between">
+        <div>
+          <div className="flex items-center gap-2">
+            {leaf.icon && (
+              <span className="grid h-7 w-7 place-items-center rounded-lg bg-[rgba(74,93,62,0.08)] text-[#4a5d3e] group-hover:bg-[#4a5d3e] group-hover:text-[#f8f6ef] transition-colors">
+                <leaf.icon className="h-3.5 w-3.5" />
+              </span>
+            )}
+            <span className="text-[10px] font-bold uppercase tracking-wider text-[#6c7662]">
+              {leaf.title}
             </span>
-          )}
-          <span className="text-[10px] font-bold uppercase tracking-wider text-[#6c7662]">
-            {leaf.title}
-          </span>
+          </div>
+          <p className="text-[10px] leading-normal text-[#67715f] mt-2">
+            {leaf.body}
+          </p>
         </div>
-        <p className="text-[10px] leading-normal text-[#67715f]">
-          {leaf.body}
-        </p>
       </div>
     );
   };
@@ -650,38 +623,34 @@ export default function InteractiveOrganicTree({
 
         {/* Dynamic connection split-fork paths from stats block to Wallet leaf */}
         {forkPaths.topFork && (
-          <g filter="url(#glow)">
+          <g
+            filter="url(#glow)"
+            stroke="currentColor"
+            fill="none"
+            strokeDasharray="5 3"
+            className="text-[#8a9a6b]/40 dark:text-[#dce6cf]/55 transition-colors"
+          >
             <path
               d={forkPaths.topFork}
-              stroke="url(#stats-grad)"
               strokeWidth="2"
-              fill="none"
-              strokeDasharray="5 3"
               className="opacity-95"
             />
             <path
               d={forkPaths.bottomFork}
-              stroke="url(#stats-grad)"
               strokeWidth="2"
-              fill="none"
-              strokeDasharray="5 3"
               className="opacity-95"
             />
             <path
               d={forkPaths.mainStem}
-              stroke="url(#stats-grad)"
               strokeWidth="2.5"
-              fill="none"
-              strokeDasharray="5 3"
               className="opacity-95"
             />
           </g>
         )}
       </svg>
 
-      <div className="mx-auto max-w-7xl px-4 md:px-6">
-        <div className="grid gap-12 md:grid-cols-[1fr_1.1fr] items-center">
-          
+      <div className="mx-auto max-w-[1400px] px-4 md:px-6">
+        <div className="grid gap-16 lg:gap-24 md:grid-cols-[1fr_1.2fr] items-center">
           {/* Left Column: Heading, description, CTA buttons and connected stats */}
           <div className="space-y-8 z-10">
             <div className="space-y-4">
@@ -691,7 +660,8 @@ export default function InteractiveOrganicTree({
                 marketplace.
               </h1>
               <p className="max-w-xl text-base leading-relaxed text-[#67715f] md:text-lg">
-                Browse live seeded trainer profiles, compare real services, and keepy booking in sync with the backend data your trainer sees.
+                Browse live seeded trainer profiles, compare real services, and
+                keepy booking in sync with the backend data your trainer sees.
               </p>
             </div>
 
@@ -747,8 +717,7 @@ export default function InteractiveOrganicTree({
           </div>
 
           {/* Right Column: The Organic Tree Container */}
-          <div className="relative w-full max-w-[700px] aspect-square mx-auto md:block flex flex-col gap-6">
-            
+          <div className="relative w-full max-w-[700px] aspect-square md:ml-auto md:mr-0 mx-auto md:block flex flex-col gap-6">
             {/* Background SVG for Tree Branch Network (Desktop only) */}
             <svg
               className="absolute inset-0 w-full h-full pointer-events-none hidden md:block"
@@ -763,7 +732,13 @@ export default function InteractiveOrganicTree({
               />
 
               {/* Branch paths linking center circle (400, 400) to each leaf node */}
-              <g stroke="url(#branch-grad)" strokeWidth="3" fill="none" filter="url(#glow)" className="opacity-95">
+              <g
+                stroke="currentColor"
+                strokeWidth="2.5"
+                fill="none"
+                filter="url(#glow)"
+                className="text-[#8a9a6b]/35 dark:text-[#dce6cf]/50 transition-colors"
+              >
                 {leaves.map((leaf) => (
                   <path key={leaf.id} d={getSwirlPath(leaf.x, leaf.y)} />
                 ))}
@@ -771,24 +746,28 @@ export default function InteractiveOrganicTree({
 
               {/* Curved Text Arc */}
               <text className="fill-[#6c7662] text-[11px] font-bold tracking-[0.16em] uppercase">
-                <textPath href="#text-curve" startOffset="50%" textAnchor="middle">
+                <textPath
+                  href="#text-curve"
+                  startOffset="50%"
+                  textAnchor="middle"
+                >
                   System Integrity & Features
                 </textPath>
               </text>
             </svg>
 
             {/* Desktop Layout: Orbiting Leaf Cards */}
-            <div className="absolute inset-0 hidden md:block" style={{ zIndex: 10 }}>
-              
+            <div
+              className="absolute inset-0 hidden md:block"
+              style={{ zIndex: 10 }}
+            >
               {/* Central Circle */}
-              <div
-                className="absolute left-[50%] top-[50%] -translate-x-1/2 -translate-y-1/2 w-48 h-48 rounded-full border border-[rgba(255,255,255,0.45)] bg-[rgba(255,252,246,0.85)] shadow-[0_20px_45px_rgba(74,93,62,0.06),0_1px_3px_rgba(0,0,0,0.01)] backdrop-blur-xl flex flex-col items-center justify-center p-6 text-center z-20"
-              >
-                <span className="font-display text-5xl font-extrabold text-[#31442a]">
+              <div className="absolute left-[50%] top-[50%] -translate-x-1/2 -translate-y-1/2 w-48 h-48 rounded-full border border-[rgba(255,255,255,0.45)] bg-[rgba(255,252,246,0.85)] shadow-[0_20px_45px_rgba(74,93,62,0.06),0_1px_3px_rgba(0,0,0,0.01)] backdrop-blur-xl flex flex-col items-center justify-center p-6 text-center z-20">
+                <span className="font-display text-5xl font-extrabold text-[#31442a] leading-none">
                   {bookingsCount}
                 </span>
-                <p className="mt-2 text-[10px] leading-relaxed text-[#67715f]">
-                  Roakings atteched to your current without relying on browser mock state.
+                <p className="mt-2 text-[10px] leading-normal text-[#67715f]">
+                  Great work! Bookings you've made so far.
                 </p>
               </div>
 
@@ -796,9 +775,9 @@ export default function InteractiveOrganicTree({
               {leaves.map((leaf) => {
                 const isWallet = leaf.id === "wallet";
                 const isFavorites = leaf.id === "favorites";
-                
-                let cardClassName = `absolute flex flex-col p-5 backdrop-blur-xl transition-all duration-300 hover:scale-[1.03] group w-52 ${leaf.rotate} ${leaf.href ? "cursor-pointer" : ""}`;
-                
+
+                let cardClassName = `absolute flex flex-col w-52 p-5 backdrop-blur-xl transition-all duration-300 hover:scale-[1.03] group ${leaf.rotate} ${leaf.href ? "cursor-pointer" : ""}`;
+
                 if (isFavorites) {
                   cardClassName += ` bg-[rgba(255,241,242,0.65)] hover:bg-[rgba(255,228,230,0.75)] border border-[rgba(244,63,94,0.35)] hover:border-[rgba(244,63,94,0.6)] shadow-[0_16px_36px_rgba(244,63,94,0.08)] hover:shadow-[0_24px_48px_rgba(244,63,94,0.18)]`;
                 } else if (leaf.href) {
@@ -811,7 +790,7 @@ export default function InteractiveOrganicTree({
                   left: `${(leaf.x / 800) * 100}%`,
                   top: `${(leaf.y / 800) * 100}%`,
                   transform: `translate(-50%, -50%)`,
-                  borderRadius: leaf.borderRadius
+                  borderRadius: leaf.borderRadius,
                 };
 
                 const innerContent = renderLeafInner(leaf);
@@ -845,7 +824,6 @@ export default function InteractiveOrganicTree({
 
             {/* Mobile View Layout: Cascading Stack of Leaf Cards */}
             <div className="flex md:hidden flex-col gap-4 mt-6 z-10">
-              
               {/* Central counter summary for mobile */}
               <div className="flex items-center gap-4 p-5 bg-[rgba(255,252,246,0.92)] border border-[rgba(88,120,74,0.14)] rounded-[20px] shadow-card">
                 <span className="font-display text-4xl font-extrabold text-primary-deep">
@@ -856,7 +834,7 @@ export default function InteractiveOrganicTree({
                     Active Bookings
                   </p>
                   <p className="text-[11px] leading-normal text-[#67715f]">
-                    Bookings attached to your current profile without relying on browser mock state.
+                    Great work! Bookings you've made so far.
                   </p>
                 </div>
               </div>
@@ -865,9 +843,9 @@ export default function InteractiveOrganicTree({
               <div className="grid gap-4 sm:grid-cols-2">
                 {leaves.map((leaf) => {
                   const isFavorites = leaf.id === "favorites";
-                  
+
                   let cardClassName = `p-5 border shadow-card flex flex-col transition-all duration-300 ${leaf.href ? "cursor-pointer hover:scale-[1.01]" : ""}`;
-                  
+
                   if (isFavorites) {
                     cardClassName += ` bg-[rgba(255,241,242,0.92)] border-[rgba(244,63,94,0.3)]`;
                   } else if (leaf.href) {

@@ -1,11 +1,14 @@
 import { CheckCircle2, Eye, Star, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { formatIDR, formatUSDC } from "@/lib/format";
+import { getTrainerAvailabilityRules } from "@/lib/actions/availability";
+import { AvailabilityWidget } from "@/components/trainer/AvailabilityWidget";
 import { getMyTrainerProfile, lamportsToTokenUnits } from "@/lib/marketplace";
 import { TrainerCard } from "@/components/shared/TrainerCard";
 
 export default async function TrainerPreviewPage() {
   const profile = await getMyTrainerProfile().catch(() => null);
+  const availabilityRules = profile ? await getTrainerAvailabilityRules(profile.id).catch(() => []) : [];
 
   if (!profile) {
     return (
@@ -138,6 +141,10 @@ export default async function TrainerPreviewPage() {
                       No certifications added yet.
                     </p>
                   )}
+                </div>
+
+                <div className="mt-8 pt-8 border-t border-border/60">
+                  <AvailabilityWidget rules={availabilityRules} isEditable={false} />
                 </div>
               </div>
             </div>

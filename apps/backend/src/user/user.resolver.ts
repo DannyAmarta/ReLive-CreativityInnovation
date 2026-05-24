@@ -8,6 +8,8 @@ import { RequestEmailChangeInput } from './dto/request-email-change.input';
 import { RequestEmailChangeResponse } from './dto/request-email-change.response';
 import { VerifyEmailChangeResponse } from './dto/verify-email-change.response';
 import { UpdateProfileInput } from './dto/update-profile.input';
+import { RequestAccountDeletionResponse } from './dto/request-account-deletion.response';
+import { ConfirmAccountDeletionResponse } from './dto/confirm-account-deletion.response';
 import { JwtService } from '@nestjs/jwt';
 import { UnauthorizedException } from '@nestjs/common';
 
@@ -90,6 +92,24 @@ export class UserResolver {
     }
 
     return this.userService.changeMyRole(userId, role);
+  }
+
+  @Mutation(() => RequestAccountDeletionResponse)
+  async requestAccountDeletionCode(
+    @Context() ctx: { req: { headers: Record<string, string> } },
+  ) {
+    const userId = this.extractUserIdFromContext(ctx);
+    return this.userService.requestAccountDeletionCode(userId);
+  }
+
+  @Mutation(() => ConfirmAccountDeletionResponse)
+  async confirmAccountDeletion(
+    @Args('verifyToken') verifyToken: string,
+    @Args('code') code: string,
+    @Context() ctx: { req: { headers: Record<string, string> } },
+  ) {
+    const userId = this.extractUserIdFromContext(ctx);
+    return this.userService.confirmAccountDeletion(userId, verifyToken, code);
   }
 
   // This helper extracts the authenticated user's ID from the request context JWT.

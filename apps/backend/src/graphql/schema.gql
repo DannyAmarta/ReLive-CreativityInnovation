@@ -58,6 +58,17 @@ type VerifyEmailChangeResponse {
   message: String!
 }
 
+type RequestAccountDeletionResponse {
+  success: Boolean!
+  verifyToken: String!
+  message: String!
+}
+
+type ConfirmAccountDeletionResponse {
+  success: Boolean!
+  message: String!
+}
+
 type FoodNutrients {
   calories: Float
   proteinGrams: Float
@@ -291,6 +302,19 @@ type TrainerService {
   updatedAt: DateTime!
 }
 
+type Review {
+  id: Int!
+  bookingId: Int!
+  clientId: Int!
+  client: User
+  trainerProfileId: Int!
+  rating: Int!
+  comment: String
+  isAnonymous: Boolean!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
 type TrainerProfile {
   id: Int!
   userId: Int!
@@ -302,6 +326,7 @@ type TrainerProfile {
   payoutMintAddress: String
   ataInitializedAt: DateTime
   services: [TrainerService]
+  reviews: [Review]
   createdAt: DateTime!
   updatedAt: DateTime!
 }
@@ -329,6 +354,7 @@ type Booking {
   meetingLink: String
   createdAt: DateTime!
   updatedAt: DateTime!
+  review: Review
 }
 
 type RescheduleRequest {
@@ -457,6 +483,8 @@ type Mutation {
   verifyEmailChange(token: String!): VerifyEmailChangeResponse!
   updateProfile(input: UpdateProfileInput!): User!
   changeMyRole(role: String!): User!
+  requestAccountDeletionCode: RequestAccountDeletionResponse!
+  confirmAccountDeletion(verifyToken: String!, code: String!): ConfirmAccountDeletionResponse!
   logWorkoutSet(input: LogWorkoutSetInput!): LoggedWorkoutSetPayload!
   generateWorkoutRecommendation(input: GeneratePlanDto!): GeneratedWorkoutPlanEntity!
   analyzeFeatureThreats(input: FeatureAnalysisDto!): FeatureThreatAnalysisEntity!
@@ -471,6 +499,7 @@ type Mutation {
   resolveBookingReschedule(input: ResolveRequestInput!): RescheduleRequest!
   requestBookingCancellation(input: RequestCancellationInput!): CancellationRequest!
   resolveBookingCancellation(input: ResolveRequestInput!): CancellationRequest!
+  createReview(input: CreateReviewInput!): Review!
   createAvailabilityRule(input: CreateAvailabilityRuleInput!): TrainerAvailabilityModel!
   updateAvailabilityRule(input: UpdateAvailabilityRuleInput!): TrainerAvailabilityModel!
   deleteAvailabilityRule(ruleId: Int!): Boolean!
@@ -617,6 +646,13 @@ input ResolveRequestInput {
 input RequestCancellationInput {
   bookingId: Int!
   reason: String
+}
+
+input CreateReviewInput {
+  bookingId: Int!
+  rating: Int!
+  comment: String
+  isAnonymous: Boolean = false
 }
 
 input CreateAvailabilityRuleInput {

@@ -21,7 +21,7 @@ export default function ClientShell({
     <div className="min-h-dvh bg-gradient-surface text-foreground">
       <Toaster richColors position="top-right" />
       <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur-xl">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+        <div className="max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
           <Link href="/client" className="flex items-center gap-2.5 shrink-0">
             <div className="relative size-8 rounded-lg bg-gradient-primary shadow-glow flex items-center justify-center">
               <div className="size-3 rounded-sm bg-highlight" />
@@ -43,7 +43,7 @@ export default function ClientShell({
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 animate-fade-in">
+      <main className="max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 animate-fade-in">
         {children}
       </main>
     </div>

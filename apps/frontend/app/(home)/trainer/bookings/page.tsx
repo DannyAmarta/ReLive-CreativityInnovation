@@ -66,6 +66,7 @@ export default async function TrainerBookingsPage({
   }
 
   const params = searchParams ? await searchParams : {};
+  const error = typeof params?.error === "string" ? params.error : undefined;
   const showSessionWarning =
     params?.session === "expired" ||
     (bookingsResult[0].status === "rejected" &&
@@ -88,6 +89,13 @@ export default async function TrainerBookingsPage({
         title="Bookings"
         description="Manage real trainer bookings from the seeded database. Actions below now follow the backend booking state machine."
       />
+
+      {error && (
+        <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive flex items-center gap-2 font-medium">
+          <AlertTriangle className="size-4 shrink-0 text-destructive" />
+          <span>{error}</span>
+        </div>
+      )}
 
       {showSessionWarning && (
         <SessionWarning description="Trainer booking data could not be refreshed with the current Google session. You can still review the page, but sign in again before approving, cancelling, or completing anything." />

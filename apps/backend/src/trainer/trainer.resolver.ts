@@ -5,6 +5,7 @@ import { TrainerService as TrainerServiceModel } from './trainer.service';
 import { TrainerProfile } from './models/trainer-profile.model';
 import { TrainerService } from './models/trainer-service.model';
 import { Booking } from './models/booking.model';
+import { Review } from './models/review.model';
 import { RescheduleRequest } from './models/reschedule-request.model';
 import { CancellationRequest } from './models/cancellation-request.model';
 import { CreateTrainerProfileInput } from './dto/create-trainer-profile.input';
@@ -17,6 +18,7 @@ import { RegisterTrainerFiatInput } from './dto/register-trainer-fiat.input';
 import { ProposeRescheduleInput } from './dto/propose-reschedule.input';
 import { ResolveRequestInput } from './dto/resolve-request.input';
 import { RequestCancellationInput } from './dto/request-cancellation.input';
+import { CreateReviewInput } from './dto/create-review.input';
 import { PrismaService } from '../prisma/prisma.service';
 import { Role } from '@prisma/client';
 
@@ -205,5 +207,14 @@ export class TrainerResolver {
   ) {
     const userId = this.extractUserIdFromContext(ctx);
     return this.trainerService.resolveCancellation(userId, input);
+  }
+
+  @Mutation(() => Review)
+  async createReview(
+    @Context() ctx: { req: { headers: Record<string, string> } },
+    @Args('input') input: CreateReviewInput,
+  ) {
+    const userId = this.extractUserIdFromContext(ctx);
+    return this.trainerService.createReview(userId, input);
   }
 }

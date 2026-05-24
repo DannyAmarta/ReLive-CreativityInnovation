@@ -20,6 +20,22 @@ export type TrainerServiceRecord = {
   isActive: boolean;
 };
 
+export type ReviewRecord = {
+  id: number;
+  bookingId: number;
+  clientId: number;
+  trainerProfileId: number;
+  rating: number;
+  comment?: string | null;
+  isAnonymous: boolean;
+  createdAt: string;
+  client?: {
+    id: number;
+    name: string;
+    avatar?: string | null;
+  } | null;
+};
+
 export type TrainerProfileRecord = {
   id: number;
   bio?: string | null;
@@ -32,6 +48,7 @@ export type TrainerProfileRecord = {
     bio?: string | null;
   };
   services: TrainerServiceRecord[];
+  reviews?: ReviewRecord[];
 };
 
 export type BookingRecord = {
@@ -46,7 +63,7 @@ export type BookingRecord = {
   processingFeeIdr?: number | null;
   gatewayPaymentMethod?: string | null;
   disputeReason?: string | null;
-  // ── Scheduling ───────────────────────────────────
+  // ── Scheduling ───────────────────────────────────────────────
   scheduledStart?: string | null;
   scheduledEnd?: string | null;
   timezone?: string | null;
@@ -70,6 +87,7 @@ export type BookingRecord = {
     };
   } | null;
   service?: TrainerServiceRecord | null;
+  review?: ReviewRecord | null;
 };
 
 

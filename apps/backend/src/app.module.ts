@@ -25,6 +25,7 @@ import { TrainerModule } from './trainer/trainer.module';
 import { BlockchainModule } from './blockchain/blockchain.module';
 import { FiatPaymentService } from './fiat-payment/fiat-payment.service';
 import { FiatPaymentModule } from './fiat-payment/fiat-payment.module';
+import { MessagingModule } from './messaging/messaging.module';
 
 @Module({
   imports: [
@@ -67,6 +68,7 @@ import { FiatPaymentModule } from './fiat-payment/fiat-payment.module';
     TrainerModule,
     BlockchainModule,
     FiatPaymentModule,
+    MessagingModule,
   ],
   controllers: [AppController],
   providers: [

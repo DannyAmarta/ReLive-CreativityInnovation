@@ -1,6 +1,7 @@
 import { Field, Int, ObjectType, Float } from '@nestjs/graphql';
 import { User } from '../../user/entities/user.entity';
 import { TrainerService } from './trainer-service.model';
+import { Review } from './review.model';
 
 @ObjectType()
 export class TrainerProfile {
@@ -33,6 +34,9 @@ export class TrainerProfile {
 
   @Field(() => [TrainerService], { nullable: 'itemsAndList' })
   services?: TrainerService[];
+
+  @Field(() => [Review], { nullable: 'itemsAndList' })
+  reviews?: Review[];
 
   @Field()
   createdAt: Date;

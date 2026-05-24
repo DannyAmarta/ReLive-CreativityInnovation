@@ -28,27 +28,26 @@ export function FiatBookingModal({
     if (stage !== "polling") return;
     const successAt = 4000;
     const t1 = setTimeout(() => {
-      actions.setBookingStatus(bookingId, "ACTIVE");
+      actions.addBooking({
+        id: bookingId,
+        trainerId: trainer.id,
+        trainerName: trainer.name,
+        trainerPhoto: trainer.photo,
+        serviceTitle: service.title,
+        scheduledAt: new Date(Date.now() + 86400000 * 2).toISOString(),
+        paymentType: "FIAT",
+        amountIdr: total,
+        status: "ACTIVE",
+        paymentUrl: "#mock-duitku",
+      });
       toast.success("Payment confirmed", { description: "Your booking is now active." });
       onClose();
       navigate.push("/client/dashboard");
     }, successAt);
     return () => clearTimeout(t1);
-  }, [stage, bookingId, navigate, onClose]);
+  }, [stage, bookingId, navigate, onClose, trainer, service, total]);
 
   const handlePay = () => {
-    actions.addBooking({
-      id: bookingId,
-      trainerId: trainer.id,
-      trainerName: trainer.name,
-      trainerPhoto: trainer.photo,
-      serviceTitle: service.title,
-      scheduledAt: new Date(Date.now() + 86400000 * 2).toISOString(),
-      paymentType: "FIAT",
-      amountIdr: total,
-      status: "PENDING",
-      paymentUrl: "#mock-duitku",
-    });
     setStage("polling");
   };
 

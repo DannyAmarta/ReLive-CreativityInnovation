@@ -617,6 +617,99 @@ async function main() {
   }
 
   // =========================
+  // REVIEWS
+  // =========================
+
+  // Seed reviews for random COMPLETED bookings (to give trainers real ratings)
+  const completedBookings = await prisma.booking.findMany({
+    where: { status: BookingStatus.COMPLETED },
+    include: { review: true },
+  });
+
+  const reviewComments = [
+    'Amazing trainer! Helped me achieve my goals faster than I expected.',
+    'Very professional and knowledgeable. Highly recommend!',
+    'Great session, very motivating. Will definitely book again.',
+    'Excellent communication and personalized training plan.',
+    'Good trainer but sessions could be a bit longer.',
+    'Incredibly patient and supportive. Perfect for beginners!',
+    'Top-notch expertise. My form has improved drastically.',
+    'Very friendly and encouraging. Loved every session.',
+    null,
+    null,
+  ];
+
+  const seenBookingsForReview = new Set<number>();
+
+  for (const booking of completedBookings) {
+    if (booking.review || seenBookingsForReview.has(booking.id)) continue;
+    seenBookingsForReview.add(booking.id);
+    if (faker.number.float() > 0.7) continue;
+    const rating = faker.number.int({ min: 3, max: 5 });
+    const comment = faker.helpers.arrayElement(reviewComments);
+    const isAnonymous = faker.datatype.boolean({ probability: 0.2 });
+    await prisma.review.upsert({
+      where: { bookingId: booking.id },
+      update: {},
+      create: {
+        bookingId: booking.id,
+        clientId: booking.clientId,
+        trainerProfileId: booking.trainerId,
+        rating,
+        comment,
+        isAnonymous,
+      },
+    });
+  }
+
+  // Recalculate ratings for all trainer profiles
+  const allTrainerProfiles = await prisma.trainerProfile.findMany({
+    include: { reviews: { select: { rating: true } } },
+  });
+  for (const profile of allTrainerProfiles) {
+    if (profile.reviews.length === 0) continue;
+    const avg = profile.reviews.reduce((sum, r) => sum + r.rating, 0) / profile.reviews.length;
+    await prisma.trainerProfile.update({
+      where: { id: profile.id },
+      data: { rating: Math.round(avg * 10) / 10 },
+    });
+  }
+
+  // Seed a specific review for the demo client's completed booking
+  const demoCompletedBooking = await prisma.booking.findFirst({
+    where: {
+      clientId: demoClient.id,
+      trainerId: demoTrainerProfile.id,
+      status: BookingStatus.COMPLETED,
+    },
+    include: { review: true },
+  });
+
+  if (demoCompletedBooking && !demoCompletedBooking.review) {
+    await prisma.review.create({
+      data: {
+        bookingId: demoCompletedBooking.id,
+        clientId: demoClient.id,
+        trainerProfileId: demoTrainerProfile.id,
+        rating: 5,
+        comment: 'Absolutely incredible session! The demo trainer is incredibly knowledgeable and pushes you to achieve your best.',
+        isAnonymous: false,
+      },
+    });
+    const demoReviews = await prisma.review.findMany({
+      where: { trainerProfileId: demoTrainerProfile.id },
+      select: { rating: true },
+    });
+    if (demoReviews.length > 0) {
+      const avg = demoReviews.reduce((sum, r) => sum + r.rating, 0) / demoReviews.length;
+      await prisma.trainerProfile.update({
+        where: { id: demoTrainerProfile.id },
+        data: { rating: Math.round(avg * 10) / 10 },
+      });
+    }
+  }
+
+  // =========================
   // WITHDRAWALS
   // =========================
 
@@ -624,32 +717,21 @@ async function main() {
     await prisma.withdrawalRequest.create({
       data: {
         trainerId: trainer.id,
-        amountIdr:
-          faker.number.int({
-            min: 100000,
-            max: 2000000,
-          }),
+        amountIdr: faker.number.int({ min: 100000, max: 2000000 }),
         bankCode: 'BCA',
-        accountNumber:
-          faker.finance.accountNumber(),
-        accountName:
-          trainer.name ||
-          'Trainer',
-        paymentMethod:
-          'BANK_TRANSFER',
-        status:
-          faker.helpers.arrayElement([
-            WithdrawalStatus.PENDING,
-            WithdrawalStatus.COMPLETED,
-            WithdrawalStatus.FAILED,
-          ]),
+        accountNumber: faker.finance.accountNumber(),
+        accountName: trainer.name || 'Trainer',
+        paymentMethod: 'BANK_TRANSFER',
+        status: faker.helpers.arrayElement([
+          WithdrawalStatus.PENDING,
+          WithdrawalStatus.COMPLETED,
+          WithdrawalStatus.FAILED,
+        ]),
       },
     });
   }
 
-  console.log(
-    '✅ Seed completed successfully!'
-  );
+  console.log('✅ Seed completed successfully!');
 }
 
 main()

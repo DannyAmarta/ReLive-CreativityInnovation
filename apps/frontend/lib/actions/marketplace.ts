@@ -5,9 +5,12 @@ import { revalidatePath } from "next/cache";
 import { print } from "graphql";
 import { z } from "zod";
 import { authFetchGraphql, isAuthenticationGraphqlError } from "../fetchGraphQL";
+import prisma from "@/lib/prisma";
+import { getSession } from "@/lib/session.server";
 import {
   CREATE_BOOKING_MUTATION,
   CREATE_TRAINER_SERVICE_MUTATION,
+  CREATE_REVIEW_MUTATION,
   REQUEST_FIAT_BOOKING_DEPOSIT_MUTATION,
   REQUEST_FIAT_WITHDRAWAL_MUTATION,
   UPDATE_BOOKING_STATUS_MUTATION,
@@ -32,6 +35,12 @@ type FiatDepositResponse = {
 
 export type ServiceFormState = {
   error: string | null;
+  fields?: {
+    title?: string;
+    description?: string;
+    priceInIdr?: string;
+    priceInTokenUnits?: string;
+  };
 };
 
 // Zod schema for service creation/update
@@ -146,11 +155,29 @@ export async function updateBookingStatusAction(formData: FormData) {
       input: { bookingId, status, disputeReason },
     });
   } catch (error) {
+    if (error instanceof Error && (error.message === "NEXT_REDIRECT" || (error as any).digest?.startsWith("NEXT_REDIRECT"))) {
+      throw error;
+    }
     if (isAuthenticationGraphqlError(error)) {
       redirectWithSessionWarning(redirectTo);
     }
 
-    throw error;
+    let errorMsg = error instanceof Error ? error.message : "Something went wrong";
+    if (typeof error === 'object' && error !== null && 'graphqlErrors' in error) {
+      const gqlErrors = (error as any).graphqlErrors;
+      if (Array.isArray(gqlErrors) && gqlErrors.length > 0) {
+        errorMsg = gqlErrors[0].message || errorMsg;
+      }
+    }
+
+    // Clean up error prefix if present
+    errorMsg = errorMsg.replace(/^GraphQL error:\s*/i, "");
+
+    // Redirect to the same page but with an error parameter
+    const redirectUrl = new URL(redirectTo, "http://local");
+    redirectUrl.searchParams.set("error", errorMsg);
+    
+    redirect(`${redirectUrl.pathname}${redirectUrl.search}`);
   }
 
   revalidatePath("/client/dashboard");
@@ -171,19 +198,30 @@ export async function saveTrainerServiceAction(
   const priceInIdrRaw = formData.get("priceInIdr")?.toString().trim();
   const priceInTokenRaw = formData.get("priceInTokenUnits")?.toString().trim();
 
+  const title = formData.get("title")?.toString() || "";
+  const description = formData.get("description")?.toString() || "";
+
   const parsed = ServiceSchema.safeParse({
-    title: formData.get("title"),
-    description: formData.get("description"),
+    title,
+    description,
     priceInIdr: priceInIdrRaw || undefined,
     priceInTokenUnits: priceInTokenRaw || undefined,
   });
 
   if (!parsed.success) {
     const firstError = parsed.error.issues?.[0]?.message || "Validation failed";
-    return { error: firstError };
+    return {
+      error: firstError,
+      fields: {
+        title,
+        description,
+        priceInIdr: priceInIdrRaw,
+        priceInTokenUnits: priceInTokenRaw,
+      },
+    };
   }
 
-  const { title, description, priceInIdr, priceInTokenUnits } = parsed.data;
+  const { priceInIdr, priceInTokenUnits } = parsed.data;
   const priceInLamports = priceInTokenUnits ? Math.round(priceInTokenUnits * 1_000_000) : null;
 
   try {
@@ -214,7 +252,15 @@ export async function saveTrainerServiceAction(
       redirect(`${url.pathname}${url.search}`);
     }
     const message = error instanceof Error ? error.message : "Failed to save service";
-    return { error: message };
+    return {
+      error: message,
+      fields: {
+        title,
+        description,
+        priceInIdr: priceInIdrRaw,
+        priceInTokenUnits: priceInTokenRaw,
+      },
+    };
   }
 
   revalidatePath("/trainer/services");
@@ -354,4 +400,91 @@ export async function resolveCancellationAction(formData: FormData) {
   revalidatePath("/client/dashboard");
   revalidatePath("/trainer/bookings");
   redirect(`${redirectTo}?cancellation=resolved`);
+}
+
+export async function createReviewAction(formData: FormData) {
+  const bookingId = parseIntField(formData.get("bookingId"), "bookingId");
+  const rating = parseIntField(formData.get("rating"), "rating");
+  const comment = formData.get("comment")?.toString().trim() || undefined;
+  const isAnonymous = formData.get("isAnonymous") === "true";
+  const redirectTo = formData.get("redirectTo")?.toString() || "/client/dashboard";
+
+  if (rating < 1 || rating > 5) {
+    throw new Error("Rating must be between 1 and 5");
+  }
+
+  try {
+    await authFetchGraphql(print(CREATE_REVIEW_MUTATION), {
+      input: { bookingId, rating, comment, isAnonymous },
+    });
+  } catch (error) {
+    if (isAuthenticationGraphqlError(error)) {
+      redirect(`${redirectTo}?session=expired`);
+    }
+    throw error;
+  }
+
+  revalidatePath("/client/dashboard");
+  revalidatePath("/client/trainers");
+  redirect(`${redirectTo}?review=submitted`);
+}
+
+export async function verifyBookingPaymentAction(bookingId: number) {
+  const session = await getSession();
+  if (!session || !session.user?.id) {
+    throw new Error("Unauthorized");
+  }
+  const userId = Number(session.user.id);
+
+  // Retrieve the booking record
+  const booking = await prisma.booking.findUnique({
+    where: { id: bookingId },
+    include: {
+      trainer: true,
+    },
+  });
+
+  if (!booking) {
+    return { status: "NOT_FOUND" };
+  }
+
+  // Ensure this booking belongs to the current user
+  if (booking.clientId !== userId) {
+    throw new Error("Unauthorized access to booking");
+  }
+
+  // If status is ACTIVE, verify/create conversation
+  if (booking.status === "ACTIVE") {
+    const trainerUserId = booking.trainer.userId;
+    const clientUserId = booking.clientId;
+
+    // Check if conversation already exists
+    let conversation = await prisma.conversation.findUnique({
+      where: {
+        trainerUserId_clientUserId: {
+          trainerUserId,
+          clientUserId,
+        },
+      },
+    });
+
+    if (!conversation) {
+      conversation = await prisma.conversation.create({
+        data: {
+          trainerUserId,
+          clientUserId,
+          bookingId: booking.id,
+        },
+      });
+    }
+
+    return {
+      status: "ACTIVE",
+      conversationId: conversation.id,
+    };
+  }
+
+  return {
+    status: booking.status,
+  };
 }

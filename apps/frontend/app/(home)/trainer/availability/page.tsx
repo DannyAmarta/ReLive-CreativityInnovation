@@ -46,9 +46,15 @@ export default async function TrainerAvailabilityPage() {
         </Link>
       </div>
 
-      <div className="rounded-2xl border border-[rgba(74,93,62,0.15)] bg-[rgba(74,93,62,0.03)] p-4 text-sm text-[#67715f]">
-        <strong className="text-[#4a5d3e]">How it works:</strong> Enable days and set working hours in the weekly schedule.
-        For exceptions (vacations, conferences, one-off open days), use Date Overrides — they take priority over the weekly default for that specific date.
+      <div className="rounded-2xl border border-[rgba(74,93,62,0.15)] bg-[rgba(74,93,62,0.03)] p-4 text-sm text-[#67715f] space-y-2">
+        <div>
+          <strong className="text-[#4a5d3e]">How it works:</strong> Enable days and set working hours in the weekly schedule.
+          For exceptions (vacations, conferences, one-off open days), use Date Overrides — they take priority over the weekly default for that specific date.
+        </div>
+        <div className="text-xs font-medium text-[#4a5d3e] flex items-center gap-1.5 pt-1 border-t border-[rgba(74,93,62,0.1)]">
+          <span>💡</span>
+          <span><strong>Note on session duration:</strong> All client bookings are fixed to exactly 1-hour sessions. Ensure your daily working hours cover complete 1-hour increments.</span>
+        </div>
       </div>
 
       <AvailabilityManager initialRules={rules} />

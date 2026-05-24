@@ -1,5 +1,5 @@
 import { Test } from '@nestjs/testing';
-import { PrismaService } from 'src/prisma/prisma.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { FoodService } from './food.service';
 import { OpenFoodFactsConnector } from './providers/open-food-facts.connector';
 import { UsdaFoodConnector } from './providers/usda-food.connector';

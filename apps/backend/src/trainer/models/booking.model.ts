@@ -2,6 +2,7 @@ import { Field, Int, ObjectType } from '@nestjs/graphql';
 import { User } from '../../user/entities/user.entity';
 import { TrainerProfile } from './trainer-profile.model';
 import { TrainerService } from './trainer-service.model';
+import { Review } from './review.model';
 
 @ObjectType()
 export class Booking {
@@ -70,4 +71,7 @@ export class Booking {
 
   @Field()
   updatedAt: Date;
+
+  @Field(() => Review, { nullable: true })
+  review?: Review;
 }
