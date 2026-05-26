@@ -12,6 +12,7 @@ import { X, User, Clock, CreditCard, Filter, CalendarDays, ChevronDown, External
 import type { BookingRecord } from "@/lib/marketplace";
 import { formatIDR, formatDateTime } from "@/lib/format";
 import Link from "next/link";
+import type { RescheduleRequest, CancellationRequest } from "./ClientBookingTabs";
 
 // ─── Status color map ─────────────────────────────────────────────────────────
 const STATUS_COLORS: Record<string, string> = {
@@ -143,7 +144,15 @@ function Row({ icon, label, value }: { icon: React.ReactNode; label: string; val
 }
 
 // ─── Main Calendar View ───────────────────────────────────────────────────────
-export function ClientCalendarView({ initialBookings }: { initialBookings: BookingRecord[] }) {
+export function ClientCalendarView({
+  initialBookings,
+  rescheduleRequests = [],
+  cancellationRequests = [],
+}: {
+  initialBookings: BookingRecord[];
+  rescheduleRequests?: RescheduleRequest[];
+  cancellationRequests?: CancellationRequest[];
+}) {
   const calendarRef = useRef<FullCalendar>(null);
 
   const [bookings] = useState<BookingRecord[]>(initialBookings);
@@ -170,8 +179,17 @@ export function ClientCalendarView({ initialBookings }: { initialBookings: Booki
         const evStart = dayjs(b.scheduledStart);
         const evEnd = dayjs(b.scheduledEnd);
 
-        // Status check
-        if (!selectedStatuses.includes(b.status)) return null;
+        // Compute display status dynamically based on pending proposals
+        const pendingReschedule = rescheduleRequests.find(
+          (r) => r.bookingId === b.id && r.status === "PENDING"
+        );
+        const pendingCancellation = cancellationRequests.find(
+          (r) => r.bookingId === b.id && r.status === "PENDING"
+        );
+        const displayStatus = (pendingReschedule || pendingCancellation) ? "PENDING" : b.status;
+
+        // Status check against displayStatus
+        if (!selectedStatuses.includes(displayStatus)) return null;
 
         // Start Date check: event end time must be at or after filter start date
         if (startDate && evEnd.isBefore(dayjs(startDate).startOf("day"))) return null;
@@ -181,21 +199,26 @@ export function ClientCalendarView({ initialBookings }: { initialBookings: Booki
 
         const trainerName = b.trainer?.user?.name ?? "Trainer";
 
+        const modifiedBooking = {
+          ...b,
+          status: displayStatus,
+        };
+
         return {
           id: String(b.id),
           title: `${b.service?.title ?? "Session"} with ${trainerName}`,
           start: b.scheduledStart!,
           end: b.scheduledEnd!,
-          backgroundColor: STATUS_COLORS[b.status] ?? "#6c7662",
+          backgroundColor: STATUS_COLORS[displayStatus] ?? "#6c7662",
           borderColor: "transparent",
           extendedProps: {
-            booking: b,
-            status: b.status,
+            booking: modifiedBooking,
+            status: displayStatus,
           },
         };
       })
       .filter((e) => e !== null) as any[];
-  }, [bookings, selectedStatuses, startDate, endDate]);
+  }, [bookings, rescheduleRequests, cancellationRequests, selectedStatuses, startDate, endDate]);
 
   const handleEventClick = useCallback((info: any) => {
     const booking = info.event.extendedProps.booking;

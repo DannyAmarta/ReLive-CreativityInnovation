@@ -34,6 +34,23 @@ export function isAuthenticationGraphqlError(
     return error instanceof GraphqlRequestError && error.isAuthenticationFailure;
 }
 
+export function isThrottledGraphqlError(error: unknown): boolean {
+    if (error instanceof GraphqlRequestError) {
+        return error.graphqlErrors.some(
+            (err) =>
+                err.message?.includes("ThrottlerException") ||
+                err.message?.toLowerCase().includes("too many requests"),
+        );
+    }
+    if (error instanceof Error) {
+        return (
+            error.message.includes("ThrottlerException") ||
+            error.message.toLowerCase().includes("too many requests")
+        );
+    }
+    return false;
+}
+
 export const fetchGraphql = async <T = unknown>(
     query: string,
     variables?: Record<string, unknown>,

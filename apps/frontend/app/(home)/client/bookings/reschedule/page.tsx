@@ -4,13 +4,14 @@ import { authFetchGraphql, isAuthenticationGraphqlError } from "@/lib/fetchGraph
 import {
   GET_MY_CLIENT_BOOKINGS_QUERY,
   MY_RESCHEDULE_REQUESTS_QUERY,
+  MY_CANCELLATION_REQUESTS_QUERY,
 } from "@/lib/gqlQueries";
 import {
-  proposeRescheduleAction,
   resolveRescheduleAction,
 } from "@/lib/actions/marketplace";
 import { formatDateTime } from "@/lib/format";
-import { CalendarClock, ArrowLeft, Check, X, Clock, CalendarPlus } from "lucide-react";
+import { CalendarClock, ArrowLeft, Check, X, Clock, CalendarPlus, CircleSlash } from "lucide-react";
+import { ClientRescheduleForm } from "@/components/client/ClientRescheduleForm";
 
 type Booking = {
   id: number;
@@ -49,23 +50,32 @@ export default async function ReschedulePage({
   const statusMsg = params?.reschedule as string | undefined;
 
   let bookings: Booking[] = [];
-  let requests: RescheduleRequest[] = [];
+  let rescheduleRequests: RescheduleRequest[] = [];
+  let cancellationRequests: any[] = [];
 
   try {
-    const [bookingsData, requestsData] = await Promise.all([
+    const [bookingsData, reschedulesData, cancellationsData] = await Promise.all([
       authFetchGraphql<ClientBookingsResponse>(print(GET_MY_CLIENT_BOOKINGS_QUERY)),
       authFetchGraphql<RescheduleRequestsResponse>(print(MY_RESCHEDULE_REQUESTS_QUERY)),
+      authFetchGraphql<{ myCancellationRequests: any[] }>(print(MY_CANCELLATION_REQUESTS_QUERY)),
     ]);
     bookings = (bookingsData.myClientBookings ?? []).filter((b) => b.status === "ACTIVE");
-    requests = requestsData.myRescheduleRequests ?? [];
+    rescheduleRequests = reschedulesData.myRescheduleRequests ?? [];
+    cancellationRequests = cancellationsData.myCancellationRequests ?? [];
   } catch (error) {
     if (!isAuthenticationGraphqlError(error)) throw error;
   }
 
-  // Map pending requests by bookingId for quick lookup
-  const requestsByBooking = new Map<number, RescheduleRequest>();
-  for (const r of requests) {
-    if (!requestsByBooking.has(r.bookingId)) requestsByBooking.set(r.bookingId, r);
+  // Map pending reschedule requests by bookingId
+  const reschedulesByBooking = new Map<number, RescheduleRequest>();
+  for (const r of rescheduleRequests) {
+    if (!reschedulesByBooking.has(r.bookingId)) reschedulesByBooking.set(r.bookingId, r);
+  }
+
+  // Map pending cancellation requests by bookingId
+  const cancellationsByBooking = new Map<number, any>();
+  for (const r of cancellationRequests) {
+    if (!cancellationsByBooking.has(r.bookingId)) cancellationsByBooking.set(r.bookingId, r);
   }
 
   return (
@@ -117,8 +127,10 @@ export default async function ReschedulePage({
       ) : (
         <div className="space-y-5">
           {bookings.map((booking) => {
-            const pendingRequest = requestsByBooking.get(booking.id);
-            const isMyPendingProposal = pendingRequest?.proposedById !== undefined;
+            const pendingReschedule = reschedulesByBooking.get(booking.id);
+            const pendingCancellation = cancellationsByBooking.get(booking.id);
+            const hasPendingRequest = !!(pendingReschedule || pendingCancellation);
+            const isMyPendingReschedule = pendingReschedule?.proposedById !== undefined;
 
             return (
               <div
@@ -138,9 +150,15 @@ export default async function ReschedulePage({
                       Trainer: {booking.trainer?.user?.name ?? "Unknown"}
                     </p>
                   </div>
-                  <span className="inline-flex items-center rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">
-                    Active
-                  </span>
+                  {hasPendingRequest ? (
+                    <span className="inline-flex items-center rounded-full bg-amber-500/10 border border-amber-500/20 px-2.5 py-0.5 text-xs font-semibold text-amber-700">
+                      Pending
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">
+                      Active
+                    </span>
+                  )}
                 </div>
 
                 {/* Current Schedule */}
@@ -164,8 +182,8 @@ export default async function ReschedulePage({
                   </div>
                 </div>
 
-                {/* Pending Request Alert */}
-                {pendingRequest && (
+                {/* Pending Reschedule Proposal Alert */}
+                {pendingReschedule && (
                   <div className="rounded-xl border border-amber-500/25 bg-amber-500/8 p-4 space-y-3">
                     <div className="flex items-center gap-2">
                       <CalendarPlus className="h-4 w-4 text-amber-600" />
@@ -176,20 +194,20 @@ export default async function ReschedulePage({
                     <div className="text-sm text-foreground">
                       <span className="text-muted-foreground">Proposed new time: </span>
                       <span className="font-semibold">
-                        {formatDateTime(pendingRequest.proposedStart)}
+                        {formatDateTime(pendingReschedule.proposedStart)}
                         {" → "}
-                        {formatDateTime(pendingRequest.proposedEnd)}
+                        {formatDateTime(pendingReschedule.proposedEnd)}
                       </span>
                     </div>
 
-                    {isMyPendingProposal ? (
+                    {isMyPendingReschedule ? (
                       <p className="text-xs text-muted-foreground italic">
                         Waiting for the trainer to respond to your proposal.
                       </p>
                     ) : (
                       <div className="flex gap-3 pt-1">
                         <form action={resolveRescheduleAction}>
-                          <input type="hidden" name="requestId" value={pendingRequest.id} />
+                          <input type="hidden" name="requestId" value={pendingReschedule.id} />
                           <input type="hidden" name="action" value="ACCEPT" />
                           <input type="hidden" name="redirectTo" value="/client/bookings/reschedule" />
                           <button
@@ -201,7 +219,7 @@ export default async function ReschedulePage({
                           </button>
                         </form>
                         <form action={resolveRescheduleAction}>
-                          <input type="hidden" name="requestId" value={pendingRequest.id} />
+                          <input type="hidden" name="requestId" value={pendingReschedule.id} />
                           <input type="hidden" name="action" value="REJECT" />
                           <input type="hidden" name="redirectTo" value="/client/bookings/reschedule" />
                           <button
@@ -217,8 +235,29 @@ export default async function ReschedulePage({
                   </div>
                 )}
 
-                {/* Propose Form — only when no pending request exists */}
-                {!pendingRequest && (
+                {/* Pending Cancellation Request Alert */}
+                {pendingCancellation && (
+                  <div className="rounded-xl border border-amber-500/25 bg-amber-500/8 p-4 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <CircleSlash className="h-4 w-4 text-amber-600" />
+                      <span className="text-sm font-semibold text-amber-800 dark:text-amber-300">
+                        Cancellation Request Pending
+                      </span>
+                    </div>
+                    {pendingCancellation.reason && (
+                      <div className="text-sm text-foreground">
+                        <span className="text-muted-foreground">Reason: </span>
+                        <span className="italic">"{pendingCancellation.reason}"</span>
+                      </div>
+                    )}
+                    <p className="text-xs text-muted-foreground italic">
+                      A cancellation request is active. You can manage this from the Cancel page.
+                    </p>
+                  </div>
+                )}
+
+                {/* Propose Form — only when no pending reschedule request exists */}
+                {!pendingReschedule && (
                   <details className="group">
                     <summary className="cursor-pointer list-none">
                       <div className="inline-flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 hover:bg-primary/10 px-4 py-2.5 text-sm font-semibold text-primary transition-all duration-200 select-none">
@@ -226,44 +265,11 @@ export default async function ReschedulePage({
                         Propose New Time
                       </div>
                     </summary>
-                    <form action={proposeRescheduleAction} className="mt-4 space-y-4 rounded-xl border border-border bg-muted/30 p-5">
-                      <input type="hidden" name="bookingId" value={booking.id} />
-                      <input type="hidden" name="timezone" value={booking.timezone ?? "Asia/Jakarta"} />
-                      <input type="hidden" name="redirectTo" value="/client/bookings/reschedule" />
-
-                      <div className="grid gap-4 sm:grid-cols-2">
-                        <div>
-                          <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">
-                            New Start Time
-                          </label>
-                          <input
-                            type="datetime-local"
-                            name="proposedStart"
-                            required
-                            className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">
-                            New End Time
-                          </label>
-                          <input
-                            type="datetime-local"
-                            name="proposedEnd"
-                            required
-                            className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
-                          />
-                        </div>
-                      </div>
-
-                      <button
-                        type="submit"
-                        className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-all duration-200 active:scale-[0.98]"
-                      >
-                        <CalendarPlus className="h-4 w-4" />
-                        Send Proposal
-                      </button>
-                    </form>
+                    <ClientRescheduleForm
+                      bookingId={booking.id}
+                      timezone={booking.timezone ?? "Asia/Jakarta"}
+                      redirectTo="/client/bookings/reschedule"
+                    />
                   </details>
                 )}
               </div>

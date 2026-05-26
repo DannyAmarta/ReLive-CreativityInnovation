@@ -18,6 +18,7 @@ import { SearchRecipes } from "@/lib/recipeSearch";
 import { CookbookDetails } from "./sections/CookbookDetails";
 import { CookbookResults } from "./sections/CookbookResults";
 import { CookbookSearch } from "./components/CookbookSearch";
+import { HealthGuidebookHeader } from "@/components/client/HealthGuidebookHeader";
 import type { Recipe } from "@/types/recipe";
 
 const RECENT_RECIPE_QUERIES_KEY = "recipe-search-recent-queries";
@@ -27,11 +28,13 @@ const SEARCH_DEBOUNCE_MS = 350;
 type CookbookMainProps = {
   initialQuery?: string;
   initialRecipeId?: string;
+  userRole?: string;
 };
 
 export function CookbookMain({
   initialQuery = "",
   initialRecipeId,
+  userRole,
 }: CookbookMainProps) {
   const {
     query, setQuery,
@@ -49,6 +52,8 @@ export function CookbookMain({
 
   return (
     <>
+      <HealthGuidebookHeader activeTab="cookbook" userRole={userRole} />
+
       {/* ── AMBIENT MESH BACKGROUND (EXACT COPY FROM FOODMAIN) ── */}
       <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden bg-[#F7F9F7]">
         {/* Top Left Soft Glow */}

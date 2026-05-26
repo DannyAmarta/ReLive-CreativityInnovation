@@ -1,6 +1,6 @@
 import { SessionWarning } from "@/components/auth/SessionWarning";
 import { Sidebar } from "@/components/navigation/Sidebar";
-import { isAuthenticationGraphqlError } from "@/lib/fetchGraphQL";
+import { isAuthenticationGraphqlError, isThrottledGraphqlError } from "@/lib/fetchGraphQL";
 import { getSessionState } from "@/lib/session.server";
 import { redirect } from "next/navigation";
 import { authFetchGraphql } from "@/lib/fetchGraphQL";
@@ -35,6 +35,9 @@ export default async function HomeLayout({
       if (isAuthenticationGraphqlError(err)) {
         sessionWarning =
           "Your session is still open in the browser, but the backend asked for a fresh Google sign-in. You can keep browsing temporarily, then sign in again when you are ready.";
+      } else if (isThrottledGraphqlError(err)) {
+        sessionWarning =
+          "The server is experiencing high traffic and request rate limits have been temporarily exceeded. Please try again in a moment.";
       } else {
         console.error("HomeLayout getMe fallback:", err);
       }

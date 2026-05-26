@@ -21,6 +21,7 @@ import {
   updateAvailabilityRuleAction,
   deleteAvailabilityRuleAction,
 } from "@/lib/actions/availability";
+import type { BookingRecord } from "@/lib/marketplace";
 
 const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const DAY_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -76,20 +77,30 @@ function getHourlySlots(startTime: string, endTime: string): { start: string; en
 function SlotCell({
   slot,
   isBlocked,
+  isBooked = false,
   onClick,
 }: {
   slot: { start: string; end: string };
   isBlocked: boolean;
+  isBooked?: boolean;
   onClick: () => void;
 }) {
   const [isPending, start] = useTransition();
 
   return (
     <button
-      onClick={() => start(onClick)}
-      disabled={isPending}
+      onClick={() => {
+        if (isBooked) {
+          toast.error("This slot is booked by a client and cannot be modified.");
+          return;
+        }
+        start(onClick);
+      }}
+      disabled={isPending || isBooked}
       className={`group relative flex flex-col items-center justify-center p-2 rounded-xl border text-center transition-all ${
-        isBlocked
+        isBooked
+          ? "bg-amber-50 border-amber-200 text-amber-800 cursor-not-allowed opacity-90"
+          : isBlocked
           ? "bg-red-50/70 hover:bg-red-100/70 border-red-200 text-red-800"
           : "bg-[rgba(74,93,62,0.06)] hover:bg-[rgba(74,93,62,0.12)] border-[rgba(74,93,62,0.15)] text-[#2c3d22]"
       } disabled:opacity-50`}
@@ -102,7 +113,7 @@ function SlotCell({
             {slot.start} – {slot.end}
           </span>
           <span className="text-[9px] mt-1 font-semibold uppercase tracking-wider opacity-85">
-            {isBlocked ? "Blocked" : "Available"}
+            {isBooked ? "Booked" : isBlocked ? "Blocked" : "Available"}
           </span>
         </>
       )}
@@ -117,6 +128,7 @@ function AddOverrideModal({
   initialDate = "",
   weeklyRules,
   overrideGroups,
+  bookings = [],
 }: {
   onClose: () => void;
   onAdd: (
@@ -133,6 +145,7 @@ function AddOverrideModal({
   initialDate?: string;
   weeklyRules: AvailabilityRule[];
   overrideGroups: OverrideGroup[];
+  bookings?: BookingRecord[];
 }) {
   const [date, setDate] = useState(initialDate);
   const [startTime, setStartTime] = useState("09:00");
@@ -143,6 +156,16 @@ function AddOverrideModal({
   const [blockedSlots, setBlockedSlots] = useState<{ start: string; end: string }[]>([]);
   const [existingRuleIdsToDelete, setExistingRuleIdsToDelete] = useState<number[]>([]);
   const [isPending, start] = useTransition();
+
+  const dateBookings = useMemo(() => {
+    if (!date) return [];
+    return bookings.filter(b => {
+      if (b.status === "CANCELLED" || b.status === "REJECTED") return false;
+      if (!b.scheduledStart) return false;
+      const bStart = new Date(b.scheduledStart);
+      return bStart.toISOString().slice(0, 10) === date;
+    });
+  }, [date, bookings]);
 
   // Load existing override settings or fall back to weekly defaults whenever the selected date changes
   useEffect(() => {
@@ -214,6 +237,30 @@ function AddOverrideModal({
 
   function submit() {
     if (!date) return toast.error("Please pick a date");
+
+    // Check if they are trying to set the whole date to "Blocked" while it has bookings
+    if (!isAvailable && dateBookings.length > 0) {
+      toast.error("Cannot block this date: you have upcoming client bookings scheduled.");
+      return;
+    }
+
+    // Check if the selected time range excludes any booked slots
+    const rangeStartMin = toMinutes(startTime);
+    const rangeEndMin = toMinutes(endTime);
+    const conflicts = dateBookings.some((b) => {
+      const bStart = new Date(b.scheduledStart!);
+      const bEnd = new Date(b.scheduledEnd!);
+      const bStartMin = bStart.getUTCHours() * 60 + bStart.getUTCMinutes();
+      const duration = Math.round((bEnd.getTime() - bStart.getTime()) / 60000);
+      const bEndMin = bStartMin + duration;
+      return bStartMin < rangeStartMin || bEndMin > rangeEndMin;
+    });
+
+    if (conflicts) {
+      toast.error("Cannot change hours: this would exclude your client booked sessions on this date.");
+      return;
+    }
+
     start(async () => {
       await onAdd(
         { specificDate: date, startTime, endTime, isAvailable, title: title || undefined },
@@ -292,11 +339,25 @@ function AddOverrideModal({
                       const isBlocked = blockedSlots.some(
                         (s) => s.start === slot.start && s.end === slot.end
                       );
+                      const isBooked = dateBookings.some((b) => {
+                        const bStart = new Date(b.scheduledStart!);
+                        const bStartMin = bStart.getUTCHours() * 60 + bStart.getUTCMinutes();
+                        const bEndMin = bStartMin + 60; // duration
+                        const slotStartMin = toMinutes(slot.start);
+                        const slotEndMin = toMinutes(slot.end);
+                        return slotStartMin < bEndMin && slotEndMin > bStartMin;
+                      });
+
                       return (
                         <button
                           key={`${slot.start}-${slot.end}`}
                           type="button"
+                          disabled={isBooked}
                           onClick={() => {
+                            if (isBooked) {
+                              toast.error("This slot is booked by a client and cannot be modified.");
+                              return;
+                            }
                             if (isBlocked) {
                               setBlockedSlots((prev) =>
                                 prev.filter(
@@ -308,7 +369,9 @@ function AddOverrideModal({
                             }
                           }}
                           className={`flex flex-col items-center justify-center p-2 rounded-xl border text-center transition-all cursor-pointer ${
-                            isBlocked
+                            isBooked
+                              ? "bg-amber-50 border-amber-200 text-amber-800 cursor-not-allowed opacity-90"
+                              : isBlocked
                               ? "bg-red-50/70 hover:bg-red-100/70 border-red-200 text-red-800"
                               : "bg-[rgba(74,93,62,0.06)] hover:bg-[rgba(74,93,62,0.12)] border-[rgba(74,93,62,0.15)] text-[#2c3d22]"
                           }`}
@@ -317,7 +380,7 @@ function AddOverrideModal({
                             {slot.start} – {slot.end}
                           </span>
                           <span className="text-[9px] mt-1 font-semibold uppercase tracking-wider opacity-85">
-                            {isBlocked ? "Blocked" : "Available"}
+                            {isBooked ? "Booked" : isBlocked ? "Blocked" : "Available"}
                           </span>
                         </button>
                       );
@@ -359,6 +422,8 @@ function DayRow({
   onToggle,
   onTimeChange,
   onToggleCell,
+  bookings = [],
+  rules = [],
 }: {
   dow: number;
   mainRule: AvailabilityRule | null;
@@ -372,6 +437,8 @@ function DayRow({
     dow?: number,
     specificDate?: string
   ) => Promise<void>;
+  bookings?: BookingRecord[];
+  rules?: AvailabilityRule[];
 }) {
   const [isPending, start] = useTransition();
   const [isExpanded, setIsExpanded] = useState(false);
@@ -456,11 +523,31 @@ function DayRow({
               });
               const isBlocked = !!blockedRule;
 
+              const isBooked = bookings.some(b => {
+                if (b.status === "CANCELLED" || b.status === "REJECTED") return false;
+                if (!b.scheduledStart) return false;
+                const bStart = new Date(b.scheduledStart);
+                if (bStart.getTime() < Date.now() - 24 * 60 * 60 * 1000) return false;
+                if (bStart.getUTCDay() !== dow) return false;
+
+                // Ignore if covered by specific date override
+                const bDateStr = bStart.toISOString().slice(0, 10);
+                const hasOverride = rules.some(r => r.specificDate && r.specificDate.slice(0, 10) === bDateStr);
+                if (hasOverride) return false;
+
+                const bStartMin = bStart.getUTCHours() * 60 + bStart.getUTCMinutes();
+                const bEndMin = bStartMin + 60; // duration
+                const slotStartMin = toMinutes(slot.start);
+                const slotEndMin = toMinutes(slot.end);
+                return slotStartMin < bEndMin && slotEndMin > bStartMin;
+              });
+
               return (
                 <SlotCell
                   key={`${slot.start}-${slot.end}`}
                   slot={slot}
                   isBlocked={isBlocked}
+                  isBooked={isBooked}
                   onClick={() => onToggleCell(slot, isBlocked, blockedRule?.id, dow, undefined)}
                 />
               );
@@ -483,6 +570,7 @@ function OverrideRow({
   group,
   onDelete,
   onToggleCell,
+  bookings = [],
 }: {
   group: OverrideGroup;
   onDelete: (ids: number[]) => Promise<void>;
@@ -493,6 +581,7 @@ function OverrideRow({
     dow?: number,
     specificDate?: string
   ) => Promise<void>;
+  bookings?: BookingRecord[];
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isPending, start] = useTransition();
@@ -577,11 +666,26 @@ function OverrideRow({
               });
               const isBlocked = !!blockedRule;
 
+              const isBooked = bookings.some(b => {
+                if (b.status === "CANCELLED" || b.status === "REJECTED") return false;
+                if (!b.scheduledStart) return false;
+                const bStart = new Date(b.scheduledStart);
+                const bDateStr = bStart.toISOString().slice(0, 10);
+                if (bDateStr !== group.dateStr) return false;
+
+                const bStartMin = bStart.getUTCHours() * 60 + bStart.getUTCMinutes();
+                const bEndMin = bStartMin + 60; // duration
+                const slotStartMin = toMinutes(slot.start);
+                const slotEndMin = toMinutes(slot.end);
+                return slotStartMin < bEndMin && slotEndMin > bStartMin;
+              });
+
               return (
                 <SlotCell
                   key={`${slot.start}-${slot.end}`}
                   slot={slot}
                   isBlocked={isBlocked}
+                  isBooked={isBooked}
                   onClick={() => onToggleCell(slot, isBlocked, blockedRule?.id, undefined, group.dateStr)}
                 />
               );
@@ -594,7 +698,13 @@ function OverrideRow({
 }
 
 // ─── Main Client Component ───────────────────────────────────────────────────
-export function AvailabilityManager({ initialRules }: { initialRules: AvailabilityRule[] }) {
+export function AvailabilityManager({
+  initialRules,
+  bookings = [],
+}: {
+  initialRules: AvailabilityRule[];
+  bookings?: BookingRecord[];
+}) {
   const [rules, setRules] = useState(initialRules);
   const [showModal, setShowModal] = useState(false);
   const [preselectedDate, setPreselectedDate] = useState("");
@@ -666,7 +776,25 @@ export function AvailabilityManager({ initialRules }: { initialRules: Availabili
 
   async function handleToggle(dow: number, existing: AvailabilityRule | null): Promise<void> {
     if (existing) {
-      // Toggle OFF: delete the main rule AND any blocked rules for this day of week
+      // Toggle OFF: Check if there is any upcoming booking on this day of week that has NO specific date override!
+      const conflict = bookings.some(b => {
+        if (b.status === "CANCELLED" || b.status === "REJECTED") return false;
+        if (!b.scheduledStart) return false;
+        const bStart = new Date(b.scheduledStart);
+        if (bStart.getTime() < Date.now() - 24 * 60 * 60 * 1000) return false;
+        if (bStart.getUTCDay() !== dow) return false;
+
+        const bDateStr = bStart.toISOString().slice(0, 10);
+        const hasOverride = rules.some(r => r.specificDate && r.specificDate.slice(0, 10) === bDateStr);
+        return !hasOverride;
+      });
+
+      if (conflict) {
+        toast.error("Cannot disable this day because you have upcoming client bookings scheduled.");
+        return;
+      }
+
+      // delete the main rule AND any blocked rules for this day of week
       const toDelete = [
         existing.id,
         ...rules
@@ -699,6 +827,34 @@ export function AvailabilityManager({ initialRules }: { initialRules: Availabili
   }
 
   async function handleTimeChange(ruleId: number, startTime: string, endTime: string) {
+    const rule = rules.find(r => r.id === ruleId);
+    if (rule && rule.dayOfWeek != null) {
+      const dow = rule.dayOfWeek;
+      const startMin = toMinutes(startTime);
+      const endMin = toMinutes(endTime);
+
+      const conflict = bookings.some(b => {
+        if (b.status === "CANCELLED" || b.status === "REJECTED") return false;
+        if (!b.scheduledStart) return false;
+        const bStart = new Date(b.scheduledStart);
+        if (bStart.getTime() < Date.now() - 24 * 60 * 60 * 1000) return false;
+        if (bStart.getUTCDay() !== dow) return false;
+
+        const bDateStr = bStart.toISOString().slice(0, 10);
+        const hasOverride = rules.some(r => r.specificDate && r.specificDate.slice(0, 10) === bDateStr);
+        if (hasOverride) return false;
+
+        const bStartMin = bStart.getUTCHours() * 60 + bStart.getUTCMinutes();
+        const bEndMin = bStartMin + 60; // duration
+        return bStartMin < startMin || bEndMin > endMin;
+      });
+
+      if (conflict) {
+        toast.error("Cannot change hours: this would exclude your client booked sessions on this day of week.");
+        return;
+      }
+    }
+
     const res = await updateAvailabilityRuleAction({ id: ruleId, startTime, endTime });
     if (!res.success) toast.error(res.error);
     else setRules((prev) => prev.map((r) => r.id === ruleId ? { ...r, startTime, endTime } : r));
@@ -760,6 +916,53 @@ export function AvailabilityManager({ initialRules }: { initialRules: Availabili
   }
 
   async function handleDeleteOverrideGroup(ids: number[]) {
+    // Find override group date
+    const groupRules = rules.filter(r => ids.includes(r.id));
+    const mainRule = groupRules.find(r => r.isAvailable) ?? groupRules[0];
+    if (mainRule && mainRule.specificDate) {
+      const dateStr = mainRule.specificDate.slice(0, 10);
+      const dateBookings = bookings.filter(b => {
+        if (b.status === "CANCELLED" || b.status === "REJECTED") return false;
+        if (!b.scheduledStart) return false;
+        const bStart = new Date(b.scheduledStart);
+        return bStart.toISOString().slice(0, 10) === dateStr;
+      });
+
+      if (dateBookings.length > 0) {
+        const rulesAfterDelete = rules.filter(r => !ids.includes(r.id));
+        const conflict = dateBookings.some(b => {
+          const bStart = new Date(b.scheduledStart!);
+          const bEnd = new Date(b.scheduledEnd!);
+          const bStartMin = bStart.getUTCHours() * 60 + bStart.getUTCMinutes();
+          const duration = Math.round((bEnd.getTime() - bStart.getTime()) / 60000);
+          const bEndMin = bStartMin + duration;
+          const dow = bStart.getUTCDay();
+
+          const activeWeeklyRules = rulesAfterDelete.filter(r => r.dayOfWeek === dow && !r.specificDate);
+          const allowedRules = activeWeeklyRules.filter(r => r.isAvailable);
+          const isCovered = allowedRules.some(r => {
+            const rStart = toMinutes(r.startTime);
+            const rEnd = toMinutes(r.endTime);
+            return rStart <= bStartMin && rEnd >= bEndMin;
+          });
+          if (!isCovered) return true;
+
+          const blockedRules = activeWeeklyRules.filter(r => !r.isAvailable);
+          const isBlocked = blockedRules.some(br => {
+            const brStart = toMinutes(br.startTime);
+            const brEnd = toMinutes(br.endTime);
+            return bStartMin < brEnd && bEndMin > brStart;
+          });
+          return isBlocked;
+        });
+
+        if (conflict) {
+          toast.error("Cannot remove this override: your fallback weekly schedule does not cover the booked session(s) on this date.");
+          return;
+        }
+      }
+    }
+
     const promises = ids.map((id) => deleteAvailabilityRuleAction(id));
     const results = await Promise.all(promises);
     const failed = results.find((res) => !res.success);
@@ -787,6 +990,36 @@ export function AvailabilityManager({ initialRules }: { initialRules: Availabili
         toast.success("Slot is now available");
       }
     } else {
+      // Check booking conflict before blocking
+      const isBooked = bookings.some(b => {
+        if (b.status === "CANCELLED" || b.status === "REJECTED") return false;
+        if (!b.scheduledStart) return false;
+        const bStart = new Date(b.scheduledStart);
+        
+        if (specificDate) {
+          const bDateStr = bStart.toISOString().slice(0, 10);
+          if (bDateStr !== specificDate) return false;
+        } else if (dow != null) {
+          if (bStart.getUTCDay() !== dow) return false;
+          const bDateStr = bStart.toISOString().slice(0, 10);
+          const hasOverride = rules.some(r => r.specificDate && r.specificDate.slice(0, 10) === bDateStr);
+          if (hasOverride) return false;
+        } else {
+          return false;
+        }
+
+        const bStartMin = bStart.getUTCHours() * 60 + bStart.getUTCMinutes();
+        const bEndMin = bStartMin + 60; // duration
+        const slotStartMin = toMinutes(slot.start);
+        const slotEndMin = toMinutes(slot.end);
+        return slotStartMin < bEndMin && slotEndMin > bStartMin;
+      });
+
+      if (isBooked) {
+        toast.error("Cannot block this slot: it is already booked by a client.");
+        return;
+      }
+
       const res = await createAvailabilityRuleAction({
         dayOfWeek: dow,
         specificDate: specificDate ? specificDate.slice(0, 10) : undefined,
@@ -826,6 +1059,7 @@ export function AvailabilityManager({ initialRules }: { initialRules: Availabili
           initialDate={preselectedDate}
           weeklyRules={weeklyRules}
           overrideGroups={overrideGroups}
+          bookings={bookings}
         />
       )}
 
@@ -849,6 +1083,8 @@ export function AvailabilityManager({ initialRules }: { initialRules: Availabili
                   onToggle={handleToggle}
                   onTimeChange={handleTimeChange}
                   onToggleCell={handleToggleCell}
+                  bookings={bookings}
+                  rules={rules}
                 />
               );
             })}
@@ -888,6 +1124,7 @@ export function AvailabilityManager({ initialRules }: { initialRules: Availabili
                   group={group}
                   onDelete={handleDeleteOverrideGroup}
                   onToggleCell={handleToggleCell}
+                  bookings={bookings}
                 />
               ))}
             </div>

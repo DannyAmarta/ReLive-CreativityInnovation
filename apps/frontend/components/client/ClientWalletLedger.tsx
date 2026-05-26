@@ -17,11 +17,49 @@ const TABS = [
 
 type Tab = (typeof TABS)[number]["value"];
 
-export function ClientWalletLedger({ bookings }: { bookings: BookingRecord[] }) {
+function getStatusTheme(status: string) {
+  const s = status.toUpperCase();
+  if (s === "ACTIVE") {
+    return "bg-emerald-500/10 border-emerald-500/20 text-emerald-600";
+  }
+  if (s === "PENDING" || s === "DISPUTED") {
+    return "bg-amber-500/10 border-amber-500/20 text-amber-600";
+  }
+  if (s === "COMPLETED") {
+    return "bg-emerald-800/10 border-emerald-800/20 text-emerald-800";
+  }
+  if (s === "CANCELLED" || s === "FAILED") {
+    return "bg-destructive/8 border-destructive/20 text-destructive";
+  }
+  return "bg-muted border-border text-muted-foreground";
+}
+
+interface ClientWalletLedgerProps {
+  bookings: BookingRecord[];
+  rescheduleRequests?: any[];
+  cancellationRequests?: any[];
+}
+
+export function ClientWalletLedger({
+  bookings,
+  rescheduleRequests = [],
+  cancellationRequests = [],
+}: ClientWalletLedgerProps) {
   const [activeTab, setActiveTab] = useState<Tab>("ALL");
 
   const filtered =
-    activeTab === "ALL" ? bookings : bookings.filter((b) => b.status === activeTab);
+    activeTab === "ALL"
+      ? bookings
+      : bookings.filter((b) => {
+          const hasPendingReschedule = rescheduleRequests.some(
+            (r) => r.bookingId === b.id && r.status === "PENDING"
+          );
+          const hasPendingCancellation = cancellationRequests.some(
+            (r) => r.bookingId === b.id && r.status === "PENDING"
+          );
+          const displayStatus = (hasPendingReschedule || hasPendingCancellation) ? "PENDING" : b.status;
+          return displayStatus === activeTab;
+        });
 
   return (
     <div className="glass-card-elevated overflow-hidden">
@@ -60,10 +98,20 @@ export function ClientWalletLedger({ bookings }: { bookings: BookingRecord[] }) 
           const amount = booking.fiatAmount ?? booking.servicePriceIdr ?? 0;
           const gateway = booking.gatewayPaymentMethod;
 
+          const hasPendingReschedule = rescheduleRequests.some(
+            (r) => r.bookingId === booking.id && r.status === "PENDING"
+          );
+          const hasPendingCancellation = cancellationRequests.some(
+            (r) => r.bookingId === booking.id && r.status === "PENDING"
+          );
+          const displayStatus = (hasPendingReschedule || hasPendingCancellation) ? "PENDING" : booking.status;
+
+          const themeClass = getStatusTheme(displayStatus);
+
           return (
             <li key={booking.id} className="px-5 py-4 flex items-center gap-4">
               {/* Icon */}
-              <div className="size-9 rounded-lg flex items-center justify-center shrink-0 border bg-destructive/8 border-destructive/20 text-destructive">
+              <div className={cn("size-9 rounded-lg flex items-center justify-center shrink-0 border", themeClass)}>
                 <ArrowUpRight className="size-3.5" />
               </div>
 
@@ -92,7 +140,7 @@ export function ClientWalletLedger({ bookings }: { bookings: BookingRecord[] }) 
 
               {/* Amount + badge */}
               <div className="text-right shrink-0">
-                <StatusBadge status={booking.status} />
+                <StatusBadge status={displayStatus} />
                 <p className="mt-1.5 text-sm font-mono tabular-nums font-semibold text-destructive">
                   − {formatIDR(amount).replace("IDR ", "")}
                 </p>

@@ -18,12 +18,14 @@ import { SetControls } from "./sections/SetControls";
 import { SetHero } from "./components/SetHero";
 import { SetResults } from "./sections/SetResults";
 import { FloatingNotice, SetPearlBackground } from "./components/SetUi";
+import { HealthGuidebookHeader } from "@/components/client/HealthGuidebookHeader";
 
 type SetExperienceProps = {
   initialExercises: SetExerciseDefinition[];
+  userRole?: string;
 };
 
-export function SetMain({ initialExercises }: SetExperienceProps) {
+export function SetMain({ initialExercises, userRole }: SetExperienceProps) {
   const {
     form,
     exercises,
@@ -57,6 +59,7 @@ export function SetMain({ initialExercises }: SetExperienceProps) {
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-cream-50 bg-[radial-gradient(circle_at_top_left,_rgba(138,154,107,0.08)_0%,_transparent_50%),_radial-gradient(circle_at_bottom_right,_rgba(199,122,90,0.06)_0%,_transparent_60%)] text-stone-900">
+      <HealthGuidebookHeader activeTab="set" userRole={userRole} />
       <SetPearlBackground />
 
       <div className="relative mx-auto flex w-full max-w-5xl flex-col px-4 py-8 sm:px-6 lg:px-8">

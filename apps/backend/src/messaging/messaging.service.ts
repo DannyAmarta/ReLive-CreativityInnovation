@@ -84,7 +84,14 @@ export class MessagingService {
   }
 
   // 3. Save a message to the DB, update conversation, and trigger notifications
-  async saveMessage(conversationId: number, senderId: number, content: string) {
+  async saveMessage(
+    conversationId: number,
+    senderId: number,
+    content: string,
+    type: "TEXT" | "IMAGE" | "FILE" | "SYSTEM" | "AUDIO" = "TEXT",
+    imageUrl?: string,
+    fileUrl?: string,
+  ) {
     const conversation = await this.prisma.conversation.findUnique({
       where: { id: conversationId },
     });
@@ -103,7 +110,9 @@ export class MessagingService {
         conversationId,
         senderId,
         content,
-        type: "TEXT",
+        type,
+        imageUrl,
+        fileUrl,
       },
       include: {
         sender: {
@@ -133,10 +142,17 @@ export class MessagingService {
           ? "/trainer/messages"
           : "/client/messages";
 
+      let notificationBody = content;
+      if (type === "IMAGE") {
+        notificationBody = "Sent an image";
+      } else if (type === "FILE") {
+        notificationBody = `Sent a file: ${content || "attachment"}`;
+      }
+
       await this.notificationService.create({
         userId: recipientId,
         title: message.sender?.name || "New Message",
-        body: content,
+        body: notificationBody,
         link,
       });
     } catch (error) {

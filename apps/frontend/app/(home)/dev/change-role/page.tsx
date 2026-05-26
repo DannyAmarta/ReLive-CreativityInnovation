@@ -5,7 +5,49 @@ import { GET_ME_QUERY, ADMIN_GET_DISPUTED_BOOKINGS_QUERY } from "@/lib/gqlQuerie
 import { changeRoleAction } from "@/lib/actions/dev";
 import { updateBookingStatusAction } from "@/lib/actions/marketplace";
 import { formatIDR, formatUSDC, formatDateTime } from "@/lib/format";
-import { Shield, User as UserIcon, Dumbbell, Calendar, Info, Check, X, AlertTriangle } from "lucide-react";
+import { Shield, User as UserIcon, Dumbbell, Calendar, Info, Check, X, AlertTriangle, ExternalLink } from "lucide-react";
+
+interface DisputeDetail {
+  whatHappened: string;
+  cause: string;
+  evidenceUrls: string[];
+}
+
+interface DisputeData {
+  initiator: "CLIENT" | "TRAINER" | "USER";
+  clientDispute?: DisputeDetail | null;
+  trainerDispute?: DisputeDetail | null;
+}
+
+function parseDisputeReason(reason?: string | null): DisputeData | null {
+  if (!reason) return null;
+  try {
+    const parsed = JSON.parse(reason);
+    if (parsed && (parsed.clientDispute || parsed.trainerDispute || parsed.initiator)) {
+      return {
+        initiator: parsed.initiator,
+        clientDispute: parsed.clientDispute || null,
+        trainerDispute: parsed.trainerDispute || null,
+      };
+    }
+  } catch (e) {
+    // Treat legacy string as client dispute
+  }
+  return {
+    initiator: "CLIENT",
+    clientDispute: {
+      whatHappened: reason,
+      cause: "",
+      evidenceUrls: [],
+    },
+    trainerDispute: null,
+  };
+}
+
+function isImageUrl(url: string): boolean {
+  if (!url) return false;
+  return /\.(jpeg|jpg|gif|png|webp)($|\?)/i.test(url) || url.startsWith("data:image/");
+}
 
 type MeResponse = {
   getMe: {
@@ -271,15 +313,95 @@ export default async function ChangeRolePage({
                       </div>
                     </div>
 
-                    {/* Dispute Reason Banner */}
-                    <div className="mt-4 rounded-xl bg-amber-500/10 border border-amber-500/20 p-4 flex gap-3 items-start">
-                      <Info className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
-                      <div className="space-y-1">
-                        <span className="text-xs font-bold text-amber-700 uppercase tracking-wide">Client Dispute Claim</span>
-                        <p className="text-sm text-amber-900 dark:text-amber-200 italic font-medium leading-relaxed">
-                          &ldquo;{booking.disputeReason || "No explanation provided."}&rdquo;
-                        </p>
+                    {/* Dispute Details Panel */}
+                    <div className="mt-4 rounded-xl border border-amber-500/25 bg-amber-500/5 p-4 space-y-3">
+                      <div className="flex items-center gap-2 text-amber-700 font-semibold text-sm">
+                        <Shield className="h-4 w-4" />
+                        <span>Dispute Details</span>
                       </div>
+                      
+                      {(() => {
+                        const parsed = parseDisputeReason(booking.disputeReason);
+                        if (!parsed) return <p className="text-xs text-muted-foreground">Dispute details unavailable.</p>;
+                        
+                        return (
+                          <div className="space-y-4 text-xs">
+                            <p className="font-semibold text-foreground/80">
+                              Dispute Initiator: <span className="font-bold text-amber-700">{parsed.initiator}</span>
+                            </p>
+                            
+                            <div className="grid md:grid-cols-2 gap-4">
+                              {/* Client Claim */}
+                              <div className="p-3 rounded-lg bg-background/50 border border-border/50 space-y-2">
+                                <p className="font-bold text-foreground">Client Claim</p>
+                                {parsed.clientDispute ? (
+                                  <div className="space-y-1.5">
+                                    <p><span className="text-muted-foreground font-medium">What Happened:</span> {parsed.clientDispute.whatHappened || <span className="italic text-muted-foreground">None</span>}</p>
+                                    <p><span className="text-muted-foreground font-medium">The Cause:</span> {parsed.clientDispute.cause || <span className="italic text-muted-foreground">None</span>}</p>
+                                    {parsed.clientDispute.evidenceUrls && parsed.clientDispute.evidenceUrls.length > 0 && (
+                                      <div className="space-y-1 mt-2">
+                                        <p className="text-muted-foreground font-medium">Evidence:</p>
+                                        <div className="flex flex-wrap gap-2">
+                                          {parsed.clientDispute.evidenceUrls.map((url, idx) => (
+                                            <div key={idx} className="flex flex-col gap-1">
+                                              {isImageUrl(url) ? (
+                                                <a href={url} target="_blank" rel="noopener noreferrer" className="relative group block border border-border rounded overflow-hidden h-16 w-16 bg-muted hover:opacity-90 transition-opacity">
+                                                  <img src={url} alt={`Client evidence ${idx + 1}`} className="h-full w-full object-cover" />
+                                                </a>
+                                              ) : (
+                                                <a href={url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-primary hover:underline font-semibold bg-muted px-2 py-1 rounded">
+                                                  <ExternalLink className="h-3 w-3" />
+                                                  Link {idx + 1}
+                                                </a>
+                                              )}
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <p className="italic text-muted-foreground">No claim submitted yet</p>
+                                )}
+                              </div>
+                              
+                              {/* Trainer Claim */}
+                              <div className="p-3 rounded-lg bg-background/50 border border-border/50 space-y-2">
+                                <p className="font-bold text-foreground">Trainer Claim</p>
+                                {parsed.trainerDispute ? (
+                                  <div className="space-y-1.5">
+                                    <p><span className="text-muted-foreground font-medium">What Happened:</span> {parsed.trainerDispute.whatHappened || <span className="italic text-muted-foreground">None</span>}</p>
+                                    <p><span className="text-muted-foreground font-medium">The Cause:</span> {parsed.trainerDispute.cause || <span className="italic text-muted-foreground">None</span>}</p>
+                                    {parsed.trainerDispute.evidenceUrls && parsed.trainerDispute.evidenceUrls.length > 0 && (
+                                      <div className="space-y-1 mt-2">
+                                        <p className="text-muted-foreground font-medium">Evidence:</p>
+                                        <div className="flex flex-wrap gap-2">
+                                          {parsed.trainerDispute.evidenceUrls.map((url, idx) => (
+                                            <div key={idx} className="flex flex-col gap-1">
+                                              {isImageUrl(url) ? (
+                                                <a href={url} target="_blank" rel="noopener noreferrer" className="relative group block border border-border rounded overflow-hidden h-16 w-16 bg-muted hover:opacity-90 transition-opacity">
+                                                  <img src={url} alt={`Trainer evidence ${idx + 1}`} className="h-full w-full object-cover" />
+                                                </a>
+                                              ) : (
+                                                <a href={url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-primary hover:underline font-semibold bg-muted px-2 py-1 rounded">
+                                                  <ExternalLink className="h-3 w-3" />
+                                                  Link {idx + 1}
+                                                </a>
+                                              )}
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <p className="italic text-muted-foreground">No counter-claim submitted yet</p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </div>
 
                     {/* Resolution Actions */}

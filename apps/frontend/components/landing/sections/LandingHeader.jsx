@@ -1,5 +1,4 @@
 import Image from 'next/image'
-import Tree from "@/public/assets/wallpaper/tree.png"
 import Logo from "@/public/assets/wallpaper/logo.png"
 import { getSession } from '@/lib/session.server';
 import Link from 'next/link';
@@ -46,9 +45,10 @@ export default async function LandingHeader(){
                 <Link className="text-white" href="#">Features</Link>
                 <Link className="text-white" href="#">Costumer</Link>
                 <Link className="text-white" href="#">Update</Link>
-                <Link className="text-white" href="#">Help</Link>
+              <Link className="text-white" href="#">Help</Link>
+              {/* pake a biar refresh kalo link biasanya buat redirect aja */}
                 {session? (
-                  <Link className='text-white' href="/auth/logout/">Logout as {session.user?.name}</Link>
+                  <a className='text-white' href="/auth/logout/">Logout as {session.user?.name}</a>
                 ) : (
                  <Link className="text-white" href="/auth/login/">Login</Link>
                 )}

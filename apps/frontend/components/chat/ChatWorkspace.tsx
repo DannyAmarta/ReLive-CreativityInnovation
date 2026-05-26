@@ -21,6 +21,47 @@ export default function ChatWorkspace({
   );
   const [inputText, setInputText] = useState("");
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const res = await fetch(`${BACKEND_URL}/messaging/upload`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: formData,
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to upload file");
+      }
+
+      const data = await res.json();
+      
+      if (data.type === "IMAGE") {
+        sendMessage(data.originalName, "IMAGE", data.url, undefined);
+      } else {
+        sendMessage(data.originalName, "FILE", undefined, data.url);
+      }
+    } catch (err) {
+      console.error("Upload error:", err);
+      alert("Failed to upload file. Please try again.");
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
 
   const {
     messages,
@@ -35,7 +76,7 @@ export default function ChatWorkspace({
     loadMore,
     hasMore,
     isLoadingMore,
-  } = useChat(accessToken, activeConvId || undefined);
+  } = useChat(accessToken, currentUserId, activeConvId || undefined);
 
   // Sync initialActiveConvId if it changes
   useEffect(() => {
@@ -77,9 +118,14 @@ export default function ChatWorkspace({
   // Mark as read when active conversation changes or new messages arrive
   useEffect(() => {
     if (activeConvId) {
-      markAsRead();
+      const hasUnreadFromPartner = messages.some(
+        (msg) => Number(msg.senderId) !== Number(currentUserId) && !msg.isRead
+      );
+      if (hasUnreadFromPartner) {
+        markAsRead();
+      }
     }
-  }, [activeConvId, messages.length, markAsRead]);
+  }, [activeConvId, messages, currentUserId, markAsRead]);
 
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault();
@@ -257,9 +303,51 @@ export default function ChatWorkspace({
                           : "bg-white border border-[#58784a]/12 text-primary-deep rounded-tl-none"
                       }`}
                     >
-                      <p className="text-xs sm:text-sm leading-normal whitespace-pre-wrap">
-                        {msg.content}
-                      </p>
+                      {msg.type === "IMAGE" && msg.imageUrl && (
+                        <div className="mb-2 max-w-sm rounded-lg overflow-hidden border border-[#58784a]/12 bg-black/5 flex items-center justify-center">
+                          <img
+                            src={`${BACKEND_URL}${msg.imageUrl}`}
+                            alt={msg.content || "Uploaded Image"}
+                            className="max-h-60 object-contain w-full cursor-pointer hover:opacity-90 transition-opacity"
+                            onClick={() => window.open(`${BACKEND_URL}${msg.imageUrl}`, "_blank")}
+                          />
+                        </div>
+                      )}
+                      {msg.type === "FILE" && msg.fileUrl && (
+                        <a
+                          href={`${BACKEND_URL}${msg.fileUrl}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={`flex items-center gap-2 p-2.5 rounded-xl mb-1.5 transition-all text-xs font-semibold ${
+                            isMe 
+                              ? "bg-white/10 hover:bg-white/20 text-white" 
+                              : "bg-[#F2F6ED] hover:bg-[#E2E9D9] text-[#4a5d3e]"
+                          }`}
+                        >
+                          <svg
+                            className="w-4 h-4 flex-shrink-0"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2.5"
+                            viewBox="0 0 24 24"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
+                            ></path>
+                          </svg>
+                          <span className="truncate max-w-[180px] underline">
+                            {msg.content || "Download Attachment"}
+                          </span>
+                        </a>
+                      )}
+                      {msg.type !== "IMAGE" && msg.type !== "FILE" && (
+                        <p className="text-xs sm:text-sm leading-normal whitespace-pre-wrap">
+                          {msg.content}
+                        </p>
+                      )}
                       <div className={`flex items-center justify-end gap-1.5 mt-1.5 text-[9px] ${
                         isMe ? "text-white/80" : "text-primary-deep/50"
                       }`}>
@@ -269,11 +357,33 @@ export default function ChatWorkspace({
                             minute: "2-digit",
                           })}
                         </span>
-                        {isMe && (
-                          <span className="font-medium">
-                            {msg.isRead ? "✓✓ Read" : "✓ Sent"}
-                          </span>
-                        )}
+                        {isMe && (() => {
+                          if (msg.isRead) {
+                            return (
+                              <span className="font-semibold text-sky-300 flex items-center gap-1">
+                                <span className="tracking-[-0.1em] mr-0.5">✓✓</span>
+                                <span>Read</span>
+                              </span>
+                            );
+                          }
+
+                          const isPartnerOnline = activePartnerStatus === "online" || activePartnerStatus === "away";
+                          if (isPartnerOnline) {
+                            return (
+                              <span className="font-medium text-white/70 flex items-center gap-1">
+                                <span className="tracking-[-0.1em] mr-0.5">✓✓</span>
+                                <span>Delivered</span>
+                              </span>
+                            );
+                          }
+
+                          return (
+                            <span className="font-medium text-white/50 flex items-center gap-1">
+                              <span>✓</span>
+                              <span>Sent</span>
+                            </span>
+                          );
+                        })()}
                       </div>
                     </div>
                   </div>
@@ -300,6 +410,39 @@ export default function ChatWorkspace({
             {/* Input Area */}
             <div className="p-4 bg-[#F9F4EA]/80 border-t border-[#58784a]/12">
               <form onSubmit={handleSend} className="flex gap-2">
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
+                  className="hidden"
+                  accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip"
+                />
+                <button
+                  type="button"
+                  disabled={isUploading || !isConnected}
+                  onClick={() => fileInputRef.current?.click()}
+                  className="bg-white border border-[#58784a]/20 text-[#4a5d3e] hover:bg-[#F2F6ED] disabled:opacity-40 px-3.5 rounded-xl flex items-center justify-center transition-all shadow-sm active:scale-[0.95]"
+                  title="Attach file (Image, PDF, Document)"
+                >
+                  {isUploading ? (
+                    <span className="w-5 h-5 border-2 border-sage-500 border-t-transparent rounded-full animate-spin"></span>
+                  ) : (
+                    <svg
+                      className="w-5 h-5 transform rotate-45"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      viewBox="0 0 24 24"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
+                      ></path>
+                    </svg>
+                  )}
+                </button>
                 <input
                   type="text"
                   value={inputText}

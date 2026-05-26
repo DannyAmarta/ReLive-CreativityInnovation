@@ -7,6 +7,7 @@ import { isAuthenticationGraphqlError } from "@/lib/fetchGraphQL";
 import { formatIDR, formatUSDC } from "@/lib/format";
 import { getMyTrainerProfile, lamportsToTokenUnits } from "@/lib/marketplace";
 import Link from "next/link";
+import { TrainerNavigationHeader } from "@/components/trainer/TrainerNavigationHeader";
 
 export default async function TrainerServicesPage({
   searchParams,
@@ -34,6 +35,8 @@ export default async function TrainerServicesPage({
         <ArrowLeft className="size-4" />
         Back to Dashboard
       </Link>
+
+      <TrainerNavigationHeader activeTab="services" />
 
       <PageHeader
         title="Services"

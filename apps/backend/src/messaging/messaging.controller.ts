@@ -7,9 +7,16 @@ import {
   Req,
   ParseIntPipe,
   UnauthorizedException,
+  UseInterceptors,
+  UploadedFile,
+  BadRequestException,
 } from "@nestjs/common";
 import { MessagingService } from "./messaging.service";
 import { jwtVerify } from "jose";
+import { FileInterceptor } from "@nestjs/platform-express";
+import { diskStorage } from "multer";
+import { extname } from "path";
+import * as fs from "fs";
 
 @Controller("messaging")
 export class MessagingController {
@@ -87,6 +94,43 @@ export class MessagingController {
     const userId = await this.extractUserIdFromRequest(req);
     await this.messagingService.markAsRead(conversationId, userId);
     return { success: true };
+  }
+
+  @Post("upload")
+  @UseInterceptors(
+    FileInterceptor("file", {
+      storage: diskStorage({
+        destination: (req, file, cb) => {
+          const dir = "./uploads/chat";
+          if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir, { recursive: true });
+          }
+          cb(null, dir);
+        },
+        filename: (req, file, cb) => {
+          const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+          const ext = extname(file.originalname);
+          cb(null, `chat-${uniqueSuffix}${ext}`);
+        },
+      }),
+    }),
+  )
+  async uploadFile(@UploadedFile() file: any, @Req() req: any) {
+    // Validate authorization token to protect upload endpoint
+    await this.extractUserIdFromRequest(req);
+
+    if (!file) throw new BadRequestException("No file uploaded.");
+
+    const ext = extname(file.originalname).toLowerCase();
+    const imageExtensions = [".png", ".jpg", ".jpeg", ".gif", ".webp"];
+    const type = imageExtensions.includes(ext) ? "IMAGE" : "FILE";
+    const fileUrl = `/uploads/chat/${file.filename}`;
+
+    return {
+      url: fileUrl,
+      originalName: file.originalname,
+      type,
+    };
   }
 }
 

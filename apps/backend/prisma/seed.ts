@@ -8,6 +8,8 @@ import {
   Role,
   WithdrawalStatus,
 } from '@prisma/client';
+import * as fs from 'fs';
+import * as path from 'path';
 
 const prisma = new PrismaClient();
 
@@ -614,6 +616,104 @@ async function main() {
         gatewayPaymentMethod: 'BCA_VA',
       },
     });
+  }
+
+  // =========================
+  // CONVERSATIONS & CHAT MESSAGES
+  // =========================
+  console.log('🌱 Seeding demo conversations and chat messages...');
+
+  const demoConv = await prisma.conversation.upsert({
+    where: {
+      trainerUserId_clientUserId: {
+        trainerUserId: demoTrainer.id,
+        clientUserId: demoClient.id,
+      },
+    },
+    update: {},
+    create: {
+      trainerUserId: demoTrainer.id,
+      clientUserId: demoClient.id,
+    },
+  });
+
+  const chatMessageCount = await prisma.chatMessage.count({
+    where: { conversationId: demoConv.id },
+  });
+
+  if (chatMessageCount === 0) {
+    const m1 = await prisma.chatMessage.create({
+      data: {
+        conversationId: demoConv.id,
+        senderId: demoClient.id,
+        content: 'Hi trainer! I was looking for some advice on structuring my weekly workout routines.',
+        type: 'TEXT',
+        isRead: true,
+        readAt: new Date(Date.now() - 3600000 * 2),
+        createdAt: new Date(Date.now() - 3600000 * 2),
+      },
+    });
+
+    const m2 = await prisma.chatMessage.create({
+      data: {
+        conversationId: demoConv.id,
+        senderId: demoTrainer.id,
+        content: 'Hey! I would love to help. To start, could you share a photo of your current meal prep or outline your typical daily diet?',
+        type: 'TEXT',
+        isRead: true,
+        readAt: new Date(Date.now() - 3600000 * 1.5),
+        createdAt: new Date(Date.now() - 3600000 * 1.5),
+      },
+    });
+
+    const m3 = await prisma.chatMessage.create({
+      data: {
+        conversationId: demoConv.id,
+        senderId: demoClient.id,
+        content: 'healthy_lunch_prep.png',
+        type: 'IMAGE',
+        imageUrl: '/uploads/chat/seed-meal.jpg',
+        isRead: true,
+        readAt: new Date(Date.now() - 3600000 * 1),
+        createdAt: new Date(Date.now() - 3600000 * 1),
+      },
+    });
+
+    const m4 = await prisma.chatMessage.create({
+      data: {
+        conversationId: demoConv.id,
+        senderId: demoTrainer.id,
+        content: 'custom_nutrition_guide.pdf',
+        type: 'FILE',
+        fileUrl: '/uploads/chat/seed-diet.pdf',
+        isRead: false,
+        createdAt: new Date(Date.now() - 1800000),
+      },
+    });
+
+    await prisma.conversation.update({
+      where: { id: demoConv.id },
+      data: {
+        lastMessageId: m4.id,
+        lastMessageAt: m4.createdAt,
+      },
+    });
+
+    // Ensure attachments directory and dummy files exist in local path
+    const chatDir = path.join(process.cwd(), 'uploads', 'chat');
+    if (!fs.existsSync(chatDir)) {
+      fs.mkdirSync(chatDir, { recursive: true });
+    }
+
+    const dummyImagePath = path.join(chatDir, 'seed-meal.jpg');
+    if (!fs.existsSync(dummyImagePath)) {
+      fs.writeFileSync(dummyImagePath, 'placeholder image content');
+    }
+
+    const dummyPdfPath = path.join(chatDir, 'seed-diet.pdf');
+    if (!fs.existsSync(dummyPdfPath)) {
+      fs.writeFileSync(dummyPdfPath, 'placeholder pdf content');
+    }
   }
 
   // =========================

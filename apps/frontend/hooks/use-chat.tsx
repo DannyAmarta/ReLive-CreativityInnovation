@@ -11,6 +11,9 @@ export interface ChatMessage {
   senderId: number;
   isRead: boolean;
   createdAt: string;
+  type?: "TEXT" | "IMAGE" | "FILE" | "SYSTEM" | "AUDIO";
+  imageUrl?: string;
+  fileUrl?: string;
 }
 
 export interface Conversation {
@@ -22,7 +25,7 @@ export interface Conversation {
   clientUser: { id: number; name: string; avatar?: string };
 }
 
-export function useChat(accessToken: string, currentConversationId?: number) {
+export function useChat(accessToken: string, currentUserId?: number, currentConversationId?: number) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const [typingUsers, setTypingUsers] = useState<number[]>([]);
@@ -86,12 +89,15 @@ export function useChat(accessToken: string, currentConversationId?: number) {
 
     // Setup conversation-specific listeners
     const handleNewMessage = (msg: ChatMessage) => {
+      console.log("WebSocket new_message received:", msg);
       if (msg.conversationId === currentConversationId) {
         setMessages((prev) => [msg, ...prev]);
-        // Send read receipt if we are currently looking at this conversation
-        socketRef.current?.emit("read_messages", {
-          conversationId: currentConversationId,
-        });
+        // Send read receipt if we are currently looking at this conversation and the message is from the partner
+        if (currentUserId && Number(msg.senderId) !== Number(currentUserId)) {
+          socketRef.current?.emit("read_messages", {
+            conversationId: currentConversationId,
+          });
+        }
       }
     };
 
@@ -116,12 +122,15 @@ export function useChat(accessToken: string, currentConversationId?: number) {
       conversationId: number;
       userId: number;
     }) => {
+      console.log("WebSocket messages_read received:", { conversationId, userId, currentConversationId });
       if (conversationId === currentConversationId) {
-        setMessages((prev) =>
-          prev.map((msg) =>
-            msg.senderId === userId ? { ...msg, isRead: true } : msg,
-          ),
-        );
+        setMessages((prev) => {
+          const updated = prev.map((msg) =>
+            Number(msg.senderId) !== Number(userId) ? { ...msg, isRead: true } : msg,
+          );
+          console.log("Updated messages in handleMessagesRead. Previous state:", prev.map(m => ({ id: m.id, content: m.content, isRead: m.isRead })), "New state:", updated.map(m => ({ id: m.id, content: m.content, isRead: m.isRead })));
+          return updated;
+        });
       }
     };
 
@@ -137,11 +146,14 @@ export function useChat(accessToken: string, currentConversationId?: number) {
   }, [currentConversationId]);
 
   const sendMessage = useCallback(
-    (content: string) => {
-      if (socketRef.current && currentConversationId && content.trim()) {
+    (content: string, type: "TEXT" | "IMAGE" | "FILE" = "TEXT", imageUrl?: string, fileUrl?: string) => {
+      if (socketRef.current && currentConversationId && (content.trim() || imageUrl || fileUrl)) {
         socketRef.current.emit("send_message", {
           conversationId: currentConversationId,
           content,
+          type,
+          imageUrl,
+          fileUrl,
         });
       }
     },

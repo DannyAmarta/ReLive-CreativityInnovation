@@ -24,18 +24,20 @@ import { NotificationService } from '../core/notification.service';
 import { TrainerAvailabilityService } from './trainer-availability.service';
 
 // ─── Booking State Machine (RBAC) ────────────────────────────────────────────
-// TRAINER: PENDING  → ACTIVE | CANCELLED
-// TRAINER: ACTIVE   → COMPLETED
-// CLIENT:  ACTIVE   → DISPUTED
-// ADMIN:   DISPUTED → COMPLETED | CANCELLED
+// Note on BookingStatus.PENDING: Bookings are initialized to PENDING upon checkout creation.
+// Once payment (Fiat webhook or Crypto confirm) completes, the system automatically transitions
+// the status to ACTIVE. Manual approval or decline from PENDING is bypassed in the live flow
+// due to security guards enforcing successful payment completion prior to status transition.
 const ALLOWED_TRANSITIONS: Record<Role, Partial<Record<BookingStatus, BookingStatus[]>>> = {
   [Role.TRAINER]: {
     [BookingStatus.PENDING]: [BookingStatus.ACTIVE, BookingStatus.CANCELLED],
-    [BookingStatus.ACTIVE]: [BookingStatus.COMPLETED],
+    [BookingStatus.ACTIVE]: [BookingStatus.COMPLETED, BookingStatus.DISPUTED],
+    [BookingStatus.DISPUTED]: [BookingStatus.DISPUTED],
   },
   [Role.USER]: {
     [BookingStatus.PENDING]: [BookingStatus.CANCELLED],
     [BookingStatus.ACTIVE]: [BookingStatus.DISPUTED],
+    [BookingStatus.DISPUTED]: [BookingStatus.DISPUTED],
   },
   [Role.ADMIN]: {
     [BookingStatus.DISPUTED]: [BookingStatus.COMPLETED, BookingStatus.CANCELLED],
@@ -464,11 +466,84 @@ export class TrainerService {
       }
     }
 
+    let finalDisputeReason = input.disputeReason;
+
+    if (input.status === BookingStatus.DISPUTED) {
+      const existingReason = booking.disputeReason;
+      
+      let inputJson: any = null;
+      try {
+        if (input.disputeReason) {
+          inputJson = JSON.parse(input.disputeReason);
+        }
+      } catch (e) {
+        // Plain string
+      }
+
+      let existingJson: any = null;
+      try {
+        if (existingReason) {
+          existingJson = JSON.parse(existingReason);
+        }
+      } catch (e) {
+        // Legacy plain string
+      }
+
+      const initiator = existingJson?.initiator || (contextualRole === Role.TRAINER ? 'TRAINER' : 'CLIENT');
+      let clientDispute = existingJson?.clientDispute || null;
+      let trainerDispute = existingJson?.trainerDispute || null;
+
+      if (!existingJson && existingReason) {
+        clientDispute = {
+          whatHappened: existingReason,
+          cause: '',
+          evidenceUrls: [],
+        };
+      }
+
+      if (inputJson) {
+        if (inputJson.clientDispute) {
+          clientDispute = {
+            whatHappened: inputJson.clientDispute.whatHappened || clientDispute?.whatHappened || '',
+            cause: inputJson.clientDispute.cause || clientDispute?.cause || '',
+            evidenceUrls: inputJson.clientDispute.evidenceUrls || clientDispute?.evidenceUrls || [],
+          };
+        }
+        if (inputJson.trainerDispute) {
+          trainerDispute = {
+            whatHappened: inputJson.trainerDispute.whatHappened || trainerDispute?.whatHappened || '',
+            cause: inputJson.trainerDispute.cause || trainerDispute?.cause || '',
+            evidenceUrls: inputJson.trainerDispute.evidenceUrls || trainerDispute?.evidenceUrls || [],
+          };
+        }
+      } else if (input.disputeReason) {
+        if (contextualRole === Role.USER) {
+          clientDispute = {
+            whatHappened: input.disputeReason,
+            cause: clientDispute?.cause || '',
+            evidenceUrls: clientDispute?.evidenceUrls || [],
+          };
+        } else if (contextualRole === Role.TRAINER) {
+          trainerDispute = {
+            whatHappened: input.disputeReason,
+            cause: trainerDispute?.cause || '',
+            evidenceUrls: trainerDispute?.evidenceUrls || [],
+          };
+        }
+      }
+
+      finalDisputeReason = JSON.stringify({
+        initiator,
+        clientDispute,
+        trainerDispute,
+      });
+    }
+
     const updated = await this.prisma.booking.update({
       where: { id: input.bookingId },
       data: {
         status: input.status,
-        disputeReason: input.disputeReason,
+        disputeReason: finalDisputeReason,
         resolvedBy: user.role === Role.ADMIN ? userId : undefined,
       },
       include: { client: true, service: true, trainer: { include: { user: true } } },
@@ -566,13 +641,43 @@ export class TrainerService {
           });
         }
       } else if (input.status === BookingStatus.DISPUTED) {
-        // Dispute raised → notify trainer
-        await this.notificationService.create({
-          userId: trainerUserId,
-          title: '⚠️ Dispute Raised',
-          body: `A client has raised a dispute for the session "${serviceName}". Our team will review it shortly.`,
-          link: '/trainer/bookings',
-        });
+        if (booking.status === BookingStatus.ACTIVE) {
+          if (contextualRole === Role.TRAINER) {
+            // Trainer raised dispute -> notify client
+            await this.notificationService.create({
+              userId: clientId,
+              title: '⚠️ Dispute Raised by Trainer',
+              body: `The trainer has raised a dispute for the session "${serviceName}". Our admin team will review it shortly.`,
+              link: '/client/dashboard',
+            });
+          } else {
+            // Client raised dispute -> notify trainer
+            await this.notificationService.create({
+              userId: trainerUserId,
+              title: '⚠️ Dispute Raised',
+              body: `A client has raised a dispute for the session "${serviceName}". Our team will review it shortly.`,
+              link: '/trainer/bookings',
+            });
+          }
+        } else if (booking.status === BookingStatus.DISPUTED) {
+          if (contextualRole === Role.TRAINER) {
+            // Trainer updated argument -> notify client
+            await this.notificationService.create({
+              userId: clientId,
+              title: '⚖️ Dispute Counter-Argument Submitted',
+              body: `The trainer has submitted a counter-argument for the disputed session "${serviceName}".`,
+              link: '/client/dashboard',
+            });
+          } else {
+            // Client updated argument -> notify trainer
+            await this.notificationService.create({
+              userId: trainerUserId,
+              title: '⚖️ Dispute Counter-Argument Submitted',
+              body: `The client has submitted a counter-argument for the disputed session "${serviceName}".`,
+              link: '/trainer/bookings',
+            });
+          }
+        }
       }
     } catch (err) {
       this.logger.warn(`Notification hook failed for booking ${input.bookingId}: ${(err as Error).message}`);

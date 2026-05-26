@@ -6,6 +6,8 @@ import { print } from "graphql";
 import { GET_MY_TRAINER_PROFILE_QUERY } from "@/lib/gqlQueries";
 import Link from "next/link";
 import { CalendarDays, ArrowLeft } from "lucide-react";
+import { getMyTrainerBookings } from "@/lib/marketplace";
+import { TrainerNavigationHeader } from "@/components/trainer/TrainerNavigationHeader";
 
 export default async function TrainerAvailabilityPage() {
   const session = await getSession();
@@ -19,7 +21,10 @@ export default async function TrainerAvailabilityPage() {
     trainerId = data.myTrainerProfile?.id ?? null;
   } catch { /* not a trainer yet */ }
 
-  const rules = trainerId ? await getTrainerAvailabilityRules(trainerId) : [];
+  const [rules, bookings] = await Promise.all([
+    trainerId ? getTrainerAvailabilityRules(trainerId) : Promise.resolve([]),
+    trainerId ? getMyTrainerBookings() : Promise.resolve([]),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -30,6 +35,8 @@ export default async function TrainerAvailabilityPage() {
         <ArrowLeft className="size-4" />
         Back to Dashboard
       </Link>
+
+      <TrainerNavigationHeader activeTab="availability" />
 
       <div className="flex items-center justify-between">
         <div>
@@ -57,7 +64,7 @@ export default async function TrainerAvailabilityPage() {
         </div>
       </div>
 
-      <AvailabilityManager initialRules={rules} />
+      <AvailabilityManager initialRules={rules} bookings={bookings} />
     </div>
   );
 }

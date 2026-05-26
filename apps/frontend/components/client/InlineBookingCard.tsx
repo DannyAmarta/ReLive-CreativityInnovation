@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useTransition } from "react";
-import { format, isBefore, isToday, startOfToday } from "date-fns";
+import { format, isBefore, startOfToday } from "date-fns";
 import { Calendar as CalendarIcon, Clock, Loader2, MessageSquare, AlertCircle, Info, CheckCircle2 } from "lucide-react";
 import { getAvailableSlots, AvailableSlot } from "@/lib/actions/availability";
 import { CryptoBookingButton, FiatBookingButton } from "@/components/relive/BookingButtons";
@@ -48,7 +48,9 @@ export function InlineBookingCard({ services, trainerId, trainerName }: InlineBo
     startTransition(async () => {
       try {
         const res = await getAvailableSlots(trainerId, dateStr, dateStr);
-        setSlots(res);
+        // Filter out slots that have already ended
+        const futureSlots = res.filter(slot => new Date(slot.end).getTime() > Date.now());
+        setSlots(futureSlots);
       } catch (err) {
         console.error("Failed to load available slots", err);
         setSlots([]);
@@ -139,7 +141,7 @@ export function InlineBookingCard({ services, trainerId, trainerName }: InlineBo
             mode="single"
             selected={selectedDate}
             onSelect={setSelectedDate}
-            disabled={(date) => isBefore(date, today) || isToday(date)}
+            disabled={(date) => isBefore(date, today)}
             className="w-full justify-center"
             classNames={{
               day_selected: "bg-[#4a5d3e] text-white hover:bg-[#3a4d2e] hover:text-white focus:bg-[#4a5d3e] focus:text-white rounded-xl font-bold",

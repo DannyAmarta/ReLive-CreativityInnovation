@@ -13,6 +13,7 @@ import { FoodRecipePanel } from "./sections/FoodRecipePanel";
 import { FoodResults } from "./sections/FoodResults";
 import { FoodSearch } from "./components/FoodSearch";
 import { useLocalStorageState } from "@/hooks/ui/useLocalStorageState";
+import { HealthGuidebookHeader } from "@/components/client/HealthGuidebookHeader";
 import {
   createMealItem,
   rememberRecentValue,
@@ -35,13 +36,15 @@ const SEARCH_DEBOUNCE_MS = 350;
 type FoodMainProps = {
   initialQuery?: string;
   initialRecipeId?: string;
+  userRole?: string;
 };
 
 export function FoodMain({
   initialQuery = "",
   initialRecipeId,
+  userRole,
 }: FoodMainProps) {
- const {
+  const {
     query, setQuery, servingSize, setServingSize,
     selectedFood, setSelectedFood, setRecentQueries, drawerOpen, setDrawerOpen, mealOpen, setMealOpen,
     recentQueries, favoriteFoods, setFavoriteFoods, mealItems, setMealItems,
@@ -58,6 +61,8 @@ export function FoodMain({
 
   return (
     <>
+      <HealthGuidebookHeader activeTab="foods" userRole={userRole} />
+
       {/* ── AMBIENT MESH BACKGROUND ── */}
       <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden bg-[#F7F9F7]">
         {/* Top Left Soft Glow */}

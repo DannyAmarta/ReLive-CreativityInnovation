@@ -20,6 +20,7 @@ import {
     SignInFormSchema,
     SignUpFormSchema,
 } from "./zodSchemas/signUpFormSchema";
+import { decodeJwt } from "jose";
 import { print } from "graphql";
 import { revalidatePath } from "next/cache";
 import { createSession } from "./session.server";
@@ -107,17 +108,29 @@ export async function Login(
         };
     }
 
+    let role: string | undefined;
+    try {
+        const decoded = decodeJwt(data.signIn.accessToken);
+        if (typeof decoded.role === "string") {
+            role = decoded.role;
+        }
+    } catch {
+        // ignore decode errors
+    }
+
     await createSession({
         user: {
             id: String(data.signIn.id),
             name: data.signIn.name,
             avatar: data.signIn.avatar,
+            role: role as "USER" | "TRAINER" | "ADMIN" | undefined,
         },
         accessToken: data.signIn.accessToken,
     });
 
-    revalidatePath("/world/");
-    redirect("/world/");
+    const redirectPath = role === "TRAINER" || role === "ADMIN" ? "/trainer" : "/client";
+    revalidatePath(redirectPath);
+    redirect(redirectPath);
 }
 
 // This server action starts the reset-password email flow.

@@ -170,7 +170,11 @@ export default async function ClientDashboardPage({
               <Star className="size-4" /> Book a Trainer
             </Link>
           </div>
-          <ClientCalendarView initialBookings={bookings} />
+          <ClientCalendarView
+            initialBookings={bookings}
+            rescheduleRequests={rescheduleRequests}
+            cancellationRequests={cancellationRequests}
+          />
         </div>
       </main>
     </div>

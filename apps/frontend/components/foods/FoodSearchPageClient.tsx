@@ -6,9 +6,10 @@ import { FoodMain } from "./FoodMain";
 type FoodSearchPageClientProps = {
   initialQuery?: string;
   initialRecipeId?: string;
+  userRole?: string;
 };
 
-export function FoodSearchPageClient({ initialQuery, initialRecipeId }: FoodSearchPageClientProps) {
+export function FoodSearchPageClient({ initialQuery, initialRecipeId, userRole }: FoodSearchPageClientProps) {
   const [isMounted, setIsMounted] = useState(false);
   useEffect(() => { setIsMounted(true); }, []);
 
@@ -35,5 +36,5 @@ export function FoodSearchPageClient({ initialQuery, initialRecipeId }: FoodSear
     );
   }
 
-  return <FoodMain initialQuery={initialQuery} initialRecipeId={initialRecipeId} />;
+  return <FoodMain initialQuery={initialQuery} initialRecipeId={initialRecipeId} userRole={userRole} />;
 }

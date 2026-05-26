@@ -112,7 +112,13 @@ export class MessagingGateway
   @SubscribeMessage("send_message")
   async handleMessage(
     @ConnectedSocket() client: Socket,
-    @MessageBody() payload: { conversationId: number; content: string },
+    @MessageBody() payload: { 
+      conversationId: number; 
+      content: string;
+      type?: "TEXT" | "IMAGE" | "FILE" | "SYSTEM" | "AUDIO";
+      imageUrl?: string;
+      fileUrl?: string;
+    },
   ) {
     const userId = client.data.userId;
     if (!userId) return;
@@ -132,6 +138,9 @@ export class MessagingGateway
       payload.conversationId,
       userId,
       payload.content,
+      payload.type || "TEXT",
+      payload.imageUrl,
+      payload.fileUrl,
     );
 
     // Broadcast the message to the conversation room
@@ -154,6 +163,7 @@ export class MessagingGateway
           senderId: userId,
           content: payload.content,
           senderName: (message as any).sender?.name || "New Message",
+          type: payload.type || "TEXT",
         });
       }
     }

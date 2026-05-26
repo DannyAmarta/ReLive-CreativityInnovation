@@ -35,7 +35,13 @@ interface TodayScheduleCardProps {
 
 export function TodayScheduleCard({ bookings }: TodayScheduleCardProps) {
   const todaySchedule = [...bookings]
-    .filter((b) => b.scheduledStart && isToday(new Date(b.scheduledStart)))
+    .filter(
+      (b) =>
+        b.scheduledStart &&
+        isToday(new Date(b.scheduledStart)) &&
+        b.status !== "CANCELLED" &&
+        b.status !== "REJECTED",
+    )
     .sort(
       (a, b) =>
         new Date(a.scheduledStart!).getTime() - new Date(b.scheduledStart!).getTime(),

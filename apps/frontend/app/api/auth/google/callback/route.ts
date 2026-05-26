@@ -1,5 +1,6 @@
 import { BACKEND_URL } from "@/lib/constants";
 import { createSession } from "@/lib/session.server";
+import { decodeJwt } from "jose";
 import { NextResponse } from "next/server";
 
 type GoogleExchangeResponse = {
@@ -35,14 +36,26 @@ export async function GET(req: Request) {
     const authPayload =
         (await response.json()) as GoogleExchangeResponse;
 
+    let role: string | undefined;
+    try {
+        const decoded = decodeJwt(authPayload.accessToken);
+        if (typeof decoded.role === "string") {
+            role = decoded.role;
+        }
+    } catch {
+        // ignore decode errors
+    }
+
     await createSession({
         user: {
             id: String(authPayload.id),
             name: authPayload.name,
             avatar: authPayload.avatar ?? undefined,
+            role: role as "USER" | "TRAINER" | "ADMIN" | undefined,
         },
         accessToken: authPayload.accessToken,
     });
 
-    return NextResponse.redirect(new URL("/world/", req.url));
+    const redirectPath = role === "TRAINER" ? "/trainer" : "/client";
+    return NextResponse.redirect(new URL(redirectPath, req.url));
 }

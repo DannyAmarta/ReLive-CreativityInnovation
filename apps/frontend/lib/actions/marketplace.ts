@@ -110,6 +110,8 @@ export async function createBookingAction(formData: FormData) {
   revalidatePath("/client/dashboard");
   revalidatePath("/trainer");
   revalidatePath("/trainer/bookings");
+  revalidatePath(`/client/trainers/${trainerId}`);
+  revalidatePath("/client/trainers/[trainerId]", "page");
 
   if (paymentMethod === "FIAT") {
     const paymentMethodCode = formData.get("paymentMethodCode")?.toString() || undefined;
@@ -184,6 +186,7 @@ export async function updateBookingStatusAction(formData: FormData) {
   revalidatePath("/trainer");
   revalidatePath("/trainer/bookings");
   revalidatePath("/trainer/wallet");
+  revalidatePath("/client/trainers/[trainerId]", "page");
 
   redirect(redirectTo);
 }
@@ -362,6 +365,7 @@ export async function resolveRescheduleAction(formData: FormData) {
   revalidatePath("/client/bookings/reschedule");
   revalidatePath("/client/dashboard");
   revalidatePath("/trainer/bookings");
+  revalidatePath("/client/trainers/[trainerId]", "page");
   redirect(`${redirectTo}?reschedule=resolved`);
 }
 
@@ -399,6 +403,7 @@ export async function resolveCancellationAction(formData: FormData) {
   revalidatePath("/client/bookings/cancel");
   revalidatePath("/client/dashboard");
   revalidatePath("/trainer/bookings");
+  revalidatePath("/client/trainers/[trainerId]", "page");
   redirect(`${redirectTo}?cancellation=resolved`);
 }
 

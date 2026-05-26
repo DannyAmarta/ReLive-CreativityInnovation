@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { FoodSearchPageClient } from "@/components/foods/FoodSearchPageClient";
+import { getSession } from "@/lib/session.server";
 
 export const metadata: Metadata = {
   title: "Foods | ReLive",
@@ -12,10 +13,13 @@ export default async function FoodsPage({
   searchParams?: Promise<{ query?: string; recipe?: string }>;
 }) {
   const resolvedSearchParams = await searchParams;
+  const session = await getSession();
+  const userRole = session?.user?.role;
   return (
     <FoodSearchPageClient
       initialQuery={resolvedSearchParams?.query}
       initialRecipeId={resolvedSearchParams?.recipe}
+      userRole={userRole}
     />
   );
 }

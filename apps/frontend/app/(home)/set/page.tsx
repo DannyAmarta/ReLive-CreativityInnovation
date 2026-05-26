@@ -5,6 +5,7 @@ import { fetchGraphql } from "@/lib/fetchGraphQL";
 import { GET_SET_EXERCISES_QUERY } from "@/lib/gqlQueries";
 import { FALLBACK_SET_EXERCISES } from "@/lib/set/catalog";
 import type { SetExerciseDefinition } from "@/types/set";
+import { getSession } from "@/lib/session.server";
 
 export const metadata: Metadata = {
   title: "Set Lab | ReLive",
@@ -31,5 +32,8 @@ export default async function SetPage() {
     exercises = FALLBACK_SET_EXERCISES;
   }
 
-  return <SetPageClient initialExercises={exercises} />;
+  const session = await getSession();
+  const userRole = session?.user?.role;
+
+  return <SetPageClient initialExercises={exercises} userRole={userRole} />;
 }

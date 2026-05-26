@@ -41,6 +41,59 @@ export class TrainerAvailabilityService {
 
   // ── Rule CRUD ────────────────────────────────────────────────────────────
 
+  async assertRulesDoNotConflictWithBookings(trainerId: number, rulesAfterChange: TrainerAvailability[]) {
+    const bookings = await this.prisma.booking.findMany({
+      where: {
+        trainerId,
+        status: { in: ['PENDING', 'ACTIVE'] },
+        scheduledStart: { not: null },
+        scheduledEnd: { not: null },
+      },
+    });
+
+    for (const b of bookings) {
+      const bStart = new Date(b.scheduledStart!);
+      const bEnd = new Date(b.scheduledEnd!);
+      const dateStr = bStart.toISOString().slice(0, 10);
+      const bStartMin = bStart.getUTCHours() * 60 + bStart.getUTCMinutes();
+      const duration = Math.round((bEnd.getTime() - bStart.getTime()) / 60000);
+      const bEndMin = bStartMin + duration;
+
+      const specificRules = rulesAfterChange.filter(
+        (r) => r.specificDate && r.specificDate.toISOString().slice(0, 10) === dateStr,
+      );
+      const dow = new Date(`${dateStr}T12:00:00Z`).getUTCDay();
+      const weeklyRules = rulesAfterChange.filter((r) => r.dayOfWeek === dow && !r.specificDate);
+      const activeRules = specificRules.length > 0 ? specificRules : weeklyRules;
+
+      const allowedRules = activeRules.filter((r) => r.isAvailable);
+      const isCovered = allowedRules.some((r) => {
+        const rStart = toMinutes(r.startTime);
+        const rEnd = toMinutes(r.endTime);
+        return rStart <= bStartMin && rEnd >= bEndMin;
+      });
+
+      if (!isCovered) {
+        throw new BadRequestException(
+          `Cannot modify availability: slot on ${dateStr} is booked by a client.`
+        );
+      }
+
+      const blockedRules = activeRules.filter((r) => !r.isAvailable);
+      const isBlocked = blockedRules.some((br) => {
+        const brStart = toMinutes(br.startTime);
+        const brEnd = toMinutes(br.endTime);
+        return bStartMin < brEnd && bEndMin > brStart;
+      });
+
+      if (isBlocked) {
+        throw new BadRequestException(
+          `Cannot modify availability: slot on ${dateStr} is booked by a client.`
+        );
+      }
+    }
+  }
+
   async getAvailabilityRules(trainerId: number) {
     return this.prisma.trainerAvailability.findMany({
       where: { trainerId },
@@ -58,6 +111,24 @@ export class TrainerAvailabilityService {
     if (toMinutes(input.startTime) >= toMinutes(input.endTime)) {
       throw new BadRequestException('startTime must be before endTime');
     }
+
+    const virtualRule: TrainerAvailability = {
+      id: 0,
+      trainerId,
+      dayOfWeek: input.dayOfWeek ?? null,
+      specificDate: input.specificDate ? new Date(input.specificDate) : null,
+      startTime: input.startTime,
+      endTime: input.endTime,
+      isAvailable: input.isAvailable ?? true,
+      title: input.title ?? null,
+      timezone: input.timezone ?? 'Asia/Jakarta',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    const existingRules = await this.getAvailabilityRules(trainerId);
+    const rulesAfterChange = [...existingRules, virtualRule];
+    await this.assertRulesDoNotConflictWithBookings(trainerId, rulesAfterChange);
 
     return this.prisma.trainerAvailability.create({
       data: {
@@ -78,6 +149,18 @@ export class TrainerAvailabilityService {
     if (!rule) throw new NotFoundException('Availability rule not found');
     if (rule.trainerId !== trainerId) throw new ForbiddenException('Not your rule');
 
+    const updatedRule: TrainerAvailability = {
+      ...rule,
+      ...(input.startTime && { startTime: input.startTime }),
+      ...(input.endTime && { endTime: input.endTime }),
+      ...(input.isAvailable != null && { isAvailable: input.isAvailable }),
+      ...(input.title != null && { title: input.title }),
+    };
+
+    const existingRules = await this.getAvailabilityRules(trainerId);
+    const rulesAfterChange = existingRules.map(r => r.id === rule.id ? updatedRule : r);
+    await this.assertRulesDoNotConflictWithBookings(trainerId, rulesAfterChange);
+
     return this.prisma.trainerAvailability.update({
       where: { id: input.id },
       data: {
@@ -93,6 +176,10 @@ export class TrainerAvailabilityService {
     const rule = await this.prisma.trainerAvailability.findUnique({ where: { id: ruleId } });
     if (!rule) throw new NotFoundException('Availability rule not found');
     if (rule.trainerId !== trainerId) throw new ForbiddenException('Not your rule');
+
+    const existingRules = await this.getAvailabilityRules(trainerId);
+    const rulesAfterChange = existingRules.filter(r => r.id !== ruleId);
+    await this.assertRulesDoNotConflictWithBookings(trainerId, rulesAfterChange);
 
     await this.prisma.trainerAvailability.delete({ where: { id: ruleId } });
     return true;

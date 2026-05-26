@@ -1,7 +1,9 @@
 import { SessionWarning } from "@/components/auth/SessionWarning";
 import { TrendingDown, Wallet, BarChart3, ArrowLeft } from "lucide-react";
 import Link from "next/link";
-import { isAuthenticationGraphqlError } from "@/lib/fetchGraphQL";
+import { isAuthenticationGraphqlError, authFetchGraphql } from "@/lib/fetchGraphQL";
+import { print } from "graphql";
+import { MY_RESCHEDULE_REQUESTS_QUERY, MY_CANCELLATION_REQUESTS_QUERY } from "@/lib/gqlQueries";
 import { formatIDR } from "@/lib/format";
 import {
   computeClientFiatMetrics,
@@ -10,11 +12,19 @@ import {
 import { ClientWalletLedger } from "@/components/client/ClientWalletLedger";
 
 export default async function ClientWalletPage() {
-  const bookingsResult = await Promise.allSettled([getMyClientFiatBookings()]);
-  const bookings = bookingsResult[0].status === "fulfilled" ? bookingsResult[0].value : [];
+  const [bookingsResult, rescheduleResult, cancellationResult] = await Promise.allSettled([
+    getMyClientFiatBookings(),
+    authFetchGraphql<{ myRescheduleRequests: any[] }>(print(MY_RESCHEDULE_REQUESTS_QUERY)),
+    authFetchGraphql<{ myCancellationRequests: any[] }>(print(MY_CANCELLATION_REQUESTS_QUERY)),
+  ]);
+
+  const bookings = bookingsResult.status === "fulfilled" ? bookingsResult.value : [];
+  const reschedules = rescheduleResult.status === "fulfilled" ? rescheduleResult.value?.myRescheduleRequests ?? [] : [];
+  const cancellations = cancellationResult.status === "fulfilled" ? cancellationResult.value?.myCancellationRequests ?? [] : [];
+
   const showSessionWarning =
-    bookingsResult[0].status === "rejected" &&
-    isAuthenticationGraphqlError(bookingsResult[0].reason);
+    bookingsResult.status === "rejected" &&
+    isAuthenticationGraphqlError(bookingsResult.reason);
 
   const { lifetimeSpent, activeInvested, avgSessionCost, completedCount } =
     computeClientFiatMetrics(bookings);
@@ -40,18 +50,17 @@ export default async function ClientWalletPage() {
 
       {/* ── Analytics Row ── */}
       <section className="grid grid-cols-1 gap-4 mb-8 md:grid-cols-3">
-        {/* Hero: Lifetime Spent */}
+        {/* Hero: Active Investments */}
         <div className="md:col-span-2 rounded-2xl border border-border bg-gradient-primary text-primary-foreground p-6 shadow-elevated">
           <div className="flex items-center gap-2 mb-3">
-            <Wallet className="size-4" />
-            <p className="text-xs uppercase tracking-wider opacity-80">Lifetime Fiat Spent</p>
+            <TrendingDown className="size-4" />
+            <p className="text-xs uppercase tracking-wider opacity-80">Active Investments</p>
           </div>
           <p className="text-4xl sm:text-5xl font-semibold font-mono tabular-nums">
-            {formatIDR(lifetimeSpent)}
+            {formatIDR(activeInvested)}
           </p>
           <p className="mt-3 text-sm opacity-75">
-            Total investment across {completedCount} completed{" "}
-            {completedCount === 1 ? "session" : "sessions"}.
+            Funds committed to pending &amp; active sessions.
           </p>
         </div>
 
@@ -59,16 +68,17 @@ export default async function ClientWalletPage() {
         <div className="flex flex-col gap-4">
           <div className="glass-card-elevated flex-1 p-5">
             <div className="flex items-center gap-2 mb-2">
-              <TrendingDown className="size-4 text-warning" />
+              <Wallet className="size-4 text-warning" />
               <p className="text-xs uppercase tracking-wider text-muted-foreground">
-                Active Investments
+                Lifetime Fiat Spent
               </p>
             </div>
             <p className="text-2xl font-semibold font-mono tabular-nums">
-              {formatIDR(activeInvested)}
+              {formatIDR(lifetimeSpent)}
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
-              Funds committed to pending &amp; active sessions.
+              Total investment across {completedCount} completed{" "}
+              {completedCount === 1 ? "session" : "sessions"}.
             </p>
           </div>
 
@@ -90,7 +100,11 @@ export default async function ClientWalletPage() {
       </section>
 
       {/* ── Spending History Ledger ── */}
-      <ClientWalletLedger bookings={bookings} />
+      <ClientWalletLedger
+        bookings={bookings}
+        rescheduleRequests={reschedules}
+        cancellationRequests={cancellations}
+      />
     </div>
   );
 }

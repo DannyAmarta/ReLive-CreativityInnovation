@@ -37,7 +37,7 @@ import { MessagingModule } from './messaging/messaging.module';
     ScheduleModule.forRoot(),
     ThrottlerModule.forRoot([{
       ttl: 60000, // 1 minute window
-      limit: 30,  // Max 30 requests per IP per minute
+      limit: 150,  // Max 150 requests per IP per minute
     }]),
     GraphQLModule.forRoot<ApolloDriverConfig>({
       driver: ApolloDriver,

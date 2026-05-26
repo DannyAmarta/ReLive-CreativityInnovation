@@ -6,9 +6,10 @@ import { CookbookMain } from "./CookbookMain";
 type CookbookSearchClientProps = {
   initialQuery?: string;
   initialRecipeId?: string;
+  userRole?: string;
 };
 
-export function CookbookPageClient({ initialQuery, initialRecipeId }: CookbookSearchClientProps) {
+export function CookbookPageClient({ initialQuery, initialRecipeId, userRole }: CookbookSearchClientProps) {
   const [isMounted, setIsMounted] = useState(false);
   useEffect(() => { setIsMounted(true); }, []);
 
@@ -35,6 +36,6 @@ export function CookbookPageClient({ initialQuery, initialRecipeId }: CookbookSe
     );
   }
 
-  return <CookbookMain initialQuery={initialQuery} initialRecipeId={initialRecipeId} />;
+  return <CookbookMain initialQuery={initialQuery} initialRecipeId={initialRecipeId} userRole={userRole} />;
 }
 

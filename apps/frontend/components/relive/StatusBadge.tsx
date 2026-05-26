@@ -3,18 +3,18 @@ import { cn } from "@/lib/utils";
 type Status = string;
 
 const styles: Record<string, string> = {
-  PENDING: "bg-warning/15 text-warning-foreground",
-  ACTIVE: "bg-primary/10 text-primary",
-  COMPLETED: "bg-primary-deep/10 text-primary-deep",
+  PENDING: "bg-amber-500/15 text-amber-700",
+  ACTIVE: "bg-emerald-500/15 text-emerald-700",
+  COMPLETED: "bg-emerald-900/20 text-emerald-950 font-bold",
   CANCELLED: "bg-destructive/10 text-destructive",
   DISPUTED: "bg-warning/15 text-warning-foreground",
   FAILED: "bg-destructive/10 text-destructive",
 };
 
 const dotColor: Record<string, string> = {
-  PENDING: "bg-warning",
-  ACTIVE: "bg-primary",
-  COMPLETED: "bg-primary-deep",
+  PENDING: "bg-amber-500",
+  ACTIVE: "bg-emerald-500",
+  COMPLETED: "bg-emerald-900",
   CANCELLED: "bg-destructive",
   DISPUTED: "bg-warning",
   FAILED: "bg-destructive",

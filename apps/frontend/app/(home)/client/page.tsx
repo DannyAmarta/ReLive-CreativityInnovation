@@ -61,7 +61,7 @@ export default async function ClientHomePage() {
       ? trainers.reduce((total, trainer) => total + trainer.rating, 0) / trainers.length
       : 0;
 
-  const { lifetimeSpent } = computeClientFiatMetrics(fiatBookings);
+  const { lifetimeSpent, activeInvested } = computeClientFiatMetrics(fiatBookings);
   const trainerAvatars = trainers.slice(0, 3).map((t) => t.user.avatar || null);
 
   return (
@@ -79,6 +79,7 @@ export default async function ClientHomePage() {
           averageRating={averageRating}
           bookingsCount={bookings.length}
           lifetimeSpent={lifetimeSpent}
+          activeInvested={activeInvested}
           recentBookings={bookings}
           trainerAvatars={trainerAvatars}
           pendingRescheduleCount={pendingRescheduleCount}

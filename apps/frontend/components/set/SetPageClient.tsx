@@ -5,8 +5,9 @@ import { SetMain } from "./SetMain";
 
 type SetPageClientProps = {
   initialExercises: SetExerciseDefinition[];
+  userRole?: string;
 };
 
-export function SetPageClient({ initialExercises }: SetPageClientProps) {
-  return <SetMain initialExercises={initialExercises} />;
+export function SetPageClient({ initialExercises, userRole }: SetPageClientProps) {
+  return <SetMain initialExercises={initialExercises} userRole={userRole} />;
 }
