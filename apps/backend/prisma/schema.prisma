@@ -22,12 +22,13 @@ enum Role {
 }
 
 enum BookingStatus {
-  PENDING    // Waiting for trainer acceptance
-  ACTIVE     // Trainer accepted, session in progress
-  COMPLETED  // Service delivered, funds released to trainer
-  DISPUTED   // Claim raised, locked until admin resolves
-  CANCELLED  // Mutual cancellation
-  REJECTED   // Trainer rejected the booking request
+  PENDING         // Waiting for trainer acceptance
+  ACTIVE          // Trainer accepted, session in progress
+  PENDING_RELEASE // Trainer declared done — awaiting client approval or auto-release
+  COMPLETED       // Service delivered, funds released to trainer
+  DISPUTED        // Claim raised, locked until admin resolves
+  CANCELLED       // Mutual cancellation
+  REJECTED        // Trainer rejected the booking request
 }
 
 enum PaymentType {
@@ -90,8 +91,11 @@ model User {
   clientReviews             Review[]                   @relation("ClientReviews")
   // Chat relations
   trainerConversations Conversation[] @relation("TrainerConversations")
-  clientConversations Conversation[] @relation("ClientConversations")
-  sentMessages ChatMessage[] @relation("SentMessages")
+  clientConversations  Conversation[] @relation("ClientConversations")
+  sentMessages         ChatMessage[]  @relation("SentMessages")
+  // Food persistence
+  favoriteFoods        UserFavoriteFood[]
+  mealItems            UserMealItem[]
 }
 
 model Exercise {
@@ -110,7 +114,7 @@ model Exercise {
 }
 
 model WorkoutSet {
-  id              Int      @id @default(autoincrement())
+  id              Int      @default(autoincrement())
   userId          Int
   exerciseId      String
   weightLifted    Float?
@@ -127,6 +131,7 @@ model WorkoutSet {
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   exercise        Exercise @relation(fields: [exerciseId], references: [id], onDelete: Restrict)
 
+  @@id([id, createdAt])
   @@index([userId, exerciseId, createdAt(sort: Desc)])
   @@index([userId, createdAt(sort: Desc)])
 }
@@ -283,6 +288,9 @@ model Booking {
   // Dispute resolution
   disputeReason String? // Filled in when status = DISPUTED
   resolvedBy    Int?    // Admin userId who resolved the dispute
+
+  // BullMQ auto-release job tracking
+  releaseJobId  String? // BullMQ job ID for the pending escrow auto-release job (cancelled on early resolution)
 
   // Scheduling
   scheduledStart DateTime? // Session start time (UTC)
@@ -530,4 +538,58 @@ model ChatMessage {
   @@index([senderId])
   @@index([conversationId, isRead])
   @@index([createdAt(sort: Desc)])
+}
+
+// --- Food Persistence Models ---
+
+enum FoodSource {
+  USDA
+  OFF // Open Food Facts
+}
+
+model UserFavoriteFood {
+  id        Int        @id @default(autoincrement())
+  userId    Int
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  foodId    String     // External source ID (fdcId or OFF barcode)
+  foodName  String
+  brand     String?
+  source    FoodSource
+
+  createdAt DateTime   @default(now())
+
+  @@unique([userId, foodId, source])
+  @@index([userId])
+}
+
+model UserMealItem {
+  id        Int        @id @default(autoincrement())
+  userId    Int
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  foodId       String     // External source ID
+  foodName     String
+  brand        String?
+  source       FoodSource
+  servingSize  Float      // grams
+  nutrientsJson Json      // Per-100g nutrient data stored as JSON
+
+  addedAt   DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@index([userId])
+}
+
+model OutboxEvent {
+  id        Int      @id @default(autoincrement())
+  eventType String   // "enqueue-auto-release" | "cancel-auto-release"
+  payload   Json
+  processed Boolean  @default(false)
+  retryCount Int      @default(0)
+  error      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([processed, createdAt])
 }

@@ -1,0 +1,46 @@
+"use client";
+import { motion, useScroll, useTransform } from "framer-motion";
+import { useRef } from "react";
+
+const WORDS = ["Move.", "Eat.", "Recover.", "Repeat.", "ReLive."];
+
+export function HorizontalText() {
+  const ref = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end end"] });
+
+  // Functional overload with manual clamp — same technique as ScrollFlipRoles.
+  // Guarantees the value is locked to [startVal, endVal] even if scrollYProgress
+  // briefly exceeds [0, 1] at the boundaries (Framer Motion string-path does NOT honour clamp).
+  const x = useTransform(scrollYProgress, (p) => {
+    const t = Math.max(0, Math.min(1, p));
+    // travel from +10% → -110%  (120 % total, enough for 10 large words)
+    return `${(10 - t * 120).toFixed(3)}%`;
+  });
+  const xSlow = useTransform(scrollYProgress, (p) => {
+    const t = Math.max(0, Math.min(1, p));
+    // travel from 0% → -55%
+    return `${(-t * 55).toFixed(3)}%`;
+  });
+
+  return (
+    <section ref={ref} className="relative h-[500vh] bg-background text-foreground">
+      <div className="sticky top-0 flex h-screen flex-col justify-center overflow-hidden">
+        <p className="absolute left-1/2 top-12 -translate-x-1/2 text-xs uppercase tracking-[0.4em] text-primary/80">
+          Chapter II — A vocabulary for the living body
+        </p>
+
+        <motion.div style={{ x }} className="flex whitespace-nowrap font-serif text-[18vw] font-light leading-none tracking-tight">
+          {WORDS.concat(WORDS).map((w, i) => (
+            <span key={i} className="mr-16 inline-block">
+              {w === "ReLive." ? <span className="italic text-primary">{w}</span> : w}
+            </span>
+          ))}
+        </motion.div>
+
+        <motion.div style={{ x: xSlow }} className="mt-8 flex whitespace-nowrap font-sans text-[6vw] uppercase tracking-[0.05em] text-foreground/30">
+          {"nutrition · training · recovery · marketplace · escrow · ai coach · ".repeat(4)}
+        </motion.div>
+      </div>
+    </section>
+  );
+}

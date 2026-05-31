@@ -3,11 +3,14 @@ import { MessagingGateway } from "./messaging.gateway";
 import { MessagingService } from "./messaging.service";
 import { MessagingController } from "./messaging.controller";
 import { PrismaModule } from "../prisma/prisma.module";
-import { NotificationService } from "../core/notification.service";
+import { CoreModule } from "../core/core.module"; // Fix #5: shared CoreModule
 
 @Module({
-  imports: [PrismaModule],
-  providers: [MessagingGateway, MessagingService, NotificationService],
+  imports: [
+    PrismaModule,
+    CoreModule, // Fix #5: provides NotificationService as shared singleton
+  ],
+  providers: [MessagingGateway, MessagingService],
   controllers: [MessagingController],
   exports: [MessagingService],
 })

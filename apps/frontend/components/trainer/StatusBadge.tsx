@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 const styles: Record<string, string> = {
   PENDING: "bg-warning/10 text-warning-foreground border-warning/30 [&>span]:bg-warning",
   ACTIVE: "bg-accent/10 text-primary border-accent/30 [&>span]:bg-accent",
+  PENDING_RELEASE: "bg-blue-500/10 text-blue-700 border-blue-500/30 [&>span]:bg-blue-500",
   COMPLETED: "bg-muted text-muted-foreground border-border [&>span]:bg-muted-foreground",
   CANCELLED: "bg-muted text-muted-foreground border-border [&>span]:bg-muted-foreground/60",
   DISPUTED: "bg-destructive/10 text-destructive border-destructive/30 [&>span]:bg-destructive",

@@ -7,11 +7,13 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { UserModule } from './user/user.module';
-import { ConfigModule } from '@nestjs/config';
+import { BullModule } from '@nestjs/bullmq';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { FoodModule } from './food/food.module';
 import { RecipeModule } from './recipe/recipe.module';
-import { ScheduleModule } from '@nestjs/schedule';
+import Redis from 'ioredis';
+import { ThrottlerStorageRedisService } from 'nestjs-throttler-storage-redis';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
@@ -20,12 +22,10 @@ import { DataLoaderInterceptor } from 'nestjs-dataloader';
 import { SetModule } from './set/set.module';
 import { RecommendationModule } from './recommendation/recommendation.module';
 import { ChatModule } from './chat/chat.module';
-import { WorkoutsModule } from './workouts/workouts.module';
 import { TrainerModule } from './trainer/trainer.module';
 import { BlockchainModule } from './blockchain/blockchain.module';
-import { FiatPaymentService } from './fiat-payment/fiat-payment.service';
-import { FiatPaymentModule } from './fiat-payment/fiat-payment.module';
 import { MessagingModule } from './messaging/messaging.module';
+import { FiatPaymentModule } from './fiat-payment/fiat-payment.module';
 
 @Module({
   imports: [
@@ -33,12 +33,42 @@ import { MessagingModule } from './messaging/messaging.module';
       isGlobal: true,
       envFilePath: '.env',
     }),
+    BullModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        connection: {
+          url: configService.get<string>('REDIS_URL') ?? 'redis://localhost:6379',
+        },
+      }),
+    }),
     EventEmitterModule.forRoot(),
-    ScheduleModule.forRoot(),
-    ThrottlerModule.forRoot([{
-      ttl: 60000, // 1 minute window
-      limit: 150,  // Max 150 requests per IP per minute
-    }]),
+    ThrottlerModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => {
+        const client = new Redis(
+          configService.get<string>('REDIS_URL') ?? 'redis://localhost:6379',
+        );
+        let lastErrorLoggedAt = 0;
+        client.on('error', (err) => {
+          const now = Date.now();
+          if (now - lastErrorLoggedAt > 30000) {
+            lastErrorLoggedAt = now;
+            console.error('Throttler Redis Connection Error:', err.message || 'Connection refused. Retrying in background...');
+          }
+        });
+        return {
+          throttlers: [
+            {
+              name: 'default',
+              ttl: 60000, // 1 minute
+              limit: 150,
+            },
+          ],
+          storage: new ThrottlerStorageRedisService(client),
+        };
+      },
+    }),
     GraphQLModule.forRoot<ApolloDriverConfig>({
       driver: ApolloDriver,
       autoSchemaFile: join(process.cwd(), 'src/graphql/schema.gql'),
@@ -64,7 +94,6 @@ import { MessagingModule } from './messaging/messaging.module';
     SetModule,
     RecommendationModule,
     ChatModule,
-    WorkoutsModule,
     TrainerModule,
     BlockchainModule,
     FiatPaymentModule,
@@ -81,7 +110,6 @@ import { MessagingModule } from './messaging/messaging.module';
       provide: APP_INTERCEPTOR,
       useClass: DataLoaderInterceptor,
     },
-    FiatPaymentService,
   ],
 })
 export class AppModule {}

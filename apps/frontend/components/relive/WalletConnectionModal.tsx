@@ -1,17 +1,23 @@
+"use client";
+
 import { X } from "lucide-react";
-import { actions, type WalletProvider } from "@/lib/store";
+import { useWallet } from "@solana/wallet-adapter-react";
 import { toast } from "sonner";
 
-const WALLETS: { id: WalletProvider; desc: string; color: string }[] = [
-  { id: "Phantom", desc: "Most popular Solana wallet", color: "#AB9FF2" },
-  { id: "Solflare", desc: "Secure web & mobile wallet", color: "#FC9965" },
-  { id: "Backpack", desc: "xNFT-native wallet", color: "#E33E3F" },
-];
+// Wallet display metadata (purely cosmetic — adapter handles actual connection)
+const WALLET_META: Record<string, { desc: string; color: string }> = {
+  Phantom: { desc: "Most popular Solana wallet", color: "#AB9FF2" },
+  Solflare: { desc: "Secure web & mobile wallet", color: "#FC9965" },
+  Backpack: { desc: "xNFT-native wallet", color: "#E33E3F" },
+  "Brave Wallet": { desc: "Brave's built-in crypto wallet", color: "#FF4724" },
+};
 
 export function WalletConnectionModal({ onClose }: { onClose: () => void }) {
-  const handleConnect = (id: WalletProvider) => {
-    actions.connectWallet(id);
-    toast.success(`${id} connected`);
+  const { wallets, select } = useWallet();
+
+  const handleConnect = (walletName: any) => {
+    select(walletName);
+    toast.success(`${walletName} selected — connecting...`);
     onClose();
   };
 
@@ -43,25 +49,31 @@ export function WalletConnectionModal({ onClose }: { onClose: () => void }) {
         </div>
 
         <div className="space-y-2">
-          {WALLETS.map((w) => (
-            <button
-              key={w.id}
-              onClick={() => handleConnect(w.id)}
-              className="flex w-full items-center gap-3 rounded-2xl border border-border bg-background p-4 text-left transition-colors hover:border-primary/50 hover:bg-primary/5"
-            >
-              <span
-                className="grid h-10 w-10 place-items-center rounded-xl text-sm font-bold text-white"
-                style={{ backgroundColor: w.color }}
+          {wallets.map((wallet) => {
+            const meta = WALLET_META[wallet.adapter.name] ?? {
+              desc: `${wallet.adapter.name} wallet`,
+              color: "#7c8b6e",
+            };
+            return (
+              <button
+                key={wallet.adapter.name}
+                onClick={() => handleConnect(wallet.adapter.name)}
+                className="flex w-full items-center gap-3 rounded-2xl border border-border bg-background p-4 text-left transition-colors hover:border-primary/50 hover:bg-primary/5"
               >
-                {w.id[0]}
-              </span>
-              <div className="flex-1">
-                <p className="text-sm font-semibold text-foreground">{w.id}</p>
-                <p className="text-xs text-muted-foreground">{w.desc}</p>
-              </div>
-              <span className="text-xs font-medium text-primary">Connect</span>
-            </button>
-          ))}
+                <span
+                  className="grid h-10 w-10 place-items-center rounded-xl text-sm font-bold text-white"
+                  style={{ backgroundColor: meta.color }}
+                >
+                  {wallet.adapter.name[0]}
+                </span>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-foreground">{wallet.adapter.name}</p>
+                  <p className="text-xs text-muted-foreground">{meta.desc}</p>
+                </div>
+                <span className="text-xs font-medium text-primary">Connect</span>
+              </button>
+            );
+          })}
         </div>
 
         <p className="mt-4 text-xs text-muted-foreground">

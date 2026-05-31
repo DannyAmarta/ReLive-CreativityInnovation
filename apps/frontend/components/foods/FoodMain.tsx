@@ -21,7 +21,6 @@ import {
   updateMealItemServing,
   withServingSize,
 } from "@/lib/food";
-import { SearchFoods } from "@/lib/foodSearch";
 import type { Food, MealFoodItem, SavedFoodReference } from "@/types/food";
 
 
@@ -65,28 +64,28 @@ export function FoodMain({
 
       {/* ── AMBIENT MESH BACKGROUND ── */}
       <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden bg-[#F7F9F7]">
-        {/* Top Left Soft Glow */}
+        {/* Top Left Soft Glow - Saturated Sage/Mint */}
         <motion.div
-          animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0.7, 0.5], x: [0, 40, 0], y: [0, -20, 0] }}
+          animate={{ scale: [1, 1.2, 1], opacity: [0.55, 0.75, 0.55], x: [0, 40, 0], y: [0, -20, 0] }}
           transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute -left-[15%] -top-[15%] h-[60vh] w-[60vw] rounded-full bg-gradient-to-br from-[#D1E2C4] to-[#D1E2C4] opacity-40 blur-[130px]"
+          className="absolute -left-[15%] -top-[15%] h-[60vh] w-[60vw] rounded-full bg-gradient-to-br from-[#A9C893] to-[#B3D69C] opacity-55 blur-[130px]"
         />
         
-        {/* Bottom Right Deep Magenta Glow */}
+        {/* Bottom Right Deep Magenta Glow - Saturated Pink/Rose to Forest */}
         <motion.div
-          animate={{ scale: [1, 1.3, 1], opacity: [0.3, 0.5, 0.3], y: [0, -60, 0], x: [0, -30, 0] }}
+          animate={{ scale: [1, 1.3, 1], opacity: [0.45, 0.65, 0.45], y: [0, -60, 0], x: [0, -30, 0] }}
           transition={{ duration: 18, repeat: Infinity, ease: "easeInOut", delay: 1.5 }}
-          className="absolute -bottom-[25%] -right-[15%] h-[70vh] w-[70vw] rounded-full bg-gradient-to-tl from-[#FFE4EE] via-[#D1E2C4] to-[#2D4A22] opacity-30 blur-[150px]"
+          className="absolute -bottom-[25%] -right-[15%] h-[70vh] w-[70vw] rounded-full bg-gradient-to-tl from-[#FFAEC9] via-[#B8DBA3] to-[#365A28] opacity-45 blur-[150px]"
         />
 
-        {/* Center Accent Glow */}
+        {/* Center Accent Glow - Saturated Spring Green */}
         <motion.div
           animate={{
-            opacity: [0.15, 0.3, 0.15],
+            opacity: [0.3, 0.45, 0.3],
             scale: [1, 1.05, 1],
           }}
           transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-          className="absolute left-[20%] top-[30%] h-[40vh] w-[60vw] rounded-full bg-gradient-to-r from-[#E1EDD9] to-[#D1E2C4] opacity-20 blur-[110px]"
+          className="absolute left-[20%] top-[30%] h-[40vh] w-[60vw] rounded-full bg-gradient-to-r from-[#C3E4AD] to-[#B2DB9A] opacity-35 blur-[110px]"
         />
 
         {/* Subtle dot matrix pattern */}

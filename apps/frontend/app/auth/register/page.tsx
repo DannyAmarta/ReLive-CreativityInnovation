@@ -5,6 +5,7 @@ import { useState, useEffect, useActionState, useRef } from "react";
 import Face, { Expression } from "@/components/auth/components/Face";
 import { Register } from "@/lib/auth";
 import Link from "next/link";
+import Script from "next/script";
 import {
     AuroraLayer,
     GroundScene,
@@ -870,6 +871,15 @@ const RegisterForm = () => {
                             </p>
                         )}
 
+                        {/* Turnstile CAPTCHA */}
+                        <div style={{ display: "flex", justifyContent: "center", marginBottom: 18 }}>
+                            <div 
+                                className="cf-turnstile" 
+                                data-sitekey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "1x00000000000000000000AA"}
+                                data-theme="dark"
+                            />
+                        </div>
+
                         {/* Register button */}
                         <motion.button
                             type="submit"
@@ -916,6 +926,7 @@ const RegisterForm = () => {
                 </div>
                 {/* /form-panel */}
             </div>
+            <Script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer />
         </>
     );
 };

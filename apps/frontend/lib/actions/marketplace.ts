@@ -64,12 +64,7 @@ function parseIntField(value: FormDataEntryValue | null, fieldName: string) {
   return parsed;
 }
 
-function parseTokenUnitsToLamports(value: FormDataEntryValue | null): number | null {
-  if (!value || value.toString().trim() === "") return null;
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed) || parsed <= 0) return null;
-  return Math.round(parsed * 1_000_000);
-}
+
 
 function redirectWithSessionWarning(path: string) {
   const url = new URL(path, "http://local-session");
@@ -140,6 +135,23 @@ export async function createBookingAction(formData: FormData) {
   }
 
   redirect(`/client/dashboard?booking=${bookingId}&payment=crypto-pending`);
+}
+
+export async function createCryptoBookingWithoutRedirect(
+  trainerId: number,
+  serviceId: number,
+  scheduledStart: string,
+  scheduledEnd: string,
+  timezone: string
+) {
+  try {
+    const bookingData = await authFetchGraphql<CreateBookingResponse>(print(CREATE_BOOKING_MUTATION), {
+      input: { trainerId, serviceId, scheduledStart, scheduledEnd, timezone },
+    });
+    return bookingData.createBooking.id;
+  } catch (error) {
+    throw error;
+  }
 }
 
 export async function updateBookingStatusAction(formData: FormData) {

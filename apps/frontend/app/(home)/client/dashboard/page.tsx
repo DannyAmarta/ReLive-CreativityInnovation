@@ -1,6 +1,6 @@
 import { SessionWarning } from "@/components/auth/SessionWarning";
 import Link from "next/link";
-import { ArrowLeft, Star } from "lucide-react";
+import { ArrowLeft, Star, AlertTriangle, AlertCircle, XCircle, Info, Clock } from "lucide-react";
 import { authFetchGraphql, isAuthenticationGraphqlError } from "@/lib/fetchGraphQL";
 import { getMyClientBookings } from "@/lib/marketplace";
 import { print } from "graphql";
@@ -108,8 +108,14 @@ export default async function ClientDashboardPage({
 
         {/* Payment result banners */}
         {payment === "crypto-pending" && bookingId && (
-          <div className="mb-6 rounded-2xl border border-warning/30 bg-warning/10 p-4 text-sm text-warning-foreground">
-            Crypto booking #{bookingId} has been created. The on-chain escrow signing step is the next implementation pass.
+          <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50/60 p-4 text-sm text-amber-900 flex items-start gap-3 shadow-sm backdrop-blur-sm dark:border-amber-900/30 dark:bg-amber-950/20 dark:text-amber-200">
+            <Clock className="size-5 shrink-0 text-amber-600 mt-0.5" />
+            <div>
+              <p className="font-semibold">Crypto booking #{bookingId} pending</p>
+              <p className="mt-1 text-amber-800/90 dark:text-amber-300/90">
+                Booking has been created. The on-chain escrow signing step is the next implementation pass.
+              </p>
+            </div>
           </div>
         )}
         {payment === "fiat-pending" && bookingId && (
@@ -117,29 +123,38 @@ export default async function ClientDashboardPage({
             {resultCode === "00" ? (
               <PaymentVerification bookingId={parseInt(bookingId, 10)} />
             ) : resultCode === "01" ? (
-              <div className="mb-6 rounded-2xl border border-warning/20 bg-warning/10 p-4 text-sm text-warning">
-                <p className="font-semibold">Booking #{bookingId} — Payment Cancelled</p>
-                <p className="mt-1 text-muted-foreground">
-                  The payment session was cancelled. You can try booking again from the trainer profile.
-                </p>
+              <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50/60 p-4 text-sm text-amber-900 flex items-start gap-3 shadow-sm backdrop-blur-sm dark:border-amber-900/30 dark:bg-amber-950/20 dark:text-amber-200">
+                <AlertTriangle className="size-5 shrink-0 text-amber-600 mt-0.5" />
+                <div>
+                  <p className="font-semibold">Booking #{bookingId} — Payment Cancelled</p>
+                  <p className="mt-1 text-amber-800/90 dark:text-amber-300/90">
+                    The payment session was cancelled. You can try booking again from the trainer profile.
+                  </p>
+                </div>
               </div>
             ) : resultCode ? (
-              <div className="mb-6 rounded-2xl border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive">
-                <p className="font-semibold">Booking #{bookingId} — Payment Failed</p>
-                <p className="mt-1 text-muted-foreground">
-                  The payment transaction was not successful (Result Code: {resultCode}). Please try again.
-                </p>
+              <div className="mb-6 rounded-2xl border border-red-200 bg-red-50/60 p-4 text-sm text-red-900 flex items-start gap-3 shadow-sm backdrop-blur-sm dark:border-red-900/30 dark:bg-red-950/20 dark:text-red-200">
+                <XCircle className="size-5 shrink-0 text-red-600 mt-0.5" />
+                <div>
+                  <p className="font-semibold">Booking #{bookingId} — Payment Failed</p>
+                  <p className="mt-1 text-red-800/90 dark:text-red-300/90">
+                    The payment transaction was not successful (Result Code: {resultCode}). Please try again.
+                  </p>
+                </div>
               </div>
             ) : (
-              <div className="mb-6 rounded-2xl border border-primary/20 bg-primary/10 p-4 text-sm text-primary-deep">
-                <p className="font-semibold">Booking #{bookingId} — Payment Pending</p>
-                <p className="mt-1 text-muted-foreground">
-                  Your booking was created but the Duitku payment session could not be started automatically.{" "}
-                  <a href="/client/trainers" className="font-medium underline">
-                    Go back and click &quot;Book with IDR&quot;
-                  </a>{" "}
-                  again to retry the payment.
-                </p>
+              <div className="mb-6 rounded-2xl border border-blue-200 bg-blue-50/60 p-4 text-sm text-blue-900 flex items-start gap-3 shadow-sm backdrop-blur-sm dark:border-blue-900/30 dark:bg-blue-950/20 dark:text-blue-200">
+                <Info className="size-5 shrink-0 text-blue-600 mt-0.5" />
+                <div>
+                  <p className="font-semibold">Booking #{bookingId} — Payment Pending</p>
+                  <p className="mt-1 text-blue-800/90 dark:text-blue-300/90">
+                    Your booking was created but the Duitku payment session could not be started automatically.{" "}
+                    <a href="/client/trainers" className="font-medium underline hover:text-blue-700">
+                      Go back and click &quot;Book with IDR&quot;
+                    </a>{" "}
+                    again to retry the payment.
+                  </p>
+                </div>
               </div>
             )}
           </>

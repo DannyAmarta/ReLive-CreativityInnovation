@@ -8,6 +8,7 @@ import { GET_ME_QUERY } from "@/lib/gqlQueries";
 import { print } from "graphql";
 import { OnboardingLayout } from "@/components/profile/onboarding/OnboardingLayout";
 import { SageChat } from "@/components/chat/SageChat";
+import { SolanaProviders } from "@/components/relive/SolanaProviders";
 import { SessionExpiryWatcher } from "@/components/auth/SessionExpiryWatcher";
 
 export default async function HomeLayout({
@@ -51,10 +52,10 @@ export default async function HomeLayout({
   // we show ONLY the onboarding, hiding the Sidebar and children.
   if ("profileCompleted" in user && user.profileCompleted === false) {
     return (
-      <>
+      <SolanaProviders>
         <OnboardingLayout initialUser={user} />
         <SessionExpiryWatcher expiryTime={expiryTimeStr} />
-      </>
+      </SolanaProviders>
     );
   }
 
@@ -68,7 +69,9 @@ export default async function HomeLayout({
             <SessionWarning description={sessionWarning} />
           </div>
         )}
-        {children}
+        <SolanaProviders>
+          {children}
+        </SolanaProviders>
         <SageChat user={user} /> {/* <--- SAGE LIVES HERE */}
         <SessionExpiryWatcher expiryTime={expiryTimeStr} />
       </main>

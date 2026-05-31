@@ -2,11 +2,10 @@ import { Module } from '@nestjs/common';
 import { UserService } from './user.service';
 import { UserResolver } from './user.resolver';
 import { UserLoader } from './user.loader';
-import { PrismaService } from 'src/prisma/prisma.service';
+import { PrismaModule } from '../prisma/prisma.module'; // Fix #2: use relative path not 'src/'
 import { JwtModule } from '@nestjs/jwt';
-import { MailerModule } from '@nestjs-modules/mailer';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { UserController } from './user.controller'; // Import the controller
+import { UserController } from './user.controller';
 import { MulterModule } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
@@ -14,6 +13,7 @@ import { extname } from 'path';
 @Module({
   imports: [
     ConfigModule,
+    PrismaModule, // Fix #2: import PrismaModule instead of providing PrismaService directly
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -24,8 +24,7 @@ import { extname } from 'path';
         },
       }),
     }),
-    MailerModule,
-    // Configure Multer for local storage
+    // Fix #7: Remove redundant bare MailerModule — already configured globally in AppModule
     MulterModule.register({
       storage: diskStorage({
         destination: './uploads/avatars',
@@ -37,7 +36,7 @@ import { extname } from 'path';
       }),
     }),
   ],
-  controllers: [UserController], // Register the controller here
-  providers: [UserResolver, UserService, PrismaService, UserLoader],
+  controllers: [UserController],
+  providers: [UserResolver, UserService, UserLoader], // Fix #2: PrismaService removed, PrismaModule provides it
 })
 export class UserModule {}

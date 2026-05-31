@@ -82,23 +82,7 @@ export async function getMyFavoriteTrainers(): Promise<FavoriteTrainerRecord[]> 
   }));
 }
 
-/**
- * Returns the set of trainerProfileIds the current user has favorited.
- * Lightweight — used to pre-populate heart button state.
- */
-export async function getMyFavoriteTrainerIds(): Promise<Set<number>> {
-  const session = await getSession();
-  if (!session?.user?.id) return new Set();
 
-  const userId = Number(session.user.id);
-
-  const rows = await prisma.favoriteTrainer.findMany({
-    where: { userId },
-    select: { trainerProfileId: true },
-  });
-
-  return new Set(rows.map((r) => r.trainerProfileId));
-}
 
 // ── Mutations ─────────────────────────────────────────────────────────────────
 

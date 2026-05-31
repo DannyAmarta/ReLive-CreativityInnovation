@@ -421,25 +421,7 @@ export const LOG_WORKOUT_SET_MUTATION = gql`
     }
 `
 
-export const GET_SET_PERFORMANCE_ANALYTICS_QUERY = gql`
-    query GetSetPerformanceAnalytics($exerciseId: String!, $days: Int!) {
-        setPerformanceAnalytics(exerciseId: $exerciseId, days: $days) {
-            exerciseId
-            exerciseName
-            periodDays
-            emaOneRepMaxKg
-            baselineAverageOneRepMaxKg
-            latestLoggedOneRepMaxKg
-            latestCleanOneRepMaxKg
-            recentRirTrend
-            latestSessionFlagged
-            performanceDropRatio
-            contextSummary
-            sampleSize
-            isColdStart
-        }
-    }
-`
+
 
 export const GENERATE_WORKOUT_RECOMMENDATION_MUTATION = gql`
     mutation GenerateWorkoutRecommendation($input: GeneratePlanDto!) {
@@ -991,6 +973,7 @@ export const REQUEST_ACCOUNT_DELETION_CODE_MUTATION = gql`
     }
 `
 
+
 export const CONFIRM_ACCOUNT_DELETION_MUTATION = gql`
     mutation ConfirmAccountDeletion($verifyToken: String!, $code: String!) {
         confirmAccountDeletion(verifyToken: $verifyToken, code: $code) {
@@ -999,3 +982,106 @@ export const CONFIRM_ACCOUNT_DELETION_MUTATION = gql`
         }
     }
 `
+
+// ─── Blockchain Escrow Transactions ───────────────────────────────────────────
+
+export const REQUEST_BOOKING_DEPOSIT_MUTATION = gql`
+    mutation RequestBookingDeposit($bookingId: Int!, $clientWallet: String) {
+        requestBookingDeposit(bookingId: $bookingId, clientWallet: $clientWallet) {
+            serializedTx
+        }
+    }
+`;
+
+export const REQUEST_RELEASE_MUTATION = gql`
+    mutation RequestRelease($bookingId: Int!) {
+        requestRelease(bookingId: $bookingId) {
+            serializedTx
+        }
+    }
+`;
+
+export const REQUEST_REFUND_MUTATION = gql`
+    mutation RequestRefund($bookingId: Int!) {
+        requestRefund(bookingId: $bookingId) {
+            serializedTx
+        }
+    }
+`;
+
+// ─── Food Persistence (DB-backed) ─────────────────────────────────────────────
+
+export const MY_FAVORITE_FOODS_QUERY = gql`
+    query MyFavoriteFoods {
+        myFavoriteFoods {
+            id
+            userId
+            foodId
+            foodName
+            brand
+            source
+            createdAt
+        }
+    }
+`;
+
+export const MY_MEAL_ITEMS_QUERY = gql`
+    query MyMealItems {
+        myMealItems {
+            id
+            userId
+            foodId
+            foodName
+            brand
+            source
+            servingSize
+            nutrientsJson
+            addedAt
+            updatedAt
+        }
+    }
+`;
+
+export const TOGGLE_FAVORITE_FOOD_MUTATION = gql`
+    mutation ToggleFavoriteFood($input: ToggleFavoriteFoodInput!) {
+        toggleFavoriteFood(input: $input) {
+            id
+            userId
+            foodId
+            foodName
+            brand
+            source
+            createdAt
+        }
+    }
+`;
+
+export const UPSERT_MEAL_ITEM_MUTATION = gql`
+    mutation UpsertMealItem($input: UpsertMealItemInput!) {
+        upsertMealItem(input: $input) {
+            id
+            userId
+            foodId
+            foodName
+            brand
+            source
+            servingSize
+            nutrientsJson
+            addedAt
+            updatedAt
+        }
+    }
+`;
+
+export const REMOVE_MEAL_ITEM_MUTATION = gql`
+    mutation RemoveMealItem($id: Int!) {
+        removeMealItem(id: $id)
+    }
+`;
+
+export const CLEAR_MEAL_ITEMS_MUTATION = gql`
+    mutation ClearMealItems {
+        clearMealItems
+    }
+`;
+

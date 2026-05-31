@@ -160,9 +160,40 @@ export class UserService {
     });
   }
 
+  async verifyCaptcha(token: string): Promise<boolean> {
+    const secret = this.configService.get<string>('RECAPTCHA_SECRET_KEY');
+    if (!secret || secret === 'disabled') {
+      return true;
+    }
+
+    try {
+      const response = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `secret=${encodeURIComponent(secret)}&response=${encodeURIComponent(token)}`,
+      });
+      const data = await response.json() as { success: boolean };
+      return !!data?.success;
+    } catch {
+      return false;
+    }
+  }
+
   // This function handles registration without creating the database user immediately.
   // It is used by the frontend register form so unverified emails do not become active accounts yet.
   async register(dto: CreateUserInput) {
+    if (dto.captchaToken) {
+      const isCaptchaValid = await this.verifyCaptcha(dto.captchaToken);
+      if (!isCaptchaValid) {
+        throw new BadRequestException('CAPTCHA verification failed. Please try again.');
+      }
+    } else {
+      const secret = this.configService.get<string>('RECAPTCHA_SECRET_KEY');
+      if (secret && secret !== 'disabled') {
+        throw new BadRequestException('CAPTCHA token is required.');
+      }
+    }
+
     const existingUser = await this.prisma.user.findUnique({
       where: { email: dto.email },
     });

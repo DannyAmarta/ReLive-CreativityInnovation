@@ -12,7 +12,8 @@ import { MessagingService } from "./messaging.service";
 import { jwtVerify } from "jose";
 
 @WebSocketGateway({
-  cors: { origin: "http://localhost:3000", credentials: true },
+  // Fix #3: Use env var so production domain is not blocked
+  cors: { origin: process.env.FRONTEND_URL ?? 'http://localhost:3000', credentials: true },
 })
 export class MessagingGateway
   implements OnGatewayConnection, OnGatewayDisconnect
@@ -70,7 +71,8 @@ export class MessagingGateway
       );
       client.emit("initial_statuses", statuses);
     } catch (error) {
-      console.error("WebSocket Auth Error:", error.message);
+      // Fix #4: error is unknown — safely access message
+      console.error("WebSocket Auth Error:", (error as Error).message ?? error);
       client.disconnect();
     }
   }

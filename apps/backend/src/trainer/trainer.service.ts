@@ -29,14 +29,18 @@ import { TrainerAvailabilityService } from './trainer-availability.service';
 // the status to ACTIVE. Manual approval or decline from PENDING is bypassed in the live flow
 // due to security guards enforcing successful payment completion prior to status transition.
 const ALLOWED_TRANSITIONS: Record<Role, Partial<Record<BookingStatus, BookingStatus[]>>> = {
+  // Trainer can mark ACTIVE sessions as done (PENDING_RELEASE), NOT COMPLETED directly.
+  // This prevents trainers from pocketing fiat funds before actually delivering the session.
   [Role.TRAINER]: {
     [BookingStatus.PENDING]: [BookingStatus.ACTIVE, BookingStatus.CANCELLED],
-    [BookingStatus.ACTIVE]: [BookingStatus.COMPLETED, BookingStatus.DISPUTED],
+    [BookingStatus.ACTIVE]: [BookingStatus.PENDING_RELEASE, BookingStatus.DISPUTED],
     [BookingStatus.DISPUTED]: [BookingStatus.DISPUTED],
   },
+  // Client controls the final COMPLETED release (or can dispute).
   [Role.USER]: {
     [BookingStatus.PENDING]: [BookingStatus.CANCELLED],
-    [BookingStatus.ACTIVE]: [BookingStatus.DISPUTED],
+    [BookingStatus.ACTIVE]: [BookingStatus.COMPLETED, BookingStatus.DISPUTED],
+    [BookingStatus.PENDING_RELEASE]: [BookingStatus.COMPLETED, BookingStatus.DISPUTED],
     [BookingStatus.DISPUTED]: [BookingStatus.DISPUTED],
   },
   [Role.ADMIN]: {
@@ -267,9 +271,7 @@ export class TrainerService {
     return service;
   }
 
-  async getTrainerServices(trainerId: number) {
-    return this.prisma.trainerService.findMany({ where: { trainerId } });
-  }
+
 
   async updateTrainerService(userId: number, input: UpdateTrainerServiceInput) {
     const profile = await this.prisma.trainerProfile.findUnique({ where: { userId } });
@@ -539,17 +541,43 @@ export class TrainerService {
       });
     }
 
-    const updated = await this.prisma.booking.update({
-      where: { id: input.bookingId },
-      data: {
-        status: input.status,
-        disputeReason: finalDisputeReason,
-        resolvedBy: user.role === Role.ADMIN ? userId : undefined,
-      },
-      include: { client: true, service: true, trainer: { include: { user: true } } },
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const up = await tx.booking.update({
+        where: { id: input.bookingId },
+        data: {
+          status: input.status,
+          disputeReason: finalDisputeReason,
+          resolvedBy: user.role === Role.ADMIN ? userId : undefined,
+        },
+        include: { client: true, service: true, trainer: { include: { user: true } } },
+      });
+
+      // Write Outbox events for auto-release enqueuing and cancellations
+      if (input.status === BookingStatus.PENDING_RELEASE && up.paymentType === 'FIAT') {
+        await tx.outboxEvent.create({
+          data: {
+            eventType: 'enqueue-auto-release',
+            payload: { bookingId: input.bookingId },
+          },
+        });
+      }
+
+      if (
+        (input.status === BookingStatus.COMPLETED || input.status === BookingStatus.DISPUTED || input.status === BookingStatus.CANCELLED) &&
+        booking.releaseJobId
+      ) {
+        await tx.outboxEvent.create({
+          data: {
+            eventType: 'cancel-auto-release',
+            payload: { bookingId: input.bookingId, releaseJobId: booking.releaseJobId },
+          },
+        });
+      }
+
+      return up;
     });
 
-    // ─── FIX #2 & #7: Fiat payment hooks on status transitions ────────────
+    // ─── Fiat payment hooks on status transitions ────────────────────────
     try {
       if (input.status === BookingStatus.COMPLETED) {
         await this.fiatPaymentService.creditTrainerOnCompletion(input.bookingId);
@@ -574,6 +602,14 @@ export class TrainerService {
           userId: clientId,
           title: '✅ Booking Accepted',
           body: `Your booking for "${serviceName}" has been accepted. Your session is now active!`,
+          link: '/client/dashboard',
+        });
+      } else if (input.status === BookingStatus.PENDING_RELEASE) {
+        // Trainer submitted work → notify client to approve payment release
+        await this.notificationService.create({
+          userId: clientId,
+          title: '💳 Payment Release Requested',
+          body: `Your trainer has marked "${serviceName}" as complete and requested payment release. Please review and approve from your Bookings page. Funds will be auto-released in 3 days if no action is taken.`,
           link: '/client/dashboard',
         });
       } else if (input.status === BookingStatus.COMPLETED) {

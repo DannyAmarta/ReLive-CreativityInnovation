@@ -9,6 +9,9 @@ const PUBLIC_PATHS = [
   "/auth/reset-password",
   "/auth/logout",
   "/",           // landing page
+  "/home5",
+  "/home6",
+  "/home7",
 ];
 
 // Static-asset and API prefixes to skip entirely

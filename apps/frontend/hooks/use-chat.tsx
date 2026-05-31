@@ -34,7 +34,13 @@ export function useChat(accessToken: string, currentUserId?: number, currentConv
   >({});
   const [hasMore, setHasMore] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [socket, setSocket] = useState<Socket | null>(null);
   const socketRef = useRef<Socket | null>(null);
+  // Always keep a ref to the latest convId so the connect handler can re-join
+  const currentConvIdRef = useRef<number | undefined>(currentConversationId);
+  useEffect(() => {
+    currentConvIdRef.current = currentConversationId;
+  }, [currentConversationId]);
 
   // Reset pagination state when conversation changes
   useEffect(() => {
@@ -46,16 +52,27 @@ export function useChat(accessToken: string, currentUserId?: number, currentConv
   useEffect(() => {
     if (!accessToken) return;
 
-    socketRef.current = io(BACKEND_URL, {
+    const socketInstance = io(BACKEND_URL, {
       auth: { token: accessToken },
       transports: ["websocket"],
     });
 
-    socketRef.current.on("connect", () => setIsConnected(true));
-    socketRef.current.on("disconnect", () => setIsConnected(false));
+    socketRef.current = socketInstance;
+    setSocket(socketInstance);
+
+    socketInstance.on("connect", () => {
+      setIsConnected(true);
+      // Re-join the active conversation room on every (re)connect.
+      // This fixes the race where join_conversation was emitted before
+      // the socket handshake completed and was silently dropped by the server.
+      if (currentConvIdRef.current) {
+        socketInstance.emit("join_conversation", currentConvIdRef.current);
+      }
+    });
+    socketInstance.on("disconnect", () => setIsConnected(false));
 
     // Listen for initial active statuses mapping
-    socketRef.current.on(
+    socketInstance.on(
       "initial_statuses",
       (statuses: { userId: number; status: "online" | "away" }) => {
         if (Array.isArray(statuses)) {
@@ -69,7 +86,7 @@ export function useChat(accessToken: string, currentUserId?: number, currentConv
     );
 
     // Listen for real-time presence updates
-    socketRef.current.on("user_status", ({ userId, status }) => {
+    socketInstance.on("user_status", ({ userId, status }) => {
       setOnlineStatuses((prev) => ({
         ...prev,
         [userId]: status,
@@ -77,15 +94,21 @@ export function useChat(accessToken: string, currentUserId?: number, currentConv
     });
 
     return () => {
-      socketRef.current?.disconnect();
+      socketInstance.disconnect();
+      socketRef.current = null;
+      setSocket(null);
     };
   }, [accessToken]);
 
   // Join specific conversation room when selected
   useEffect(() => {
-    if (!socketRef.current || !currentConversationId) return;
+    if (!currentConversationId || !socket) return;
 
-    socketRef.current.emit("join_conversation", currentConversationId);
+    // If socket is already connected, join immediately.
+    // If not yet connected, the connect handler above will join via currentConvIdRef.
+    if (socket.connected) {
+      socket.emit("join_conversation", currentConversationId);
+    }
 
     // Setup conversation-specific listeners
     const handleNewMessage = (msg: ChatMessage) => {
@@ -94,7 +117,7 @@ export function useChat(accessToken: string, currentUserId?: number, currentConv
         setMessages((prev) => [msg, ...prev]);
         // Send read receipt if we are currently looking at this conversation and the message is from the partner
         if (currentUserId && Number(msg.senderId) !== Number(currentUserId)) {
-          socketRef.current?.emit("read_messages", {
+          socket.emit("read_messages", {
             conversationId: currentConversationId,
           });
         }
@@ -134,16 +157,16 @@ export function useChat(accessToken: string, currentUserId?: number, currentConv
       }
     };
 
-    socketRef.current.on("new_message", handleNewMessage);
-    socketRef.current.on("typing", handleTyping);
-    socketRef.current.on("messages_read", handleMessagesRead);
+    socket.on("new_message", handleNewMessage);
+    socket.on("typing", handleTyping);
+    socket.on("messages_read", handleMessagesRead);
 
     return () => {
-      socketRef.current?.off("new_message", handleNewMessage);
-      socketRef.current?.off("typing", handleTyping);
-      socketRef.current?.off("messages_read", handleMessagesRead);
+      socket.off("new_message", handleNewMessage);
+      socket.off("typing", handleTyping);
+      socket.off("messages_read", handleMessagesRead);
     };
-  }, [currentConversationId]);
+  }, [currentConversationId, socket, currentUserId]);
 
   const sendMessage = useCallback(
     (content: string, type: "TEXT" | "IMAGE" | "FILE" = "TEXT", imageUrl?: string, fileUrl?: string) => {

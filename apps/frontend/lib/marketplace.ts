@@ -190,23 +190,7 @@ export function getTrainerLowestIdr(trainer: TrainerProfileRecord) {
   return Math.min(...idrValues);
 }
 
-export function sumCompletedFiatEarnings(bookings: BookingRecord[]) {
-  return bookings
-    .filter((booking) => booking.status === "COMPLETED")
-    .reduce((total, booking) => total + (booking.servicePriceIdr ?? booking.fiatAmount ?? 0), 0);
-}
 
-export function sumCompletedCryptoVolume(bookings: BookingRecord[]) {
-  return bookings
-    .filter((booking) => booking.status === "COMPLETED")
-    .reduce((total, booking) => total + lamportsToTokenUnits(booking.service?.priceInLamports), 0);
-}
-
-export function getUpcomingBookings(bookings: BookingRecord[], limit = 5) {
-  return [...bookings]
-    .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())
-    .slice(0, limit);
-}
 
 // ── Client Wallet helpers ────────────────────────────────────────────────────
 

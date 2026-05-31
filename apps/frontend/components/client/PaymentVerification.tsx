@@ -25,9 +25,10 @@ export function PaymentVerification({ bookingId }: PaymentVerificationProps) {
 
         if (res.status === "ACTIVE" && res.conversationId) {
           setStatus("active");
-          // Wait 1.5 seconds to show success checkmark before redirecting
+          // Hard navigate so the layout re-fetches notifications from DB,
+          // picking up the "Booking Accepted" notification the backend just created.
           setTimeout(() => {
-            router.push(`/client/messages?convId=${res.conversationId}`);
+            window.location.href = `/client/messages?convId=${res.conversationId}`;
           }, 1500);
         } else if (res.status === "PENDING") {
           setStatus("pending_webhook");

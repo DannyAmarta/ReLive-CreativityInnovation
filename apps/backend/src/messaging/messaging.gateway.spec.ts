@@ -39,7 +39,14 @@ describe('MessagingGateway', () => {
       content: 'Hello coach',
     });
 
-    expect(messagingService.saveMessage).toHaveBeenCalledWith(77, 1, 'Hello coach');
+    expect(messagingService.saveMessage).toHaveBeenCalledWith(
+      77,
+      1,
+      'Hello coach',
+      'TEXT',
+      undefined,
+      undefined,
+    );
     expect(gateway.server.to).toHaveBeenNthCalledWith(1, 'conv:77');
     expect(gateway.server.to).toHaveBeenNthCalledWith(2, 'sock-a');
     expect(gateway.server.to).toHaveBeenNthCalledWith(3, 'sock-b');

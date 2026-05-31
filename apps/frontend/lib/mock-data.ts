@@ -268,9 +268,6 @@ export const payoutSettings = {
 };
 
 // Formatters
-export const fmtIdr = (n: number) => `IDR ${n.toLocaleString("id-ID")}`;
-export const fmtUsdc = (n: number) => `${n.toFixed(2)} USDC`;
-export const fmtUsd = (n: number) => `$${n.toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
 export const fmtDateTime = (iso: string) => {
   const d = new Date(iso);
   return d.toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });

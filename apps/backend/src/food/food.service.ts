@@ -7,6 +7,7 @@ import { FoodSearchResponse } from './entities/food-search-response.entity';
 import { OpenFoodFactsConnector } from './providers/open-food-facts.connector';
 import { scaleNutrientsForServing } from './providers/food-mapper';
 import { UsdaFoodConnector } from './providers/usda-food.connector';
+import { RedisService } from '../core/redis.service';
 
 type CachedFoodRecord = {
   source: string;
@@ -43,13 +44,12 @@ type FoodCacheModel = {
 @Injectable()
 export class FoodService {
   private readonly logger = new Logger(FoodService.name);
-  private readonly responseCache = new Map<string, ResponseCacheEntry>();
-  private readonly responseCacheTtlMs = 60_000;
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly usdaFoodConnector: UsdaFoodConnector,
     private readonly openFoodFactsConnector: OpenFoodFactsConnector,
+    private readonly redisService: RedisService,
   ) {}
 
   // Main entry point for both REST and GraphQL food search.
@@ -70,11 +70,14 @@ export class FoodService {
     const cacheKey = 
     `${this.normalizeQuery(normalizedArgs.query)}:${normalizedArgs.page}:${normalizedArgs.pageSize}:${normalizedArgs.servingSize}`;
 
-    // Reads the short-lived response cache before we touch the database or providers.
-    // Used only by searchFoods.
-    const cached = this.responseCache.get(cacheKey);
-    if (cached && cached.expiresAt > Date.now()) {
-      return cached.value;
+    // Check Redis search cache first
+    try {
+      const cached = await this.redisService.get(`food:search:${cacheKey}`);
+      if (cached) {
+        return JSON.parse(cached) as FoodSearchResponse;
+      }
+    } catch (err: any) {
+      this.logger.warn(`Redis search cache lookup failed: ${err.message}`);
     }
 
     //mulai database check
@@ -151,13 +154,11 @@ export class FoodService {
     return response;
   }
   
-  // Stores a completed response in the short-lived in-memory cache.
+  // Stores a completed response in the Redis cache with a 24-hour TTL.
   // Used by searchFoods after each successful search path.
   private storeResponseCache(cacheKey: string, value: FoodSearchResponse) {
-    this.responseCache.set(cacheKey, {
-      expiresAt: Date.now() + this.responseCacheTtlMs,
-      value,
-    });
+    this.redisService.set(`food:search:${cacheKey}`, JSON.stringify(value), 86400)
+      .catch((err) => this.logger.warn(`Failed to write food search to Redis: ${err.message}`));
   }
 
   // Looks up normalized food records from the local database cache.
@@ -427,5 +428,93 @@ export class FoodService {
     }
 
     return 'NONE';
+  }
+
+  // ─── User Favorite Foods ─────────────────────────────────────────────────
+
+  async getFavoriteFoods(userId: number) {
+    return this.prisma.userFavoriteFood.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  // Toggles: creates if not present, deletes if already favorited
+  async toggleFavoriteFood(userId: number, input: { foodId: string; foodName: string; brand?: string; source: string }) {
+    const existing = await this.prisma.userFavoriteFood.findFirst({
+      where: { userId, foodId: input.foodId, source: input.source as any },
+    });
+
+    if (existing) {
+      await this.prisma.userFavoriteFood.delete({ where: { id: existing.id } });
+      return null; // null signals removal to the frontend
+    }
+
+    return this.prisma.userFavoriteFood.create({
+      data: {
+        userId,
+        foodId: input.foodId,
+        foodName: input.foodName,
+        brand: input.brand ?? null,
+        source: input.source as any,
+      },
+    });
+  }
+
+  // ─── User Meal Items ──────────────────────────────────────────────────────
+
+  async getMealItems(userId: number) {
+    return this.prisma.userMealItem.findMany({
+      where: { userId },
+      orderBy: { addedAt: 'asc' },
+    });
+  }
+
+  async upsertMealItem(
+    userId: number,
+    input: {
+      foodId: string;
+      foodName: string;
+      brand?: string;
+      source: string;
+      servingSize: number;
+      nutrientsJson: Record<string, number>;
+    },
+  ) {
+    // Upsert by userId+foodId+source — ensures one row per food per user in the meal
+    const existing = await this.prisma.userMealItem.findFirst({
+      where: { userId, foodId: input.foodId, source: input.source as any },
+    });
+
+    if (existing) {
+      return this.prisma.userMealItem.update({
+        where: { id: existing.id },
+        data: { servingSize: input.servingSize, nutrientsJson: input.nutrientsJson },
+      });
+    }
+
+    return this.prisma.userMealItem.create({
+      data: {
+        userId,
+        foodId: input.foodId,
+        foodName: input.foodName,
+        brand: input.brand ?? null,
+        source: input.source as any,
+        servingSize: input.servingSize,
+        nutrientsJson: input.nutrientsJson,
+      },
+    });
+  }
+
+  async removeMealItem(userId: number, id: number): Promise<boolean> {
+    const item = await this.prisma.userMealItem.findFirst({ where: { id, userId } });
+    if (!item) return false;
+    await this.prisma.userMealItem.delete({ where: { id } });
+    return true;
+  }
+
+  async clearMealItems(userId: number): Promise<boolean> {
+    await this.prisma.userMealItem.deleteMany({ where: { userId } });
+    return true;
   }
 }

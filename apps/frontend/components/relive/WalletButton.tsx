@@ -1,6 +1,8 @@
+"use client";
+
 import { useState } from "react";
 import { Wallet, ChevronDown, LogOut } from "lucide-react";
-import { actions, useStore } from "@/lib/store";
+import { useWallet } from "@solana/wallet-adapter-react";
 import { WalletConnectionModal } from "./WalletConnectionModal";
 import {
   Popover,
@@ -13,10 +15,12 @@ export const truncateAddress = (a?: string) =>
   !a ? "" : `${a.slice(0, 4)}…${a.slice(-4)}`;
 
 export function WalletButton() {
-  const wallet = useStore((s) => s.wallet);
+  const { connected, publicKey, disconnect, wallet } = useWallet();
   const [open, setOpen] = useState(false);
 
-  if (!wallet.connected) {
+  const address = publicKey?.toBase58();
+
+  if (!connected || !address) {
     return (
       <>
         <button
@@ -36,28 +40,22 @@ export function WalletButton() {
       <PopoverTrigger asChild>
         <button className="inline-flex items-center gap-2 rounded-full border border-[rgba(74,93,62,0.18)] bg-[rgba(255,252,246,0.9)] px-3 py-2 text-sm font-medium text-primary-deep transition-colors hover:bg-[rgba(234,240,225,0.85)]">
           <span className="h-2 w-2 rounded-full bg-[#4a5d3e]" />
-          {truncateAddress(wallet.address)}
+          {truncateAddress(address)}
           <ChevronDown className="h-3.5 w-3.5" />
         </button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-64">
         <div className="mb-3">
           <p className="text-xs uppercase tracking-wide text-muted-foreground">
-            {wallet.provider}
+            {wallet?.adapter.name ?? "Wallet"}
           </p>
           <p className="font-mono text-sm text-foreground">
-            {truncateAddress(wallet.address)}
-          </p>
-        </div>
-        <div className="rounded-xl bg-muted px-3 py-2.5">
-          <p className="text-xs text-muted-foreground">USDC balance</p>
-          <p className="font-display text-lg font-bold text-primary">
-            ${wallet.usdcBalance.toFixed(2)}
+            {truncateAddress(address)}
           </p>
         </div>
         <button
           onClick={() => {
-            actions.disconnectWallet();
+            disconnect();
             toast("Wallet disconnected");
           }}
           className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-full border border-border px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted"

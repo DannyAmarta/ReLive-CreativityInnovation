@@ -6,6 +6,7 @@ import { calculateDuitkuFee, generateInquirySignature, generateCallbackSignature
 import { DuitkuCreateInvoiceResponse, DuitkuDisbursementResponse } from './fiat-payment.types';
 import { DuitkuWebhookPayload } from './dto/duitku-webhook-payload.dto';
 import { CurrentUserPayload } from '../auth/decorators/current-user.decorator';
+import { NotificationService } from '../core/notification.service';
 
 @Injectable()
 export class FiatPaymentService {
@@ -20,6 +21,7 @@ export class FiatPaymentService {
   constructor(
     private prisma: PrismaService,
     private configService: ConfigService,
+    private notificationService: NotificationService,
   ) {
     this.sandboxMode = this.configService.get<string>('DUITKU_SANDBOX_MODE') === 'true';
     // Duitku v2 sandbox base URL — append /inquiry for invoice creation, /disbursement for withdrawals
@@ -185,6 +187,35 @@ export class FiatPaymentService {
         });
       });
       this.logger.log(`Booking ${paymentTx.bookingId} activated via webhook`);
+
+      // Create notifications
+      try {
+        const booking = await this.prisma.booking.findUnique({
+          where: { id: paymentTx.bookingId },
+          include: { client: true, service: true, trainer: { include: { user: true } } },
+        });
+        if (booking) {
+          const serviceName = booking.service.title;
+          const clientId = booking.clientId;
+          const trainerUserId = booking.trainer.user.id;
+
+          await this.notificationService.create({
+            userId: clientId,
+            title: '✅ Booking Accepted',
+            body: `Your booking for "${serviceName}" has been accepted. Your session is now active!`,
+            link: '/client/dashboard',
+          });
+
+          await this.notificationService.create({
+            userId: trainerUserId,
+            title: '📅 New Active Booking',
+            body: `A client has paid for your service "${serviceName}". The session is now active!`,
+            link: '/trainer/bookings',
+          });
+        }
+      } catch (err) {
+        this.logger.error(`Failed to create notifications for booking ${paymentTx.bookingId}: ${(err as Error).message}`);
+      }
     } else {
       // Failure
       await this.prisma.paymentTransaction.update({
@@ -195,6 +226,36 @@ export class FiatPaymentService {
         },
       });
       this.logger.warn(`Payment failed for booking ${paymentTx.bookingId}: ${resultCode}`);
+
+      // Create failure notification for the client
+      try {
+        const booking = await this.prisma.booking.findUnique({
+          where: { id: paymentTx.bookingId },
+          include: { client: true, service: true },
+        });
+        if (booking) {
+          const serviceName = booking.service.title;
+          const clientId = booking.clientId;
+
+          if (resultCode === '01') {
+            await this.notificationService.create({
+              userId: clientId,
+              title: '❌ Payment Cancelled',
+              body: `Your payment session for "${serviceName}" was cancelled.`,
+              link: '/client/dashboard',
+            });
+          } else {
+            await this.notificationService.create({
+              userId: clientId,
+              title: '❌ Payment Failed',
+              body: `Your payment for "${serviceName}" failed (Result Code: ${resultCode}).`,
+              link: '/client/dashboard',
+            });
+          }
+        }
+      } catch (err) {
+        this.logger.error(`Failed to create failure notification for booking ${paymentTx.bookingId}: ${(err as Error).message}`);
+      }
     }
     return { received: true };
   }
@@ -349,14 +410,15 @@ export class FiatPaymentService {
     const successTx = booking.paymentTransactions.find(tx => tx.status === 'SUCCESS');
 
     if (!this.sandboxMode && successTx) {
-      // ── Production: Call Duitku refund API ──
-      // TODO: Implement actual Duitku refund endpoint call when production
-      // credentials are available. The refund body would include:
-      //   merchantCode, reference (gatewayTxId), amount, bankCode, etc.
-      // For now, log a warning so this is not silently skipped in production.
-      this.logger.warn(
-        `PRODUCTION REFUND NOT IMPLEMENTED: Booking ${bookingId} refund of ${booking.fiatAmount} IDR ` +
-        `requires manual processing via Duitku dashboard (ref: ${successTx.gatewayTxId})`,
+      // Fix #9: In production, throw rather than silently proceeding.
+      // Continuing would mark the DB as REFUNDED without actually returning money to the customer.
+      // TODO: Call Duitku refund API here when production credentials are available.
+      // The refund body should include: merchantCode, reference (gatewayTxId), amount, bankCode, etc.
+      throw new BadRequestException(
+        `Production refund not yet implemented. ` +
+        `Please process this refund manually via the Duitku dashboard ` +
+        `(ref: ${successTx.gatewayTxId}, amount: ${booking.fiatAmount} IDR) ` +
+        `before cancelling this booking.`,
       );
     }
 

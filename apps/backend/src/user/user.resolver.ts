@@ -1,4 +1,5 @@
 import { Resolver, Mutation, Args, Query, Context } from '@nestjs/graphql';
+import { Throttle } from '@nestjs/throttler';
 
 import { User } from './entities/user.entity';
 import { CreateUserInput } from './dto/create-user.input';
@@ -22,6 +23,7 @@ export class UserResolver {
 
   // This mutation starts account registration by sending an activation email.
   // It is used by the frontend register form instead of creating an active user immediately.
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Mutation(() => RegisterResponse)
   async register(@Args('createUserInput') createUserInput: CreateUserInput) {
     return this.userService.register(createUserInput);

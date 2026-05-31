@@ -3,12 +3,14 @@ import { PrismaService } from '../prisma/prisma.service';
 import { FoodService } from './food.service';
 import { OpenFoodFactsConnector } from './providers/open-food-facts.connector';
 import { UsdaFoodConnector } from './providers/usda-food.connector';
+import { RedisService } from '../core/redis.service';
 
 describe('FoodService', () => {
   let service: FoodService;
   let prismaService: { foodCache: { findMany: jest.Mock; upsert: jest.Mock } };
   let usdaConnector: { searchFoods: jest.Mock };
   let openFoodFactsConnector: { searchFoods: jest.Mock };
+  let redisService: { get: jest.Mock; set: jest.Mock };
 
   beforeEach(async () => {
     prismaService = {
@@ -19,6 +21,10 @@ describe('FoodService', () => {
     };
     usdaConnector = { searchFoods: jest.fn() };
     openFoodFactsConnector = { searchFoods: jest.fn() };
+    redisService = {
+      get: jest.fn().mockResolvedValue(null),
+      set: jest.fn().mockResolvedValue(undefined),
+    };
 
     const moduleRef = await Test.createTestingModule({
       providers: [
@@ -34,6 +40,10 @@ describe('FoodService', () => {
         {
           provide: OpenFoodFactsConnector,
           useValue: openFoodFactsConnector,
+        },
+        {
+          provide: RedisService,
+          useValue: redisService,
         },
       ],
     }).compile();

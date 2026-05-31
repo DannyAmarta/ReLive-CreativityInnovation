@@ -46,6 +46,7 @@ export function NotificationBell({
   function handleClickNotification(id: number) {
     // Optimistically mark as read locally
     setItems((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
+    if (id < 0) return; // Skip API call for client-side dynamic notifications
     startTransition(async () => {
       await markNotificationAsReadAction(id);
     });

@@ -84,7 +84,7 @@ export class BlockchainTransactionService {
     mint: string;
   }): Promise<{ serializedTx: string; escrowAddress: string }> {
     const { connection, programId } = this.getSolanaConfig();
-    const platformAuthority = this.getPlatformAuthority();
+    const platformAuthority = await this.getPlatformAuthority();
     const trainer = new PublicKey(params.trainerWallet);
     const client = new PublicKey(params.clientWallet);
     const mint = new PublicKey(params.mint);
@@ -129,7 +129,7 @@ export class BlockchainTransactionService {
     mint: string;
   }): Promise<{ serializedTx: string; escrowAddress: string }> {
     const { connection, programId } = this.getSolanaConfig();
-    const platformAuthority = this.getPlatformAuthority();
+    const platformAuthority = await this.getPlatformAuthority();
     const client = new PublicKey(params.clientWallet);
     const mint = new PublicKey(params.mint);
     const bookingId = this.toU64(params.bookingId, 'bookingId');
@@ -186,10 +186,12 @@ export class BlockchainTransactionService {
     };
   }
 
-  private getPlatformAuthority(): Keypair {
-    const rawSecret = this.configService.get<string>('PLATFORM_AUTHORITY_SECRET');
-    if (!rawSecret) {
-      throw new BadRequestException('PLATFORM_AUTHORITY_SECRET must be configured');
+  private async getPlatformAuthority(): Promise<Keypair> {
+    let rawSecret: string;
+    try {
+      rawSecret = await this.fetchPlatformSecret();
+    } catch (err: any) {
+      throw new BadRequestException(err.message);
     }
 
     const trimmed = rawSecret.trim();
@@ -205,15 +207,41 @@ export class BlockchainTransactionService {
       }
     } catch {
       throw new BadRequestException(
-        'PLATFORM_AUTHORITY_SECRET must be a JSON array, comma-separated byte list, or base64 secret key',
+        'PLATFORM_AUTHORITY_SECRET validation failed. Key format is invalid.',
       );
     }
 
     if (bytes.length !== 64 || bytes.some((value) => !Number.isInteger(value) || value < 0 || value > 255)) {
-      throw new BadRequestException('PLATFORM_AUTHORITY_SECRET must decode to a 64-byte Solana keypair');
+      throw new BadRequestException('PLATFORM_AUTHORITY_SECRET validation failed. Invalid byte length or values.');
     }
 
     return Keypair.fromSecretKey(Uint8Array.from(bytes));
+  }
+
+  private async fetchPlatformSecret(): Promise<string> {
+    const providerType = this.configService.get<string>('SECRET_PROVIDER_TYPE') ?? 'LOCAL';
+
+    if (providerType === 'AWS_SECRETS_MANAGER') {
+      try {
+        const { SecretsManagerClient, GetSecretValueCommand } = await import('@aws-sdk/client-secrets-manager');
+        const client = new SecretsManagerClient({ region: this.configService.get<string>('AWS_REGION') ?? 'us-east-1' });
+        const secretId = this.configService.get<string>('AWS_SECRET_ID_PLATFORM_KEY') ?? 'relive/platform-authority-key';
+        
+        const response = await client.send(new GetSecretValueCommand({ SecretId: secretId }));
+        if (response.SecretString) {
+          return response.SecretString;
+        }
+      } catch (err: any) {
+        this.logger.error('Failed to fetch platform authority secret from AWS Secrets Manager');
+        throw new Error('Secured platform authority secret is currently unavailable');
+      }
+    }
+
+    const rawSecret = this.configService.get<string>('PLATFORM_AUTHORITY_SECRET');
+    if (!rawSecret) {
+      throw new Error('Platform authority secret must be configured via environment or secret provider');
+    }
+    return rawSecret;
   }
 
   private deriveEscrowAccounts(programId: PublicKey, bookingId: bigint) {

@@ -101,11 +101,7 @@ export class SetService {
     );
   }
 
-  async syncCatalogIntoDatabase() {
-    for (const exercise of SET_EXERCISE_CATALOG) {
-      await this.upsertExerciseCatalogEntry(exercise);
-    }
-  }
+
 
   private mapLoggedWorkoutSet(
     record: {

@@ -17,5 +17,7 @@ export class CreateUserInput {
 
     @Field({nullable: true})
     avatar?: string;
-    
+
+    @Field({nullable: true})
+    captchaToken?: string;
 }

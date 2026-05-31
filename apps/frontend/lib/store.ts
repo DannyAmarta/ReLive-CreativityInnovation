@@ -59,38 +59,11 @@ export const actions = {
   addBooking(b: Booking) {
     set((s) => ({ ...s, bookings: [b, ...s.bookings] }));
   },
-  setBookingStatus(id: string, status: Booking["status"]) {
-    set((s) => ({
-      ...s,
-      bookings: s.bookings.map((b) => (b.id === id ? { ...b, status } : b)),
-    }));
-  },
-  completeSession(bookingId: string) {
-    const b = state.bookings.find((x) => x.id === bookingId);
-    set((s) => ({
-      ...s,
-      bookings: s.bookings.map((bk) =>
-        bk.id === bookingId ? { ...bk, status: "COMPLETED" } : bk,
-      ),
-      fiatBalance:
-        b && b.paymentType === "FIAT" && b.amountIdr
-          ? s.fiatBalance + Math.round(b.amountIdr * 0.9)
-          : s.fiatBalance,
-    }));
-  },
   addWithdrawal(w: Withdrawal) {
     set((s) => ({
       ...s,
       withdrawals: [w, ...s.withdrawals],
       fiatBalance: s.fiatBalance - w.amountIdr,
-    }));
-  },
-  retryWithdrawal(id: string) {
-    set((s) => ({
-      ...s,
-      withdrawals: s.withdrawals.map((w) =>
-        w.id === id ? { ...w, status: "PENDING", failureReason: undefined } : w,
-      ),
     }));
   },
   connectWallet(provider: WalletProvider) {

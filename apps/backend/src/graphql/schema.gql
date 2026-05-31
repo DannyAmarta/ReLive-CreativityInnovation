@@ -106,6 +106,39 @@ type FoodSearchResponse {
   items: [Food!]!
 }
 
+type UserFavoriteFoodEntity {
+  id: Int!
+  userId: Int!
+  foodId: String!
+  foodName: String!
+  brand: String
+  source: FoodSource!
+  createdAt: DateTime!
+}
+
+enum FoodSource {
+  USDA
+  OFF
+}
+
+type UserMealItemEntity {
+  id: Int!
+  userId: Int!
+  foodId: String!
+  foodName: String!
+  brand: String
+  source: FoodSource!
+  servingSize: Float!
+  nutrientsJson: JSON!
+  addedAt: DateTime!
+  updatedAt: DateTime!
+}
+
+"""
+The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
+"""
+scalar JSON
+
 type Recipe {
   id: String!
   source: String!
@@ -439,9 +472,10 @@ type PartialSignedTx {
 }
 
 type Query {
-  hello: String!
   getMe: User!
   searchFoods(query: String!, page: Int! = 1, pageSize: Int! = 10, servingSize: Int! = 100): FoodSearchResponse!
+  myFavoriteFoods: [UserFavoriteFoodEntity!]!
+  myMealItems: [UserMealItemEntity!]!
   searchRecipes(query: String!, page: Int! = 1, pageSize: Int! = 10): RecipeSearchResponse!
   setExercises: [SetExercise!]!
   calculateSetEstimate(input: CalculateSetInput!): SetCalculationResult!
@@ -485,6 +519,10 @@ type Mutation {
   changeMyRole(role: String!): User!
   requestAccountDeletionCode: RequestAccountDeletionResponse!
   confirmAccountDeletion(verifyToken: String!, code: String!): ConfirmAccountDeletionResponse!
+  toggleFavoriteFood(input: ToggleFavoriteFoodInput!): UserFavoriteFoodEntity
+  upsertMealItem(input: UpsertMealItemInput!): UserMealItemEntity!
+  removeMealItem(id: Int!): Boolean!
+  clearMealItems: Boolean!
   logWorkoutSet(input: LogWorkoutSetInput!): LoggedWorkoutSetPayload!
   generateWorkoutRecommendation(input: GeneratePlanDto!): GeneratedWorkoutPlanEntity!
   analyzeFeatureThreats(input: FeatureAnalysisDto!): FeatureThreatAnalysisEntity!
@@ -506,7 +544,7 @@ type Mutation {
   requestFiatBookingDeposit(input: RequestFiatDepositInput!): FiatDepositResponse!
   requestFiatWithdrawal(input: RequestWithdrawalInput!): WithdrawalRequestEntity!
   adminRefundFiatBooking(bookingId: Float!): Boolean!
-  requestBookingDeposit(bookingId: Int!): PartialSignedTx!
+  requestBookingDeposit(bookingId: Int!, clientWallet: String): PartialSignedTx!
   requestRelease(bookingId: Int!): PartialSignedTx!
   requestRefund(bookingId: Int!): PartialSignedTx!
 }
@@ -536,6 +574,7 @@ input CreateUserInput {
   password: String!
   bio: String
   avatar: String
+  captchaToken: String
 }
 
 input RequestEmailChangeInput {
@@ -552,6 +591,22 @@ input UpdateProfileInput {
   dailyActivity: String
   primaryGoal: String
   vitalityScore: Int
+}
+
+input ToggleFavoriteFoodInput {
+  foodId: String!
+  foodName: String!
+  brand: String
+  source: FoodSource!
+}
+
+input UpsertMealItemInput {
+  foodId: String!
+  foodName: String!
+  brand: String
+  source: FoodSource!
+  servingSize: Float!
+  nutrientsJson: JSON!
 }
 
 input LogWorkoutSetInput {

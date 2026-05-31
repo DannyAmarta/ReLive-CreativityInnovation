@@ -9,6 +9,7 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { GoogleAuthGuard } from './guards/google-auth/google-auth.guard';
 import { AuthService } from './auth.service';
 import type { Response } from 'express';
@@ -53,6 +54,7 @@ export class AuthController {
 
   // This function exchanges the short-lived Google handoff code for the final auth payload.
   // It is used only by the frontend callback route so the session cookie can be created server-side.
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Post('google/exchange')
   async exchangeGoogleCode(@Body('code') code: string) {
     if (!code) {
@@ -64,6 +66,7 @@ export class AuthController {
 
   // This function consumes the email activation token and creates the real user record once.
   // It is used from the activation link sent during registration so duplicate accounts are not created accidentally.
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Get('activate')
   async activate(@Query('token') token: string, @Res() res: Response) {
     if (!token) {

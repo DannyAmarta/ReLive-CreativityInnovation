@@ -34,6 +34,7 @@ export class BlockchainResolver {
   async requestBookingDeposit(
     @Context() ctx: { req: { headers: Record<string, string> } },
     @Args('bookingId', { type: () => Int }) bookingId: number,
+    @Args('clientWallet', { type: () => String, nullable: true }) clientWallet?: string,
   ): Promise<PartialSignedTx> {
     const userId = this.extractUserId(ctx);
 
@@ -53,6 +54,15 @@ export class BlockchainResolver {
     if (booking.status !== BookingStatus.PENDING) {
       throw new ForbiddenException(`Booking must be PENDING before escrow deposit. Current status: ${booking.status}`);
     }
+
+    if (clientWallet) {
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { walletAddress: clientWallet },
+      });
+      booking.client.walletAddress = clientWallet;
+    }
+
     if (!booking.client.walletAddress) {
       throw new ForbiddenException('Client wallet address is not set');
     }

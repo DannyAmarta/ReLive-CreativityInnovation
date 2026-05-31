@@ -23,6 +23,7 @@ import {
   randomBytes,
 } from 'crypto';
 import { ExchangeOpenRouterCodeInput } from './dto/exchange-openrouter-code.input';
+import { RedisService } from '../core/redis.service';
 
 const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
 
@@ -40,10 +41,7 @@ type PasswordResetPayload = {
 
 type GoogleProfileInput = Pick<CreateUserInput, 'email' | 'name' | 'avatar'>;
 
-type GoogleAuthHandoffRecord = {
-  authPayload: SafeAuthUser;
-  expiresAt: number;
-};
+
 
 export type ConnectedOpenRouterAccess = {
   status: 'available' | 'missing' | 'decrypt_failed';
@@ -55,7 +53,6 @@ export type ConnectedOpenRouterAccess = {
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
-  private readonly googleAuthHandoffs = new Map<string, GoogleAuthHandoffRecord>();
   private readonly genericCredentialError = 'Invalid email or password';
 
   constructor(
@@ -63,6 +60,7 @@ export class AuthService {
     private jwtService: JwtService,
     private eventEmitter: EventEmitter2,
     private configService: ConfigService,
+    private redisService: RedisService,
   ) {}
 
   // This function handles local email/password login.
@@ -185,33 +183,27 @@ export class AuthService {
   // This function creates a short-lived, opaque code for Google OAuth completion.
   // It is used by `AuthController.googleCallback()` so the browser URL never contains the raw access token.
   async createGoogleAuthHandoff(user: Pick<User, 'id' | 'name' | 'avatar'>) {
-    this.pruneExpiredGoogleAuthHandoffs();
-
     const authPayload = await this.login(user);
     const code = randomBytes(24).toString('hex');
-
-    this.googleAuthHandoffs.set(code, {
-      authPayload,
-      expiresAt: Date.now() + 2 * 60 * 1000,
-    });
-
+    await this.redisService.set(
+      `oauth:handoff:${code}`,
+      JSON.stringify(authPayload),
+      120, // 2-minute TTL — Redis auto-expires, no pruning needed
+    );
     return code;
   }
 
   // This function exchanges the one-time Google handoff code for the real auth payload.
   // It is used only by the frontend callback route right after Google redirects back into the app.
   async exchangeGoogleAuthHandoff(code: string) {
-    this.pruneExpiredGoogleAuthHandoffs();
-
-    const handoff = this.googleAuthHandoffs.get(code);
-    if (!handoff) {
+    // Atomic GET+DEL: prevents replay attacks; returns null if expired/already used
+    const raw = await this.redisService.getAndDel(`oauth:handoff:${code}`);
+    if (!raw) {
       throw new BadRequestException(
         'Google sign-in session expired. Please try again.',
       );
     }
-
-    this.googleAuthHandoffs.delete(code);
-    return handoff.authPayload;
+    return JSON.parse(raw) as SafeAuthUser;
   }
 
   // This function starts the reset-password email flow without revealing whether the email exists.
@@ -343,12 +335,7 @@ export class AuthService {
     };
   }
 
-  // This function returns the decrypted user-controlled OpenRouter API key when one is connected.
-  // It is used by the recommendation service as the second-layer fallback after the server key is rate-limited.
-  async getConnectedOpenRouterApiKey(userId: number) {
-    const connection = await this.getConnectedOpenRouterAccess(userId);
-    return connection.apiKey;
-  }
+
 
   async getConnectedOpenRouterAccess(
     userId: number,
@@ -551,17 +538,7 @@ export class AuthService {
     }
   }
 
-  // This helper removes expired Google OAuth handoff codes from memory.
-  // It is used by the Google handoff create/exchange flow so old codes cannot be reused later.
-  private pruneExpiredGoogleAuthHandoffs() {
-    const now = Date.now();
 
-    for (const [code, handoff] of this.googleAuthHandoffs.entries()) {
-      if (handoff.expiresAt <= now) {
-        this.googleAuthHandoffs.delete(code);
-      }
-    }
-  }
 
   // This helper centralizes the frontend base URL used inside auth emails and redirects.
   // It is used by email-based flows so auth links do not stay hardcoded to localhost forever.

@@ -38,6 +38,8 @@ export async function Register(
         password2: formData.get("password2")?.toString() || "",
     };
 
+    const captchaToken = formData.get("cf-turnstile-response")?.toString() || "";
+
     const validatedFields = SignUpFormSchema.safeParse(rawData);
 
     if (!validatedFields.success) {
@@ -52,7 +54,10 @@ export async function Register(
 
     try {
         const data = (await fetchGraphql(print(CREATE_USER_MUTATION), {
-            input: userInput,
+            input: {
+                ...userInput,
+                captchaToken,
+            },
         })) as any;
 
         return {

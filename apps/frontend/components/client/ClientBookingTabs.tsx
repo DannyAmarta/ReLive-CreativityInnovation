@@ -24,6 +24,9 @@ import { formatDateTime, formatIDR, formatUSDC } from "@/lib/format";
 import { lamportsToTokenUnits } from "@/lib/marketplace";
 import type { BookingRecord } from "@/lib/marketplace";
 import { ReviewButton } from "@/components/relive/ReviewButton";
+import { useCryptoEscrow } from "@/hooks/features/marketplace/useCryptoEscrow";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 export type RescheduleRequest = {
@@ -131,7 +134,7 @@ interface ClientBookingTabsProps {
 type Tab = "active" | "history";
 
 // ─── Classification Logic ─────────────────────────────────────────────────────
-const ACTIVE_STATUSES = new Set(["PENDING", "ACTIVE", "DISPUTED"]);
+const ACTIVE_STATUSES = new Set(["PENDING", "ACTIVE", "PENDING_RELEASE", "DISPUTED"]);
 const HISTORY_STATUSES = new Set(["COMPLETED", "CANCELLED", "REJECTED"]);
 
 function classifyBooking(
@@ -252,6 +255,8 @@ export function ClientBookingTabs({
   rescheduleRequests,
   cancellationRequests,
 }: ClientBookingTabsProps) {
+  const router = useRouter();
+  const { execute: executeCrypto, isLoading: isCryptoLoading, error: cryptoError } = useCryptoEscrow();
   const [activeTab, setActiveTab] = useState<Tab>("active");
   const [disputeBooking, setDisputeBooking] = useState<BookingRecord | null>(null);
   const [disputeWhatHappened, setDisputeWhatHappened] = useState("");
@@ -640,6 +645,26 @@ export function ClientBookingTabs({
                         />
                       ))}
 
+                    {/* PENDING CRYPTO DEPOSIT */}
+                    {booking.status === "PENDING" && booking.paymentType === "CRYPTO" && !booking.txHash && (
+                      <button
+                        type="button"
+                        disabled={isCryptoLoading}
+                        onClick={async () => {
+                          const signature = await executeCrypto(booking.id, "deposit");
+                          if (signature) {
+                            toast.success("Deposit successful! Transaction signature: " + signature);
+                            router.refresh();
+                          } else {
+                            toast.error(cryptoError || "Transaction failed");
+                          }
+                        }}
+                        className="inline-flex items-center gap-1.5 rounded-full bg-[#4a5d3e] px-4 py-2 text-xs font-semibold text-[#f8f6ef] shadow-[0_12px_24px_rgba(74,93,62,0.16)] transition-all hover:opacity-90 disabled:opacity-50"
+                      >
+                        {isCryptoLoading ? "Processing..." : "Pay Crypto Deposit"}
+                      </button>
+                    )}
+
                     {/* ACTIVE: reschedule / cancel / dispute */}
                     {booking.status === "ACTIVE" && (
                       <>
@@ -664,6 +689,52 @@ export function ClientBookingTabs({
                           Raise dispute
                         </button>
                       </>
+                    )}
+
+                    {/* PENDING RELEASE: Approve or Dispute */}
+                    {booking.status === "PENDING_RELEASE" && (
+                      <>
+                        <form action={updateBookingStatusAction}>
+                          <input type="hidden" name="bookingId" value={booking.id} />
+                          <input type="hidden" name="status" value="COMPLETED" />
+                          <input type="hidden" name="redirectTo" value="/client/dashboard" />
+                          <button
+                            type="submit"
+                            className="inline-flex items-center gap-1.5 rounded-full bg-[#4a5d3e] px-4 py-2 text-xs font-semibold text-[#f8f6ef] hover:bg-[#3d4f32] transition-colors"
+                          >
+                            <CheckCircle2 className="h-3.5 w-3.5" />
+                            {booking.paymentType === "CRYPTO" ? "Approve & Release Escrow" : "Approve & Release Payment"}
+                          </button>
+                        </form>
+                        <button
+                          type="button"
+                          onClick={() => openDisputeModal(booking)}
+                          className="inline-flex items-center gap-1.5 rounded-full border border-destructive/30 px-4 py-2 text-xs font-semibold text-destructive hover:bg-destructive/10 transition-colors"
+                        >
+                          <ShieldAlert className="h-3.5 w-3.5" />
+                          Raise dispute
+                        </button>
+                      </>
+                    )}
+
+                    {/* CANCELLED CRYPTO REFUND */}
+                    {booking.status === "CANCELLED" && booking.paymentType === "CRYPTO" && booking.txHash && (
+                      <button
+                        type="button"
+                        disabled={isCryptoLoading}
+                        onClick={async () => {
+                          const signature = await executeCrypto(booking.id, "refund");
+                          if (signature) {
+                            toast.success("Refund claimed successfully! Signature: " + signature);
+                            router.refresh();
+                          } else {
+                            toast.error(cryptoError || "Transaction failed");
+                          }
+                        }}
+                        className="inline-flex items-center gap-1.5 rounded-full bg-amber-600 px-4 py-2 text-xs font-semibold text-white hover:bg-amber-700 transition-colors disabled:opacity-50"
+                      >
+                        {isCryptoLoading ? "Processing..." : "Claim Refund"}
+                      </button>
                     )}
                   </div>
                 </div>

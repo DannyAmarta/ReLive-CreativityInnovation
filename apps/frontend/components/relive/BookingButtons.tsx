@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Wallet } from "lucide-react";
 import { CheckoutModal } from "@/components/relive/CheckoutModal";
+import { CryptoBookingModal } from "@/components/relive/CryptoBookingModal";
 import { createBookingAction } from "@/lib/actions/marketplace";
 
 type Service = {
@@ -15,26 +16,34 @@ type Service = {
 type Props = {
   service: Service;
   trainerId: number;
+  trainerName?: string;
   slot: { start: string; end: string };
 };
 
-// ─── Crypto booking still uses a plain form (no modal needed) ──────────────
-export function CryptoBookingButton({ service, trainerId, slot }: Props) {
+// ─── Crypto booking now uses a modal for on-chain checkout ──────────────
+export function CryptoBookingButton({ service, trainerId, trainerName, slot }: Props) {
+  const [open, setOpen] = useState(false);
+
   return (
-    <form action={createBookingAction}>
-      <input type="hidden" name="trainerId" value={trainerId} />
-      <input type="hidden" name="serviceId" value={service.id} />
-      <input type="hidden" name="paymentMethod" value="CRYPTO" />
-      <input type="hidden" name="scheduledStart" value={slot.start} />
-      <input type="hidden" name="scheduledEnd" value={slot.end} />
-      <input type="hidden" name="timezone" value={Intl.DateTimeFormat().resolvedOptions().timeZone} />
+    <>
       <button
-        type="submit"
+        type="button"
+        onClick={() => setOpen(true)}
         className="w-full rounded-full border border-border bg-background px-4 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary-deep"
       >
         Reserve with Crypto
       </button>
-    </form>
+
+      {open && (
+        <CryptoBookingModal
+          service={service as any}
+          trainerId={trainerId}
+          trainerName={trainerName || "Trainer"}
+          slot={slot}
+          onClose={() => setOpen(false)}
+        />
+      )}
+    </>
   );
 }
 

@@ -18,9 +18,10 @@ function minutesToLabel(minutes: number): string {
   return `${h}:${m}`;
 }
 
-/** Build a Date from a YYYY-MM-DD string and HH:mm time, in the given offset */
+/** Build a Date from a YYYY-MM-DD string and HH:mm time in WIB (UTC+7) */
 function buildUtcDate(dateStr: string, timeStr: string): Date {
-  return new Date(`${dateStr}T${timeStr}:00.000Z`);
+  // Trainer times are WIB (UTC+7) — use +07:00 offset so JS converts correctly to UTC
+  return new Date(`${dateStr}T${timeStr}:00.000+07:00`);
 }
 
 /** Get YYYY-MM-DD string from a Date in UTC */

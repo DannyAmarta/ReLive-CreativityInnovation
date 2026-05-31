@@ -110,7 +110,10 @@ export class PerformanceAnalyticsService {
     ) {
       await workoutSetModel.update({
         where: {
-          id: latestLoggedSet.id,
+          id_createdAt: {
+            id: latestLoggedSet.id,
+            createdAt: latestLoggedSet.createdAt,
+          },
         },
         data: {
           isCnsFatigue: true,

@@ -24,9 +24,7 @@ export class GraphqlRequestError extends Error {
     }
 }
 
-export function isGraphqlRequestError(error: unknown): error is GraphqlRequestError {
-    return error instanceof GraphqlRequestError;
-}
+
 
 export function isAuthenticationGraphqlError(
     error: unknown,

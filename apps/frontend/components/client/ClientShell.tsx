@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Toaster } from "sonner";
 import { NotificationBell } from "@/components/trainer/NotificationBell";
@@ -17,6 +18,66 @@ export default function ClientShell({
   user: SessionUser;
   initialNotifications: NotificationRecord[];
 }) {
+  const [allNotifications, setAllNotifications] = useState<NotificationRecord[]>(initialNotifications);
+
+  useEffect(() => {
+    // Parse URL query params manually to avoid NextJS Suspense deoptimization warnings
+    const params = new URLSearchParams(window.location.search);
+    const payment = params.get("payment");
+    const bookingId = params.get("booking");
+    const resultCode = params.get("resultCode");
+
+    const dynamicNotifs: NotificationRecord[] = [];
+    if (payment === "crypto-pending" && bookingId) {
+      dynamicNotifs.push({
+        id: -1,
+        title: "⏳ Crypto Booking Pending",
+        body: `Crypto booking #${bookingId} created. Please sign on-chain escrow to activate.`,
+        link: `/client/dashboard?booking=${bookingId}&payment=crypto-pending`,
+        read: false,
+        createdAt: new Date().toISOString(),
+      });
+    }
+    if (payment === "fiat-pending" && bookingId) {
+      if (resultCode === "01") {
+        dynamicNotifs.push({
+          id: -2,
+          title: "❌ Payment Cancelled",
+          body: `Booking #${bookingId} payment was cancelled. Try booking again.`,
+          link: `/client/dashboard?booking=${bookingId}&payment=fiat-pending&resultCode=01`,
+          read: false,
+          createdAt: new Date().toISOString(),
+        });
+      } else if (resultCode && resultCode !== "00") {
+        dynamicNotifs.push({
+          id: -3,
+          title: "❌ Payment Failed",
+          body: `Booking #${bookingId} payment failed (Result: ${resultCode}).`,
+          link: `/client/dashboard?booking=${bookingId}&payment=fiat-pending&resultCode=${resultCode}`,
+          read: false,
+          createdAt: new Date().toISOString(),
+        });
+      } else if (!resultCode) {
+        dynamicNotifs.push({
+          id: -4,
+          title: "ℹ️ Payment Pending",
+          body: `Booking #${bookingId} payment session could not be started automatically.`,
+          link: `/client/dashboard?booking=${bookingId}&payment=fiat-pending`,
+          read: false,
+          createdAt: new Date().toISOString(),
+        });
+      }
+    }
+
+    if (dynamicNotifs.length > 0) {
+      setAllNotifications((prev) => {
+        const filteredPrev = prev.filter((n) => n.id >= 0);
+        return [...dynamicNotifs, ...filteredPrev];
+      });
+    } else {
+      setAllNotifications(initialNotifications);
+    }
+  }, [initialNotifications]);
   return (
     <div className="min-h-dvh bg-gradient-surface text-foreground">
       <Toaster richColors position="top-right" />
@@ -34,7 +95,7 @@ export default function ClientShell({
 
           <div className="flex items-center gap-2 sm:gap-3">
             <WalletButton />
-            <NotificationBell initialNotifications={initialNotifications} />
+            <NotificationBell initialNotifications={allNotifications} />
             {/* Divider */}
             <div className="hidden sm:block h-8 w-px bg-border" />
             {/* Profile Dropdown */}

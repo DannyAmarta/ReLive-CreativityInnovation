@@ -28,6 +28,9 @@ import {
 } from "@/lib/actions/marketplace";
 import { formatDateTime, formatIDR, formatUSDC } from "@/lib/format";
 import { lamportsToTokenUnits } from "@/lib/marketplace";
+import { useCryptoEscrow } from "@/hooks/features/marketplace/useCryptoEscrow";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 // ─── Dispute Helpers & Types ───────────────────────────────────────────────
 export interface DisputeDetail {
@@ -120,6 +123,8 @@ export function TrainerBookingsTable({
   rescheduleRequests,
   cancellationRequests,
 }: TrainerBookingsTableProps) {
+  const router = useRouter();
+  const { execute: executeCrypto, isLoading: isCryptoLoading, error: cryptoError } = useCryptoEscrow();
   const [mounted, setMounted] = useState(false);
   const [disputeBooking, setDisputeBooking] = useState<any | null>(null);
   const [disputeWhatHappened, setDisputeWhatHappened] = useState("");
@@ -256,16 +261,16 @@ export function TrainerBookingsTable({
                           </ActionForm>
                         </>
                       )}
-                      {booking.status === "ACTIVE" && (
+                       {booking.status === "ACTIVE" && (
                         <>
-                          <ActionForm bookingId={booking.id} status="COMPLETED" redirectTo="/trainer/bookings">
+                          <ActionForm bookingId={booking.id} status="PENDING_RELEASE" redirectTo="/trainer/bookings">
                             {booking.paymentType === "CRYPTO" ? (
                               <>
-                                <Send className="size-3 mr-1.5" /> Mark complete
+                                <Send className="size-3 mr-1.5" /> Request release
                               </>
                             ) : (
                               <>
-                                <CheckCircle2 className="size-3 mr-1.5" /> Complete
+                                <CheckCircle2 className="size-3 mr-1.5" /> Mark Complete & Request Payment
                               </>
                             )}
                           </ActionForm>
@@ -278,10 +283,23 @@ export function TrainerBookingsTable({
                           </button>
                         </>
                       )}
-                      {booking.status === "COMPLETED" && booking.paymentType === "CRYPTO" && (
-                        <span className="inline-flex items-center gap-1 rounded-full border border-primary/20 px-3 py-1 text-[11px] text-primary">
-                          Release step next
-                        </span>
+                      {booking.status === "COMPLETED" && booking.paymentType === "CRYPTO" && booking.txHash && (
+                        <button
+                          type="button"
+                          disabled={isCryptoLoading}
+                          onClick={async () => {
+                            const signature = await executeCrypto(booking.id, "release");
+                            if (signature) {
+                              toast.success("Successfully claimed USDC from escrow! Signature: " + signature);
+                              router.refresh();
+                            } else {
+                              toast.error(cryptoError || "Transaction failed");
+                            }
+                          }}
+                          className="inline-flex h-8 items-center rounded-full bg-[#4a5d3e] px-3 text-xs font-semibold text-[#f8f6ef] hover:bg-[#3d4f32] transition-colors disabled:opacity-50"
+                        >
+                          {isCryptoLoading ? "Processing..." : "Claim USDC Escrow"}
+                        </button>
                       )}
                     </div>
                   </td>

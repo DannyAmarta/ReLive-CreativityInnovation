@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useTransition } from "react";
+import { useState, useEffect, useRef, useTransition } from "react";
 import { format, isBefore, startOfToday } from "date-fns";
 import { Calendar as CalendarIcon, Clock, Loader2, MessageSquare, AlertCircle, Info, CheckCircle2 } from "lucide-react";
 import { getAvailableSlots, AvailableSlot } from "@/lib/actions/availability";
@@ -33,6 +33,26 @@ export function InlineBookingCard({ services, trainerId, trainerName }: InlineBo
   const [slots, setSlots] = useState<AvailableSlot[]>([]);
   const [selectedSlot, setSelectedSlot] = useState<AvailableSlot | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [currentWIBTime, setCurrentWIBTime] = useState("");
+
+  // Live WIB clock — ticks every second
+  useEffect(() => {
+    const tick = () => {
+      const now = new Date();
+      setCurrentWIBTime(
+        now.toLocaleTimeString("id-ID", {
+          timeZone: "Asia/Jakarta",
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+          hour12: false,
+        })
+      );
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, []);
 
   // Reset selected slot and load slots when selected date or service changes
   useEffect(() => {
@@ -73,12 +93,26 @@ export function InlineBookingCard({ services, trainerId, trainerName }: InlineBo
   return (
     <div className="glass-card-elevated p-6 space-y-6 md:sticky md:top-6 h-fit transition-all duration-300">
       <div>
-        <h3 className="font-display text-lg font-bold text-primary-deep tracking-tight">
-          Book a Session
-        </h3>
-        <p className="text-xs text-muted-foreground mt-0.5">
-          Select a service, choose a date and time, and confirm your workout
-        </p>
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <h3 className="font-display text-lg font-bold text-primary-deep tracking-tight">
+              Book a Session
+            </h3>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Select a service, choose a date and time, and confirm your workout
+            </p>
+          </div>
+          {/* Live WIB clock */}
+          {currentWIBTime && (
+            <div className="shrink-0 flex items-center gap-1.5 bg-[#4a5d3e]/8 border border-[#4a5d3e]/20 rounded-xl px-2.5 py-1.5">
+              <Clock className="size-3 text-[#4a5d3e]" />
+              <span className="text-[11px] font-bold text-[#4a5d3e] tabular-nums tracking-tight">
+                {currentWIBTime}
+              </span>
+              <span className="text-[9px] text-muted-foreground font-semibold uppercase tracking-wider">WIB</span>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Step 1: Service Selector */}
@@ -159,6 +193,12 @@ export function InlineBookingCard({ services, trainerId, trainerName }: InlineBo
         <label className="text-xs font-bold uppercase tracking-wider text-primary-soft flex items-center gap-1.5">
           <Clock className="size-3.5" /> 3. Available Slots
         </label>
+        {currentWIBTime && (
+          <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+            <Info className="size-3 shrink-0" />
+            Slots before current time (<span className="font-semibold text-[#4a5d3e]">{currentWIBTime} WIB</span>) are hidden automatically.
+          </p>
+        )}
         
         {!selectedDate ? (
           <div className="flex items-center gap-2 rounded-xl bg-muted/40 p-4 border border-border/40 text-center justify-center">
@@ -238,6 +278,7 @@ export function InlineBookingCard({ services, trainerId, trainerName }: InlineBo
               <CryptoBookingButton
                 service={selectedService as any}
                 trainerId={trainerId}
+                trainerName={trainerName}
                 slot={selectedSlot}
               />
             )}

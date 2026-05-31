@@ -5,6 +5,7 @@ type Status = string;
 const styles: Record<string, string> = {
   PENDING: "bg-amber-500/15 text-amber-700",
   ACTIVE: "bg-emerald-500/15 text-emerald-700",
+  PENDING_RELEASE: "bg-blue-500/15 text-blue-700",
   COMPLETED: "bg-emerald-900/20 text-emerald-950 font-bold",
   CANCELLED: "bg-destructive/10 text-destructive",
   DISPUTED: "bg-warning/15 text-warning-foreground",
@@ -14,6 +15,7 @@ const styles: Record<string, string> = {
 const dotColor: Record<string, string> = {
   PENDING: "bg-amber-500",
   ACTIVE: "bg-emerald-500",
+  PENDING_RELEASE: "bg-blue-500",
   COMPLETED: "bg-emerald-900",
   CANCELLED: "bg-destructive",
   DISPUTED: "bg-warning",

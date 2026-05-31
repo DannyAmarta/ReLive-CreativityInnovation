@@ -1,5 +1,6 @@
 import {
   Injectable,
+  Logger,
   UnauthorizedException,
   NotFoundException,
 } from "@nestjs/common";
@@ -8,6 +9,8 @@ import { NotificationService } from "../core/notification.service";
 
 @Injectable()
 export class MessagingService {
+  private readonly logger = new Logger(MessagingService.name); // Fix #15
+
   constructor(
     private prisma: PrismaService,
     private notificationService: NotificationService,
@@ -156,7 +159,7 @@ export class MessagingService {
         link,
       });
     } catch (error) {
-      console.error("Failed to create chat notification record:", error);
+      this.logger.error(`Failed to create chat notification record: ${(error as Error).message ?? error}`);
     }
 
     return message;

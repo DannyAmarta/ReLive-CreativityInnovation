@@ -16,6 +16,7 @@ export default function ChatWorkspace({
   initialActiveConvId,
 }: ChatWorkspaceProps) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [isLoadingConversations, setIsLoadingConversations] = useState(true);
   const [activeConvId, setActiveConvId] = useState<number | null>(
     initialActiveConvId || null
   );
@@ -87,6 +88,7 @@ export default function ChatWorkspace({
 
   // Fetch conversations list on mount
   useEffect(() => {
+    setIsLoadingConversations(true);
     fetch(`${BACKEND_URL}/messaging/conversations`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     })
@@ -96,7 +98,8 @@ export default function ChatWorkspace({
           setConversations(data);
         }
       })
-      .catch(console.error);
+      .catch(console.error)
+      .finally(() => setIsLoadingConversations(false));
   }, [accessToken]);
 
   // Fetch history when a conversation is selected
@@ -203,7 +206,16 @@ export default function ChatWorkspace({
         </div>
 
         <div className="overflow-y-auto flex-1 divide-y divide-[#58784a]/10">
-          {conversations.map((conv) => {
+          {isLoadingConversations ? (
+            <div className="p-8 text-center">
+              <div className="w-5 h-5 border-2 border-[#4a5d3e]/30 border-t-[#4a5d3e] rounded-full animate-spin mx-auto" />
+            </div>
+          ) : conversations.length === 0 ? (
+            <div className="p-8 text-center text-xs text-[#4a5d3e]/60 font-medium">
+              No conversations found.
+            </div>
+          ) : (
+            conversations.map((conv) => {
             const partner =
               conv.trainerUserId === currentUserId
                 ? conv.clientUser
@@ -247,11 +259,7 @@ export default function ChatWorkspace({
                 </div>
               </button>
             );
-          })}
-          {conversations.length === 0 && (
-            <div className="p-8 text-center text-xs text-[#4a5d3e]/60 font-medium">
-              No conversations found.
-            </div>
+            })
           )}
         </div>
       </div>
