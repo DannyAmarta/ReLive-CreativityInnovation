@@ -17,9 +17,15 @@ export const Role = {
 export const BookingStatus = {
   PENDING: 'PENDING',
   ACTIVE: 'ACTIVE',
+  PENDING_RELEASE: 'PENDING_RELEASE',
   COMPLETED: 'COMPLETED',
   DISPUTED: 'DISPUTED',
   CANCELLED: 'CANCELLED',
+} as const;
+
+export const PaymentType = {
+  FIAT: 'FIAT',
+  CRYPTO: 'CRYPTO',
 } as const;
 
 export const User = {} as const;

@@ -1,5 +1,7 @@
-import { InputType, Field, Float, Int } from '@nestjs/graphql';
-import { IsBoolean, IsInt, IsNumber, IsOptional, IsPositive, IsString } from 'class-validator';
+import { InputType, Field, Int } from '@nestjs/graphql';
+import { IsBoolean, IsInt, IsNumber, IsOptional, IsPositive, IsString, Matches } from 'class-validator';
+
+const SOLANA_ADDRESS_REGEX = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
 
 @InputType()
 export class UpdateTrainerServiceInput {
@@ -28,6 +30,14 @@ export class UpdateTrainerServiceInput {
   @IsPositive()
   @Field({ nullable: true })
   priceInIdr?: number;
+
+  @IsOptional()
+  @IsString()
+  @Matches(SOLANA_ADDRESS_REGEX, {
+    message: 'tokenMintAddress must be a valid Solana base58 address',
+  })
+  @Field({ nullable: true })
+  tokenMintAddress?: string;
 
   @IsOptional()
   @IsBoolean()

@@ -1,4 +1,4 @@
-import { Args, Context, Int, Mutation, Resolver } from '@nestjs/graphql';
+import { Args, Context, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
 import {
   ForbiddenException,
   NotFoundException,
@@ -9,6 +9,11 @@ import { BookingStatus, Role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { BlockchainTransactionService } from './blockchain-transaction.service';
 import { PartialSignedTx } from './models/partial-signed-tx.model';
+import { UserWalletAccount } from '../user/entities/user-wallet-account.entity';
+import {
+  getPendingBookingExpiresAt,
+  isPendingBookingExpired,
+} from '../trainer/pending-booking.util';
 
 @Resolver()
 export class BlockchainResolver {
@@ -28,6 +33,74 @@ export class BlockchainResolver {
     } catch {
       throw new UnauthorizedException('Invalid or expired token');
     }
+  }
+
+  @Query(() => [UserWalletAccount])
+  async myWalletAccounts(
+    @Context() ctx: { req: { headers: Record<string, string> } },
+  ): Promise<UserWalletAccount[]> {
+    const userId = this.extractUserId(ctx);
+
+    return (this.prisma as any).userWalletAccount.findMany({
+      where: { userId },
+      orderBy: [{ isActive: 'desc' }, { lastUsedAt: 'desc' }],
+    });
+  }
+
+  @Mutation(() => Boolean)
+  async rememberWalletAccount(
+    @Context() ctx: { req: { headers: Record<string, string> } },
+    @Args('provider', { type: () => String }) provider: string,
+    @Args('walletAddress', { type: () => String }) walletAddress: string,
+    @Args('setActive', { type: () => Boolean, nullable: true }) setActive?: boolean,
+  ): Promise<boolean> {
+    const userId = this.extractUserId(ctx);
+    const normalizedProvider =
+      provider?.toUpperCase() === 'SOLFLARE'
+        ? 'SOLFLARE'
+        : provider?.toUpperCase() === 'PHANTOM'
+          ? 'PHANTOM'
+          : 'OTHER';
+
+    await this.prisma.$transaction(async (tx) => {
+      await (tx as any).userWalletAccount.upsert({
+        where: {
+          userId_walletAddress: {
+            userId,
+            walletAddress,
+          },
+        },
+        create: {
+          userId,
+          provider: normalizedProvider as any,
+          walletAddress,
+          isActive: setActive ?? true,
+          lastUsedAt: new Date(),
+        },
+        update: {
+          provider: normalizedProvider as any,
+          isActive: setActive ?? true,
+          lastUsedAt: new Date(),
+        },
+      });
+
+      if (setActive ?? true) {
+        await (tx as any).userWalletAccount.updateMany({
+          where: {
+            userId,
+            walletAddress: { not: walletAddress },
+          },
+          data: { isActive: false },
+        });
+
+        await tx.user.update({
+          where: { id: userId },
+          data: { walletAddress },
+        });
+      }
+    });
+
+    return true;
   }
 
   @Mutation(() => PartialSignedTx)
@@ -51,20 +124,26 @@ export class BlockchainResolver {
     if (booking.clientId !== userId) {
       throw new ForbiddenException('You can only deposit for your own booking');
     }
+    if (isPendingBookingExpired(booking)) {
+      await this.prisma.booking.update({
+        where: { id: bookingId },
+        data: { status: BookingStatus.CANCELLED },
+      });
+      throw new ForbiddenException('This checkout session expired. Please book the slot again.');
+    }
     if (booking.status !== BookingStatus.PENDING) {
       throw new ForbiddenException(`Booking must be PENDING before escrow deposit. Current status: ${booking.status}`);
     }
 
-    if (clientWallet) {
-      await this.prisma.user.update({
-        where: { id: userId },
-        data: { walletAddress: clientWallet },
-      });
-      booking.client.walletAddress = clientWallet;
-    }
-
     if (!booking.client.walletAddress) {
-      throw new ForbiddenException('Client wallet address is not set');
+      throw new ForbiddenException(
+        'Set your wallet address in ReLive before paying with crypto.',
+      );
+    }
+    if (clientWallet && booking.client.walletAddress !== clientWallet) {
+      throw new ForbiddenException(
+        'Your connected wallet does not match the wallet address saved in ReLive.',
+      );
     }
     if (!booking.trainer.user.walletAddress) {
       throw new ForbiddenException('Trainer wallet address is not set');
@@ -84,7 +163,11 @@ export class BlockchainResolver {
 
     await this.prisma.booking.update({
       where: { id: bookingId },
-      data: { escrowAddress },
+      data: {
+        escrowAddress,
+        paymentType: 'CRYPTO',
+        pendingExpiresAt: getPendingBookingExpiresAt(),
+      },
     });
 
     return { serializedTx, bookingId, instruction: 'initialize_booking', escrowAddress };

@@ -45,8 +45,8 @@ describe('TrainerAvailabilityService', () => {
     ]);
     prisma.booking.findMany.mockResolvedValue([
       {
-        scheduledStart: new Date('2026-05-25T11:00:00.000Z'),
-        scheduledEnd: new Date('2026-05-25T12:00:00.000Z'),
+        scheduledStart: new Date('2026-05-25T04:00:00.000Z'),
+        scheduledEnd: new Date('2026-05-25T05:00:00.000Z'),
       },
     ]);
 
@@ -54,8 +54,8 @@ describe('TrainerAvailabilityService', () => {
 
     expect(slots).toHaveLength(1);
     expect(slots[0]).toEqual({
-      start: new Date('2026-05-25T09:00:00.000Z'),
-      end: new Date('2026-05-25T10:00:00.000Z'),
+      start: new Date('2026-05-25T02:00:00.000Z'),
+      end: new Date('2026-05-25T03:00:00.000Z'),
       label: expect.stringContaining('09:00'),
     });
   });
@@ -70,5 +70,31 @@ describe('TrainerAvailabilityService', () => {
         new Date('2026-05-25T10:00:00.000Z'),
       ),
     ).rejects.toThrow(BadRequestException);
+  });
+
+  it('ignores expired pending bookings during conflict checks', async () => {
+    prisma.booking.findFirst.mockResolvedValue(null);
+
+    await expect(
+      service.assertNoSchedulingConflict(
+        3,
+        new Date('2026-05-25T09:00:00.000Z'),
+        new Date('2026-05-25T10:00:00.000Z'),
+      ),
+    ).resolves.toBeUndefined();
+
+    expect(prisma.booking.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          OR: expect.arrayContaining([
+            { status: 'ACTIVE' },
+            expect.objectContaining({
+              status: 'PENDING',
+              pendingExpiresAt: expect.objectContaining({ gt: expect.any(Date) }),
+            }),
+          ]),
+        }),
+      }),
+    );
   });
 });

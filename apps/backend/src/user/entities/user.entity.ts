@@ -1,4 +1,5 @@
 import { Field, Int, ObjectType } from "@nestjs/graphql";
+import { UserWalletAccount } from "./user-wallet-account.entity";
 
 @ObjectType()
 export class User {
@@ -19,6 +20,12 @@ export class User {
 
     @Field({ nullable: true })
     avatar?: string;
+
+    @Field({ nullable: true })
+    walletAddress?: string;
+
+    @Field(() => [UserWalletAccount], { nullable: "itemsAndList" })
+    walletAccounts?: UserWalletAccount[];
 
     // --- Add these for Onboarding & Vitality ---
     @Field()

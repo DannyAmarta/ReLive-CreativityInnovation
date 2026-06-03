@@ -26,6 +26,15 @@ A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date
 """
 scalar DateTime
 
+type UserWalletAccount {
+  id: Int!
+  provider: String!
+  walletAddress: String!
+  isActive: Boolean!
+  lastUsedAt: DateTime!
+  createdAt: DateTime!
+}
+
 type User {
   id: Int!
   name: String!
@@ -33,6 +42,8 @@ type User {
   role: String!
   bio: String
   avatar: String
+  walletAddress: String
+  walletAccounts: [UserWalletAccount]
   profileCompleted: Boolean!
   fitnessLevel: String
   dailyActivity: String
@@ -492,6 +503,7 @@ type Query {
   getAvailableSlots(trainerId: Int!, startDate: String!, endDate: String!, slotDurationMinutes: Int! = 60): [AvailableSlot!]!
   myFiatWallet: FiatWalletEntity!
   myWithdrawalRequests: [WithdrawalRequestEntity!]!
+  myWalletAccounts: [UserWalletAccount!]!
 }
 
 input CalculateSetInput {
@@ -531,6 +543,7 @@ type Mutation {
   registerTrainerFiat(input: RegisterTrainerFiatInput!): TrainerProfile!
   createTrainerService(input: CreateTrainerServiceInput!): TrainerService!
   updateTrainerService(input: UpdateTrainerServiceInput!): TrainerService!
+  updateTrainerCryptoSettings(input: UpdateTrainerCryptoSettingsInput!): TrainerProfile!
   createBooking(input: CreateBookingInput!): Booking!
   updateBookingStatus(input: UpdateBookingStatusInput!): Booking!
   proposeBookingReschedule(input: ProposeRescheduleInput!): RescheduleRequest!
@@ -544,6 +557,7 @@ type Mutation {
   requestFiatBookingDeposit(input: RequestFiatDepositInput!): FiatDepositResponse!
   requestFiatWithdrawal(input: RequestWithdrawalInput!): WithdrawalRequestEntity!
   adminRefundFiatBooking(bookingId: Float!): Boolean!
+  rememberWalletAccount(provider: String!, walletAddress: String!, setActive: Boolean): Boolean!
   requestBookingDeposit(bookingId: Int!, clientWallet: String): PartialSignedTx!
   requestRelease(bookingId: Int!): PartialSignedTx!
   requestRefund(bookingId: Int!): PartialSignedTx!
@@ -669,7 +683,13 @@ input UpdateTrainerServiceInput {
   description: String
   priceInLamports: Float
   priceInIdr: Float
+  tokenMintAddress: String
   isActive: Boolean
+}
+
+input UpdateTrainerCryptoSettingsInput {
+  walletAddress: String
+  payoutMintAddress: String
 }
 
 input CreateBookingInput {
@@ -678,6 +698,7 @@ input CreateBookingInput {
   scheduledStart: String!
   scheduledEnd: String!
   timezone: String
+  paymentType: String
 }
 
 input UpdateBookingStatusInput {

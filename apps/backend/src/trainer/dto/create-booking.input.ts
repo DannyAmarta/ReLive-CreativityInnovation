@@ -1,5 +1,5 @@
 import { Field, InputType, Int } from '@nestjs/graphql';
-import { IsInt, IsDateString, IsOptional, IsString } from 'class-validator';
+import { IsDateString, IsIn, IsInt, IsOptional, IsString } from 'class-validator';
 
 @InputType()
 export class CreateBookingInput {
@@ -23,5 +23,9 @@ export class CreateBookingInput {
   @IsString()
   @Field({ nullable: true })
   timezone?: string;
-}
 
+  @IsOptional()
+  @IsIn(['CRYPTO', 'FIAT'])
+  @Field({ nullable: true })
+  paymentType?: string;
+}

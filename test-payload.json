@@ -1,0 +1,8 @@
+{
+  "merchantCode": "test",
+  "amount": 100,
+  "merchantOrderId": "test",
+  "signature": "test",
+  "resultCode": "00",
+  "resultMessage": "test"
+}

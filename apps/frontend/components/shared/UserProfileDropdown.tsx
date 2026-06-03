@@ -146,7 +146,9 @@ export function UserProfileDropdown({
           <div className="flex items-center gap-3">
             <UserAvatar user={user} className="size-9" />
             <div className="leading-tight min-w-0">
-              <p className="text-sm font-semibold truncate">{user.name ?? "User"}</p>
+              <p className="text-sm font-semibold truncate">
+                {user.name ?? "User"}
+              </p>
               <p className="text-[10px] text-muted-foreground uppercase tracking-wider">
                 {roleLabel}
               </p>
@@ -158,17 +160,39 @@ export function UserProfileDropdown({
 
         {/* ── Group 1: Personal & Coaching ── */}
         <DropdownMenuGroup>
-          <MenuItemLink href="/profile" icon={<User className="size-4" />} label="Profile" />
-          <MenuItemLink href={sessionsHref} icon={<CalendarDays className="size-4" />} label="My Sessions" />
-          {currentMode === "client" && (
-            <MenuItemLink href="/foods" icon={<Utensils className="size-4" />} label="Food Calculator" />
+          {isTrainer ? (
+            <MenuItemLink
+              href="/trainer/settings"
+              icon={<User className="size-4" />}
+              label="Profile"
+            />
+          ) : (
+            <></>
           )}
-          <MenuItemLink href="/fitness-goals" icon={<Target className="size-4" />} label="Fitness Goals" />
+          <MenuItemLink
+            href="/profile"
+            icon={<Settings className="size-4" />}
+            label="Settings"
+          />
+          <MenuItemLink
+            href={sessionsHref}
+            icon={<CalendarDays className="size-4" />}
+            label="My Sessions"
+          />
+          {currentMode === "client" && (
+            <MenuItemLink
+              href="/foods"
+              icon={<Utensils className="size-4" />}
+              label="Food Calculator"
+            />
+          )}
           <DropdownMenuItem
             onClick={() => window.dispatchEvent(new Event("open-sage-chat"))}
             className="flex cursor-pointer items-center gap-2.5 px-2 py-2 text-sm"
           >
-            <span className="text-muted-foreground"><Bot className="size-4" /></span>
+            <span className="text-muted-foreground">
+              <Bot className="size-4" />
+            </span>
             AI Coach
           </DropdownMenuItem>
         </DropdownMenuGroup>
@@ -177,10 +201,11 @@ export function UserProfileDropdown({
 
         {/* ── Group 2: Financial & Updates ── */}
         <DropdownMenuGroup>
-          <MenuItemLink href={walletHref} icon={<Wallet className="size-4" />} label="Wallet" />
-          <MenuItemLink href="/promo" icon={<Tag className="size-4" />} label="Promo" />
-          <MenuItemLink href="/membership" icon={<Crown className="size-4" />} label="Membership" />
-          <MenuItemLink href="/notifications" icon={<Bell className="size-4" />} label="Notifications" />
+          <MenuItemLink
+            href={walletHref}
+            icon={<Wallet className="size-4" />}
+            label="Wallet"
+          />
         </DropdownMenuGroup>
 
         <DropdownMenuSeparator />
@@ -209,7 +234,6 @@ export function UserProfileDropdown({
 
         {/* ── Group 4: Account Actions ── */}
         <DropdownMenuGroup>
-          <MenuItemLink href={settingsHref} icon={<Settings className="size-4" />} label="Settings" />
           <DropdownMenuItem
             onClick={handleLogout}
             className="flex cursor-pointer items-center gap-2.5 px-2 py-2 text-sm text-destructive focus:text-destructive focus:bg-destructive/10"

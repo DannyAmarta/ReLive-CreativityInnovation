@@ -7,5 +7,5 @@ export default async function TrainerLayout({ children }: { children: React.Reac
   const user = session?.user ?? { name: "Trainer" };
   const notifications = await getMyNotifications();
 
-  return <TrainerShell user={user} initialNotifications={notifications}>{children}</TrainerShell>;
+  return <TrainerShell user={user} accessToken={session?.accessToken} initialNotifications={notifications}>{children}</TrainerShell>;
 }

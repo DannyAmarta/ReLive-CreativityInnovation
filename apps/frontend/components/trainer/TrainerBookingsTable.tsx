@@ -285,15 +285,15 @@ export function TrainerBookingsTable({
                       )}
                       {booking.status === "COMPLETED" && booking.paymentType === "CRYPTO" && booking.txHash && (
                         <button
-                          type="button"
-                          disabled={isCryptoLoading}
-                          onClick={async () => {
-                            const signature = await executeCrypto(booking.id, "release");
-                            if (signature) {
+                        type="button"
+                        disabled={isCryptoLoading}
+                        onClick={async () => {
+                            try {
+                              const signature = await executeCrypto(booking.id, "release");
                               toast.success("Successfully claimed USDC from escrow! Signature: " + signature);
                               router.refresh();
-                            } else {
-                              toast.error(cryptoError || "Transaction failed");
+                            } catch (err: any) {
+                              toast.error(err?.message || cryptoError || "Transaction failed");
                             }
                           }}
                           className="inline-flex h-8 items-center rounded-full bg-[#4a5d3e] px-3 text-xs font-semibold text-[#f8f6ef] hover:bg-[#3d4f32] transition-colors disabled:opacity-50"
@@ -384,7 +384,7 @@ export function TrainerBookingsTable({
                               )}
                               <p className="text-[10px] text-muted-foreground italic mt-1">
                                 {pendingCancellation.proposedById === booking.clientId
-                                  ? "Proposed by Client. Agreeing to cancel will refund the client."
+                                  ? "Cancelled by Client. Acknowledging will dismiss this notification."
                                   : "Waiting for Client to respond to your cancellation request."}
                               </p>
                             </div>
@@ -398,18 +398,7 @@ export function TrainerBookingsTable({
                                     type="submit"
                                     className="bg-destructive text-white rounded-lg px-3 py-1 hover:bg-destructive/90 font-semibold"
                                   >
-                                    Agree to Cancel
-                                  </button>
-                                </form>
-                                <form action={resolveCancellationAction}>
-                                  <input type="hidden" name="requestId" value={pendingCancellation.id} />
-                                  <input type="hidden" name="action" value="REJECT" />
-                                  <input type="hidden" name="redirectTo" value="/trainer/bookings" />
-                                  <button
-                                    type="submit"
-                                    className="bg-muted border border-border text-foreground rounded-lg px-3 py-1 hover:bg-foreground hover:text-background font-semibold"
-                                  >
-                                    Keep Booking
+                                    I understand
                                   </button>
                                 </form>
                               </div>

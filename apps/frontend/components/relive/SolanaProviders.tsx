@@ -33,7 +33,7 @@ export function SolanaProviders({
 
   return (
     <ConnectionProvider endpoint={rpcEndpoint}>
-      <WalletProvider wallets={wallets} autoConnect={true}>
+      <WalletProvider wallets={wallets} autoConnect={false}>
         <WalletModalProvider>
           {children}
         </WalletModalProvider>

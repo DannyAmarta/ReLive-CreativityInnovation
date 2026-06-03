@@ -3,13 +3,14 @@
 import Link from "next/link";
 
 interface TrainerNavigationHeaderProps {
-  activeTab: "services" | "availability";
+  activeTab: "services" | "availability" | "crypto";
 }
 
 export function TrainerNavigationHeader({ activeTab }: TrainerNavigationHeaderProps) {
   const navItems = [
     { label: "Your Services", href: "/trainer/services", key: "services" },
     { label: "Weekly Schedule", href: "/trainer/availability", key: "availability" },
+    { label: "Crypto Setup", href: "/trainer/crypto", key: "crypto" },
   ];
 
   return (

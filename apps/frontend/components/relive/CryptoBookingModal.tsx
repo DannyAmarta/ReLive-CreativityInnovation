@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { formatUSDC } from "@/lib/format";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { WalletConnectionModal } from "./WalletConnectionModal";
+import { WalletAccountHelperModal } from "./WalletAccountHelperModal";
 import { truncateAddress } from "./WalletButton";
 import { toast } from "sonner";
 import { useCryptoEscrow } from "@/hooks/features/marketplace/useCryptoEscrow";
@@ -32,7 +33,7 @@ export function CryptoBookingModal({
   onClose: () => void;
 }) {
   const navigate = useRouter();
-  const { connected, publicKey } = useWallet();
+  const { connected, publicKey, wallet } = useWallet();
   const address = publicKey?.toBase58();
   const { execute, isLoading, error: cryptoError } = useCryptoEscrow();
   
@@ -40,10 +41,21 @@ export function CryptoBookingModal({
   const [failure, setFailure] = useState<Failure | null>(null);
   const [backendErrorMsg, setBackendErrorMsg] = useState<string | null>(null);
   const [signature, setSignature] = useState<string>("");
+  const [pendingBookingId, setPendingBookingId] = useState<number | null>(null);
   const [showWalletModal, setShowWalletModal] = useState(false);
+  const [showWalletHelper, setShowWalletHelper] = useState(false);
+  const [savedWalletAddress, setSavedWalletAddress] = useState<string | null>(null);
+  const [isLoadingSavedWallet, setIsLoadingSavedWallet] = useState(true);
+  const [isSavingWallet, setIsSavingWallet] = useState(false);
 
-  const tokenUnits = service.priceInLamports ? service.priceInLamports / 1e9 : 0;
+  const tokenUnits = service.priceInLamports ? service.priceInLamports / 1e6 : 0;
   const insufficient = false; // Trust the blockchain/wallet to handle balance checks
+  const hasWalletMismatch =
+    !!connected &&
+    !!address &&
+    !!savedWalletAddress &&
+    savedWalletAddress !== address;
+  const needsSavedWallet = !!connected && !!address && !savedWalletAddress;
 
   // Open wallet modal automatically if not connected
   useEffect(() => {
@@ -62,9 +74,85 @@ export function CryptoBookingModal({
     return () => clearTimeout(t);
   }, [stage, navigate, onClose]);
 
+  useEffect(() => {
+    let ignore = false;
+
+    async function loadSavedWallet() {
+      setIsLoadingSavedWallet(true);
+      try {
+        const response = await fetch("/api/wallet-accounts", { cache: "no-store" });
+        const payload = (await response.json()) as { savedWalletAddress?: string | null };
+        if (!ignore) {
+          setSavedWalletAddress(payload.savedWalletAddress ?? null);
+        }
+      } catch {
+        if (!ignore) {
+          setSavedWalletAddress(null);
+        }
+      } finally {
+        if (!ignore) {
+          setIsLoadingSavedWallet(false);
+        }
+      }
+    }
+
+    void loadSavedWallet();
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  const saveConnectedWallet = async () => {
+    if (!connected || !address || !wallet?.adapter.name) return;
+
+    setIsSavingWallet(true);
+    try {
+      const response = await fetch("/api/wallet-accounts", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          provider: wallet.adapter.name.toUpperCase().includes("SOLFLARE")
+            ? "SOLFLARE"
+            : wallet.adapter.name.toUpperCase().includes("PHANTOM")
+              ? "PHANTOM"
+              : "OTHER",
+          walletAddress: address,
+          setActive: true,
+        }),
+      });
+
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(payload?.error || "Unable to save your wallet address.");
+      }
+
+      setSavedWalletAddress(address);
+      toast.success("Your ReLive wallet address was updated.");
+      setShowWalletHelper(false);
+    } catch (err: any) {
+      toast.error(err?.message || "Unable to save your wallet address.");
+    } finally {
+      setIsSavingWallet(false);
+    }
+  };
+
   const handleDeposit = async () => {
     if (!connected) {
       setShowWalletModal(true);
+      return;
+    }
+    if (hasWalletMismatch) {
+      setShowWalletHelper(true);
+      toast.error("Your connected wallet must match the wallet address saved in ReLive.");
+      return;
+    }
+    if (needsSavedWallet) {
+      setFailure("rejected");
+      setBackendErrorMsg("Save your connected wallet as your ReLive wallet before paying.");
+      setStage("error");
       return;
     }
     if (insufficient) {
@@ -78,30 +166,25 @@ export function CryptoBookingModal({
     setBackendErrorMsg(null);
     
     try {
-      // 1. Create booking in DB (Status: PENDING)
       const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      const bookingId = await createCryptoBookingWithoutRedirect(
-        trainerId,
-        service.id,
-        slot.start,
-        slot.end,
-        timezone
-      );
+      const bookingId =
+        pendingBookingId ??
+        (await createCryptoBookingWithoutRedirect(
+          trainerId,
+          service.id,
+          slot.start,
+          slot.end,
+          timezone
+        ));
+      setPendingBookingId(bookingId);
 
-      // 2. Process on-chain transaction
       const sig = await execute(bookingId, "deposit");
-      
-      if (sig) {
-        setSignature(sig);
-        setStage("success");
-      } else {
-        setFailure("rejected");
-        setStage("error");
-      }
+      setSignature(sig);
+      setStage("success");
     } catch (err: any) {
       console.error("Booking error:", err);
       setFailure("rejected");
-      setBackendErrorMsg(err?.message || null);
+      setBackendErrorMsg(err?.message || cryptoError || null);
       setStage("error");
     }
   };
@@ -172,12 +255,57 @@ export function CryptoBookingModal({
                   </p>
                 </div>
                 <button
-                  onClick={() => setShowWalletModal(true)}
+                  onClick={() => {
+                    if (connected) {
+                      setShowWalletHelper(true);
+                      return;
+                    }
+                    setShowWalletModal(true);
+                  }}
                   className="text-xs font-medium text-primary hover:underline"
                 >
                   {connected ? "Change" : "Connect"}
                 </button>
               </div>
+
+              <div className="mt-3 flex items-center justify-between rounded-xl border border-dashed border-border px-3 py-2.5 text-sm">
+                <div>
+                  <p className="text-xs text-muted-foreground">Saved in ReLive</p>
+                  <p className="font-mono text-foreground">
+                    {isLoadingSavedWallet
+                      ? "Loading..."
+                      : savedWalletAddress
+                        ? truncateAddress(savedWalletAddress)
+                        : "Not set yet"}
+                  </p>
+                </div>
+                {connected && address && (
+                  <button
+                    onClick={() => void saveConnectedWallet()}
+                    disabled={isSavingWallet}
+                    className="text-xs font-medium text-primary hover:underline disabled:opacity-50"
+                  >
+                    {isSavingWallet
+                      ? "Saving..."
+                      : savedWalletAddress
+                        ? "Use connected"
+                        : "Save wallet"}
+                  </button>
+                )}
+              </div>
+
+              {hasWalletMismatch && (
+                <div className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
+                  Your connected signer wallet does not match the wallet address saved in ReLive.
+                  Update your saved wallet to this signer, or reconnect the correct wallet before paying.
+                </div>
+              )}
+
+              {needsSavedWallet && (
+                <div className="mt-3 rounded-2xl border border-primary/20 bg-primary/5 p-3 text-xs text-primary-deep">
+                  Save your connected wallet as your ReLive wallet first. Crypto checkout now uses your saved ReLive wallet address as the expected signer.
+                </div>
+              )}
 
               {insufficient && (
                 <p className="mt-3 text-xs text-destructive">
@@ -187,11 +315,11 @@ export function CryptoBookingModal({
 
               <button
                 onClick={handleDeposit}
-                disabled={!connected || insufficient || isLoading}
+                disabled={!connected || insufficient || isLoading || hasWalletMismatch || needsSavedWallet || isSavingWallet}
                 className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-primary py-3.5 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Wallet className="h-4 w-4" />
-                Deposit & Book
+                {needsSavedWallet ? "Save Wallet First" : hasWalletMismatch ? "Wallet Mismatch" : "Deposit & Book"}
               </button>
               <button
                 onClick={onClose}
@@ -264,6 +392,18 @@ export function CryptoBookingModal({
 
       {showWalletModal && (
         <WalletConnectionModal onClose={() => setShowWalletModal(false)} />
+      )}
+
+      {showWalletHelper && (
+        <WalletAccountHelperModal
+          title="Use or change client wallet"
+          description="Your connected signer wallet should match the wallet address you have saved in ReLive before crypto payment."
+          connectedWalletAddress={address}
+          savedWalletAddress={savedWalletAddress}
+          useConnectedLabel="Keep using this wallet"
+          onUseConnectedWallet={() => setShowWalletHelper(false)}
+          onClose={() => setShowWalletHelper(false)}
+        />
       )}
     </>
   );

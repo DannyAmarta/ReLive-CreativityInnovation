@@ -1,7 +1,10 @@
 "use client";
 
 import { Bell, Check, Inbox } from "lucide-react";
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
+import { io, Socket } from "socket.io-client";
+import { BACKEND_URL } from "@/lib/constants";
+import { toast } from "sonner";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,11 +31,41 @@ function fmtRelative(isoString: string): string {
 
 export function NotificationBell({
   initialNotifications,
+  accessToken,
 }: {
   initialNotifications: NotificationRecord[];
+  accessToken?: string;
 }) {
   const [items, setItems] = useState(initialNotifications);
   const [isPending, startTransition] = useTransition();
+
+  useEffect(() => {
+    if (!accessToken) return;
+
+    const socket: Socket = io(BACKEND_URL, {
+      auth: { token: accessToken },
+      transports: ["websocket"],
+    });
+
+    socket.on("new_notification", (notification: any) => {
+      const newRecord: NotificationRecord = {
+        id: notification.id,
+        title: notification.title,
+        body: notification.body,
+        link: notification.link,
+        read: false,
+        createdAt: notification.createdAt || new Date().toISOString(),
+      };
+      
+      setItems((prev) => [newRecord, ...prev]);
+      toast.info(newRecord.title, { description: newRecord.body });
+    });
+
+    return () => {
+      socket.off("new_notification");
+      socket.disconnect();
+    };
+  }, [accessToken]);
 
   const unread = items.filter((n) => !n.read).length;
 

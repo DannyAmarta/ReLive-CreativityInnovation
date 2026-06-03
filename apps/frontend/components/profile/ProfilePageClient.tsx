@@ -130,11 +130,11 @@ export function ProfilePageClient({ user: initialUser }: ProfilePageClientProps)
           className="flex items-center justify-between px-6 py-5 sm:px-10"
         >
           <Link
-            href="/"
-            className="text-sm font-semibold text-white/40 hover:text-white/80 transition-colors"
+            href={user.role === "USER" ? "/client" : "/trainer"}
+            className="text-sm font-semibold text-[#2C2E2C]/50 hover:text-[#2C2E2C] transition-colors"
             style={{ fontFamily: "'Sora', sans-serif" }}
           >
-            ← Back
+            ← Back to Dashboard
           </Link>
           <motion.div
             whileHover={{ scale: 1.05, y: -1 }}

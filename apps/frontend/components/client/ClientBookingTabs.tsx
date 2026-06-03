@@ -131,17 +131,70 @@ interface ClientBookingTabsProps {
   cancellationRequests: CancellationRequest[];
 }
 
-type Tab = "active" | "history";
+type Tab = "active" | "action_needed" | "completed" | "history";
+
+// ─── Auto-Release Countdown Component ─────────────────────────────────────────
+function AutoReleaseCountdown({ updatedAt }: { updatedAt: string }) {
+  const [timeLeft, setTimeLeft] = useState<{ d: number; h: number; m: number; s: number } | null>(null);
+
+  useEffect(() => {
+    const target = new Date(updatedAt).getTime() + 3 * 24 * 60 * 60 * 1000;
+    
+    const update = () => {
+      const now = Date.now();
+      const diff = target - now;
+      if (diff <= 0) {
+        setTimeLeft({ d: 0, h: 0, m: 0, s: 0 });
+        return;
+      }
+      setTimeLeft({
+        d: Math.floor(diff / (1000 * 60 * 60 * 24)),
+        h: Math.floor((diff / (1000 * 60 * 60)) % 24),
+        m: Math.floor((diff / 1000 / 60) % 60),
+        s: Math.floor((diff / 1000) % 60),
+      });
+    };
+
+    update();
+    const interval = setInterval(update, 1000);
+    return () => clearInterval(interval);
+  }, [updatedAt]);
+
+  if (!timeLeft) return <span className="text-xs text-muted-foreground ml-2">Calculating time...</span>;
+  
+  if (timeLeft.d === 0 && timeLeft.h === 0 && timeLeft.m === 0 && timeLeft.s === 0) {
+    return (
+      <span className="text-[10px] font-bold text-red-500 uppercase tracking-wider ml-2 flex items-center gap-1">
+        <Clock className="h-3 w-3" /> Auto-releasing soon...
+      </span>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-1.5 ml-2">
+      <Clock className="h-3.5 w-3.5 text-amber-500" />
+      <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+        Auto-release in
+      </span>
+      <span className="font-mono tabular-nums text-xs text-amber-600 font-bold bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
+        {timeLeft.d}d {timeLeft.h.toString().padStart(2, '0')}h {timeLeft.m.toString().padStart(2, '0')}m {timeLeft.s.toString().padStart(2, '0')}s
+      </span>
+    </div>
+  );
+}
 
 // ─── Classification Logic ─────────────────────────────────────────────────────
-const ACTIVE_STATUSES = new Set(["PENDING", "ACTIVE", "PENDING_RELEASE", "DISPUTED"]);
-const HISTORY_STATUSES = new Set(["COMPLETED", "CANCELLED", "REJECTED"]);
+const ACTIVE_STATUSES = new Set(["PENDING", "ACTIVE", "DISPUTED"]);
+const HISTORY_STATUSES = new Set(["CANCELLED", "REJECTED"]);
 
 function classifyBooking(
   booking: BookingRecord,
   rescheduleRequests: RescheduleRequest[],
   cancellationRequests: CancellationRequest[]
-): "active" | "history" {
+): Tab {
+  if (booking.status === "PENDING_RELEASE") return "action_needed";
+  if (booking.status === "COMPLETED") return "completed";
+
   // Always active if primary status is actionable
   if (ACTIVE_STATUSES.has(booking.status)) return "active";
 
@@ -220,7 +273,7 @@ function EmptyState({ tab }: { tab: Tab }) {
     return (
       <div className="rounded-2xl border border-dashed border-border bg-card p-12 text-center">
         <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-[rgba(74,93,62,0.08)]">
-          <CheckCircle2 className="h-5 w-5 text-[#4a5d3e]" />
+          <Calendar className="h-5 w-5 text-[#4a5d3e]" />
         </div>
         <p className="font-semibold text-primary-deep">No active bookings</p>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -236,14 +289,42 @@ function EmptyState({ tab }: { tab: Tab }) {
     );
   }
 
+  if (tab === "action_needed") {
+    return (
+      <div className="rounded-2xl border border-dashed border-border bg-card p-12 text-center">
+        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-blue-500/10">
+          <CheckCircle2 className="h-5 w-5 text-blue-500" />
+        </div>
+        <p className="font-semibold text-primary-deep">All caught up!</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          You have no sessions waiting for payment release or approval.
+        </p>
+      </div>
+    );
+  }
+
+  if (tab === "completed") {
+    return (
+      <div className="rounded-2xl border border-dashed border-border bg-card p-12 text-center">
+        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/10">
+          <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+        </div>
+        <p className="font-semibold text-primary-deep">No completed sessions yet</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Sessions that have successfully finished will appear here.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="rounded-2xl border border-dashed border-border bg-card p-12 text-center">
       <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
         <History className="h-5 w-5 text-muted-foreground" />
       </div>
-      <p className="font-semibold text-primary-deep">No booking history yet</p>
+      <p className="font-semibold text-primary-deep">No cancelled sessions</p>
       <p className="mt-1 text-sm text-muted-foreground">
-        Completed, cancelled, and rejected sessions will appear here.
+        Cancelled and rejected sessions will appear here.
       </p>
     </div>
   );
@@ -310,28 +391,53 @@ export function ClientBookingTabs({
     setIsSubmittingDispute(false);
   };
 
-  // Split bookings into two classified lists
+  // Split bookings into four classified lists
   const activeBookings = bookings.filter(
     (b) => classifyBooking(b, rescheduleRequests, cancellationRequests) === "active"
+  );
+  const actionNeededBookings = bookings.filter(
+    (b) => classifyBooking(b, rescheduleRequests, cancellationRequests) === "action_needed"
+  );
+  const completedBookings = bookings.filter(
+    (b) => classifyBooking(b, rescheduleRequests, cancellationRequests) === "completed"
   );
   const historyBookings = bookings.filter(
     (b) => classifyBooking(b, rescheduleRequests, cancellationRequests) === "history"
   );
 
   const displayedBookings =
-    activeTab === "active" ? activeBookings : historyBookings;
+    activeTab === "active" ? activeBookings :
+    activeTab === "action_needed" ? actionNeededBookings :
+    activeTab === "completed" ? completedBookings :
+    historyBookings;
 
   return (
     <div>
       {/* ── Tab Header ── */}
-      <div className="mb-6 flex items-center gap-1 border-b border-border">
+      <div className="mb-6 flex items-center gap-1 border-b border-border overflow-x-auto">
         <TabButton
           active={activeTab === "active"}
           onClick={() => setActiveTab("active")}
           count={activeBookings.length}
           icon={<Zap className="h-3.5 w-3.5" />}
         >
-          Active Bookings
+          Active
+        </TabButton>
+        <TabButton
+          active={activeTab === "action_needed"}
+          onClick={() => setActiveTab("action_needed")}
+          count={actionNeededBookings.length}
+          icon={<AlertTriangle className="h-3.5 w-3.5" />}
+        >
+          Action Needed
+        </TabButton>
+        <TabButton
+          active={activeTab === "completed"}
+          onClick={() => setActiveTab("completed")}
+          count={completedBookings.length}
+          icon={<CheckCircle2 className="h-3.5 w-3.5" />}
+        >
+          Completed
         </TabButton>
         <TabButton
           active={activeTab === "history"}
@@ -473,7 +579,7 @@ export function ClientBookingTabs({
                     <CircleSlash className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
                     <div>
                       <p className="font-semibold text-destructive px-0.5">
-                        Cancellation Request Pending
+                        Cancellation Processed
                       </p>
                       {pendingCancellation.reason && (
                         <p className="italic text-muted-foreground mt-0.5">
@@ -482,8 +588,8 @@ export function ClientBookingTabs({
                       )}
                       <p className="text-muted-foreground mt-1 font-medium">
                         {pendingCancellation.proposedById === booking.clientId
-                          ? "Waiting for the trainer to agree or reject."
-                          : "The trainer requested mutual cancellation. Go to Cancel page to resolve."}
+                          ? "Your session has been cancelled. This notification is waiting for the trainer to acknowledge it."
+                          : "The trainer cancelled this session. Any payments will be refunded."}
                       </p>
                     </div>
                   </div>
@@ -607,6 +713,34 @@ export function ClientBookingTabs({
                   </div>
                 )}
 
+                {/* ── Review Section ── */}
+                {booking.status === "COMPLETED" && booking.review && (
+                  <div className="mt-4 rounded-xl border border-amber-200/60 bg-amber-50/50 p-4 dark:border-amber-900/30 dark:bg-amber-900/10">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="flex gap-0.5">
+                        {[1, 2, 3, 4, 5].map((s) => (
+                          <Star
+                            key={s}
+                            className={`h-4 w-4 ${
+                              s <= booking.review!.rating
+                                ? "fill-amber-400 text-amber-400"
+                                : "fill-transparent text-black/10 dark:text-white/10"
+                            }`}
+                          />
+                        ))}
+                      </div>
+                      <span className="text-sm font-semibold text-amber-700 dark:text-amber-500">
+                        You rated {booking.review.rating} stars
+                      </span>
+                    </div>
+                    {booking.review.comment && (
+                      <p className="text-sm text-foreground/80 mt-1 italic">
+                        "{booking.review.comment}"
+                      </p>
+                    )}
+                  </div>
+                )}
+
                 {/* ── Footer: Meta + Actions ── */}
                 <div className="mt-4 grid gap-3 border-t border-border pt-4 md:grid-cols-[1fr_auto] md:items-center">
                   <div className="space-y-1 text-xs text-muted-foreground">
@@ -621,29 +755,14 @@ export function ClientBookingTabs({
 
                   {/* Action Buttons */}
                   <div className="flex flex-wrap gap-2 md:justify-end">
-                    {/* COMPLETED: review or already-reviewed star badge */}
-                    {booking.status === "COMPLETED" &&
-                      (booking.review ? (
-                        <div className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/25 bg-amber-400/8 px-3 py-1.5 text-xs text-amber-500">
-                          {[1, 2, 3, 4, 5].map((s) => (
-                            <Star
-                              key={s}
-                              className={`h-3 w-3 ${
-                                s <= booking.review!.rating
-                                  ? "fill-amber-400 text-amber-400"
-                                  : "fill-transparent text-white/20"
-                              }`}
-                            />
-                          ))}
-                          <span className="ml-1 font-semibold">Reviewed</span>
-                        </div>
-                      ) : (
+                    {/* COMPLETED: review button if not reviewed */}
+                    {booking.status === "COMPLETED" && !booking.review && (
                         <ReviewButton
                           bookingId={booking.id}
                           trainerName={booking.trainer?.user?.name ?? "Trainer"}
                           serviceName={booking.service?.title ?? "Session"}
                         />
-                      ))}
+                    )}
 
                     {/* PENDING CRYPTO DEPOSIT */}
                     {booking.status === "PENDING" && booking.paymentType === "CRYPTO" && !booking.txHash && (
@@ -651,12 +770,12 @@ export function ClientBookingTabs({
                         type="button"
                         disabled={isCryptoLoading}
                         onClick={async () => {
-                          const signature = await executeCrypto(booking.id, "deposit");
-                          if (signature) {
+                          try {
+                            const signature = await executeCrypto(booking.id, "deposit");
                             toast.success("Deposit successful! Transaction signature: " + signature);
                             router.refresh();
-                          } else {
-                            toast.error(cryptoError || "Transaction failed");
+                          } catch (err: any) {
+                            toast.error(err?.message || cryptoError || "Transaction failed");
                           }
                         }}
                         className="inline-flex items-center gap-1.5 rounded-full bg-[#4a5d3e] px-4 py-2 text-xs font-semibold text-[#f8f6ef] shadow-[0_12px_24px_rgba(74,93,62,0.16)] transition-all hover:opacity-90 disabled:opacity-50"
@@ -693,7 +812,9 @@ export function ClientBookingTabs({
 
                     {/* PENDING RELEASE: Approve or Dispute */}
                     {booking.status === "PENDING_RELEASE" && (
-                      <>
+                      <div className="flex flex-col items-end gap-3 w-full sm:w-auto">
+                        <AutoReleaseCountdown updatedAt={booking.updatedAt} />
+                        <div className="flex flex-wrap gap-2 justify-end">
                         <form action={updateBookingStatusAction}>
                           <input type="hidden" name="bookingId" value={booking.id} />
                           <input type="hidden" name="status" value="COMPLETED" />
@@ -714,7 +835,8 @@ export function ClientBookingTabs({
                           <ShieldAlert className="h-3.5 w-3.5" />
                           Raise dispute
                         </button>
-                      </>
+                        </div>
+                      </div>
                     )}
 
                     {/* CANCELLED CRYPTO REFUND */}
@@ -723,12 +845,12 @@ export function ClientBookingTabs({
                         type="button"
                         disabled={isCryptoLoading}
                         onClick={async () => {
-                          const signature = await executeCrypto(booking.id, "refund");
-                          if (signature) {
+                          try {
+                            const signature = await executeCrypto(booking.id, "refund");
                             toast.success("Refund claimed successfully! Signature: " + signature);
                             router.refresh();
-                          } else {
-                            toast.error(cryptoError || "Transaction failed");
+                          } catch (err: any) {
+                            toast.error(err?.message || cryptoError || "Transaction failed");
                           }
                         }}
                         className="inline-flex items-center gap-1.5 rounded-full bg-amber-600 px-4 py-2 text-xs font-semibold text-white hover:bg-amber-700 transition-colors disabled:opacity-50"

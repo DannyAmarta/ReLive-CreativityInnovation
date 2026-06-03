@@ -56,6 +56,6 @@ export async function GET(req: Request) {
         accessToken: authPayload.accessToken,
     });
 
-    const redirectPath = role === "TRAINER" ? "/trainer" : "/client";
+    const redirectPath = role === "TRAINER" ? "/trainer" : "/client/trainers";
     return NextResponse.redirect(new URL(redirectPath, req.url));
 }

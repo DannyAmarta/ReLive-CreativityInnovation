@@ -35,20 +35,17 @@ export function SessionExpiryWatcher({ expiryTime }: SessionExpiryWatcherProps) 
   useEffect(() => {
     if (!isExpired) return;
 
+    if (countdown <= 0) {
+      router.push("/auth/logout?next=/auth/login");
+      return;
+    }
+
     const timer = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          // Redirect to logout and then login
-          router.push("/auth/logout?next=/auth/login");
-          return 0;
-        }
-        return prev - 1;
-      });
+      setCountdown((prev) => prev - 1);
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [isExpired, router]);
+  }, [isExpired, countdown, router]);
 
   if (!isExpired) return null;
 

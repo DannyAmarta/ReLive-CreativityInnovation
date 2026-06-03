@@ -80,6 +80,18 @@ export function CreateServiceForm() {
             className="h-11 w-full rounded-xl border border-border bg-background px-3 outline-none focus:border-primary disabled:opacity-50"
           />
         </label>
+        <label className="space-y-1.5 text-sm md:col-span-2">
+          <span className="text-muted-foreground">
+            Token mint address <span className="text-xs opacity-60">(required for crypto pricing)</span>
+          </span>
+          <input
+            name="tokenMintAddress"
+            placeholder="Paste the Solana token mint for this service"
+            disabled={isPending}
+            defaultValue={state.fields?.tokenMintAddress ?? ""}
+            className="h-11 w-full rounded-xl border border-border bg-background px-3 font-mono text-sm outline-none focus:border-primary disabled:opacity-50"
+          />
+        </label>
         <div className="flex items-end md:col-span-2">
           <button
             type="submit"
@@ -104,6 +116,7 @@ export function EditServiceForm({
     description: string;
     priceInLamports?: number | null;
     priceInIdr?: number | null;
+    tokenMintAddress?: string | null;
   };
 }) {
   const [state, formAction, isPending] = useActionState(saveTrainerServiceAction, initialState);
@@ -174,6 +187,17 @@ export function EditServiceForm({
           />
         </label>
       </div>
+      <label className="space-y-1.5 text-sm">
+        <span className="text-muted-foreground">
+          Token mint address <span className="text-xs opacity-60">(required for crypto pricing)</span>
+        </span>
+        <input
+          name="tokenMintAddress"
+          defaultValue={state.fields?.tokenMintAddress ?? service.tokenMintAddress ?? ""}
+          disabled={isPending}
+          className="h-11 w-full rounded-xl border border-border bg-card px-3 font-mono text-sm outline-none focus:border-primary disabled:opacity-50"
+        />
+      </label>
       <button
         type="submit"
         disabled={isPending}

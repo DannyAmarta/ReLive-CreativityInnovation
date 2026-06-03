@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, BadRequestException, ForbiddenException 
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateAvailabilityRuleInput, UpdateAvailabilityRuleInput } from './dto/availability.input';
 import { TrainerAvailability } from '@prisma/client';
+import { buildBlockingBookingWindowWhere } from './pending-booking.util';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -43,10 +44,11 @@ export class TrainerAvailabilityService {
   // ── Rule CRUD ────────────────────────────────────────────────────────────
 
   async assertRulesDoNotConflictWithBookings(trainerId: number, rulesAfterChange: TrainerAvailability[]) {
+    const now = new Date();
     const bookings = await this.prisma.booking.findMany({
       where: {
         trainerId,
-        status: { in: ['PENDING', 'ACTIVE'] },
+        ...buildBlockingBookingWindowWhere(now),
         scheduledStart: { not: null },
         scheduledEnd: { not: null },
       },
@@ -201,6 +203,7 @@ export class TrainerAvailabilityService {
     endDate: string,   // YYYY-MM-DD
     slotDurationMinutes = 60,
   ) {
+    const now = new Date();
     const rules = await this.getAvailabilityRules(trainerId);
 
     // Fetch existing booked windows for the trainer in the date range
@@ -210,7 +213,7 @@ export class TrainerAvailabilityService {
     const existingBookings = await this.prisma.booking.findMany({
       where: {
         trainerId,
-        status: { in: ['PENDING', 'ACTIVE'] },
+        ...buildBlockingBookingWindowWhere(now),
         scheduledStart: { gte: rangeStart, lte: rangeEnd },
         scheduledEnd:   { not: null },
       },
@@ -286,10 +289,11 @@ export class TrainerAvailabilityService {
     scheduledEnd: Date,
     excludeBookingId?: number,
   ) {
+    const now = new Date();
     const conflict = await this.prisma.booking.findFirst({
       where: {
         trainerId,
-        status: { in: ['PENDING', 'ACTIVE'] },
+        ...buildBlockingBookingWindowWhere(now),
         ...(excludeBookingId && { id: { not: excludeBookingId } }),
         scheduledStart: { lt: scheduledEnd },
         scheduledEnd:   { gt: scheduledStart },

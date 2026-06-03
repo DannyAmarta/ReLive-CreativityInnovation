@@ -11,6 +11,7 @@ type Service = {
   title: string;
   priceInIdr: number;
   priceInLamports: number | null;
+  tokenMintAddress?: string | null;
 };
 
 type Props = {
@@ -23,18 +24,20 @@ type Props = {
 // ─── Crypto booking now uses a modal for on-chain checkout ──────────────
 export function CryptoBookingButton({ service, trainerId, trainerName, slot }: Props) {
   const [open, setOpen] = useState(false);
+  const cryptoReady = Boolean(service.priceInLamports && service.tokenMintAddress);
 
   return (
     <>
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="w-full rounded-full border border-border bg-background px-4 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary-deep"
+        disabled={!cryptoReady}
+        className="w-full rounded-full border border-border bg-background px-4 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary-deep disabled:cursor-not-allowed disabled:opacity-50"
       >
-        Reserve with Crypto
+        {cryptoReady ? "Reserve with Crypto" : "Crypto unavailable"}
       </button>
 
-      {open && (
+      {open && cryptoReady && (
         <CryptoBookingModal
           service={service as any}
           trainerId={trainerId}

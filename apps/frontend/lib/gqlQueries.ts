@@ -543,11 +543,42 @@ export const GET_MY_TRAINER_PROFILE_QUERY = gql`
             bio
             certifications
             rating
+            payoutAtaAddress
+            payoutMintAddress
+            ataInitializedAt
             user {
                 id
                 name
                 avatar
                 bio
+                walletAddress
+            }
+            services {
+                id
+                title
+                description
+                priceInLamports
+                priceInIdr
+                tokenMintAddress
+                isActive
+            }
+        }
+    }
+`
+
+export const UPDATE_TRAINER_CRYPTO_SETTINGS_MUTATION = gql`
+    mutation UpdateTrainerCryptoSettings($input: UpdateTrainerCryptoSettingsInput!) {
+        updateTrainerCryptoSettings(input: $input) {
+            id
+            payoutAtaAddress
+            payoutMintAddress
+            ataInitializedAt
+            user {
+                id
+                name
+                avatar
+                bio
+                walletAddress
             }
             services {
                 id

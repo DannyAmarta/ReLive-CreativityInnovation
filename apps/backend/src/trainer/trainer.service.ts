@@ -18,10 +18,14 @@ import { UpdateTrainerServiceInput } from './dto/update-trainer-service.input';
 import { UpdateBookingStatusInput } from './dto/update-booking-status.input';
 import { RegisterTrainerFiatInput } from './dto/register-trainer-fiat.input';
 import { CreateReviewInput } from './dto/create-review.input';
-import { Role, BookingStatus } from '@prisma/client';
+import { UpdateTrainerCryptoSettingsInput } from './dto/update-trainer-crypto-settings.input';
+import { Role, BookingStatus, PaymentType } from '@prisma/client';
 import { FiatPaymentService } from '../fiat-payment/fiat-payment.service';
 import { NotificationService } from '../core/notification.service';
 import { TrainerAvailabilityService } from './trainer-availability.service';
+import {
+  getPendingBookingExpiresAt,
+} from './pending-booking.util';
 
 // ─── Booking State Machine (RBAC) ────────────────────────────────────────────
 // Note on BookingStatus.PENDING: Bookings are initialized to PENDING upon checkout creation.
@@ -33,13 +37,13 @@ const ALLOWED_TRANSITIONS: Record<Role, Partial<Record<BookingStatus, BookingSta
   // This prevents trainers from pocketing fiat funds before actually delivering the session.
   [Role.TRAINER]: {
     [BookingStatus.PENDING]: [BookingStatus.ACTIVE, BookingStatus.CANCELLED],
-    [BookingStatus.ACTIVE]: [BookingStatus.PENDING_RELEASE, BookingStatus.DISPUTED],
+    [BookingStatus.ACTIVE]: [BookingStatus.PENDING_RELEASE, BookingStatus.DISPUTED, BookingStatus.CANCELLED],
     [BookingStatus.DISPUTED]: [BookingStatus.DISPUTED],
   },
   // Client controls the final COMPLETED release (or can dispute).
   [Role.USER]: {
     [BookingStatus.PENDING]: [BookingStatus.CANCELLED],
-    [BookingStatus.ACTIVE]: [BookingStatus.COMPLETED, BookingStatus.DISPUTED],
+    [BookingStatus.ACTIVE]: [BookingStatus.COMPLETED, BookingStatus.DISPUTED, BookingStatus.CANCELLED],
     [BookingStatus.PENDING_RELEASE]: [BookingStatus.COMPLETED, BookingStatus.DISPUTED],
     [BookingStatus.DISPUTED]: [BookingStatus.DISPUTED],
   },
@@ -85,6 +89,26 @@ export class TrainerService {
     return booking;
   }
 
+  async expireAbandonedPendingBookings(filters: {
+    clientId?: number;
+    trainerId?: number;
+  } = {}) {
+    const now = new Date();
+
+    return this.prisma.booking.updateMany({
+      where: {
+        status: BookingStatus.PENDING,
+        txHash: null,
+        pendingExpiresAt: { not: null, lte: now },
+        ...(filters.clientId ? { clientId: filters.clientId } : {}),
+        ...(filters.trainerId ? { trainerId: filters.trainerId } : {}),
+      },
+      data: {
+        status: BookingStatus.CANCELLED,
+      },
+    });
+  }
+
   // ─── Trainer Profile ──────────────────────────────────────────────────────
   async getTrainerProfiles() {
     const profiles = await this.prisma.trainerProfile.findMany({
@@ -109,6 +133,53 @@ export class TrainerService {
     });
     if (!profile) throw new NotFoundException('Trainer profile not found');
     return this.sanitizeProfile(profile);
+  }
+
+  async updateTrainerCryptoSettings(userId: number, input: UpdateTrainerCryptoSettingsInput) {
+    const profile = await this.prisma.trainerProfile.findUnique({
+      where: { userId },
+      include: { user: true, services: true, reviews: true },
+    });
+    if (!profile) throw new NotFoundException('Trainer profile not found');
+
+    const updatedProfile = await this.prisma.$transaction(async (tx) => {
+      if (input.walletAddress !== undefined) {
+        await tx.user.update({
+          where: { id: userId },
+          data: { walletAddress: input.walletAddress },
+        });
+      }
+
+      await tx.trainerProfile.update({
+        where: { userId },
+        data: {
+          ...(input.payoutMintAddress !== undefined
+            ? { payoutMintAddress: input.payoutMintAddress }
+            : {}),
+        },
+      });
+
+      if (input.payoutMintAddress) {
+        await tx.trainerService.updateMany({
+          where: {
+            trainerId: profile.id,
+            priceInLamports: { gt: 0 },
+            tokenMintAddress: null,
+          },
+          data: {
+            tokenMintAddress: input.payoutMintAddress,
+          },
+        });
+      }
+
+      return tx.trainerProfile.findUnique({
+        where: { userId },
+        include: { user: true, services: true, reviews: true },
+      });
+    });
+
+    if (!updatedProfile) throw new NotFoundException('Trainer profile not found');
+    return this.sanitizeProfile(updatedProfile);
   }
 
   async createTrainerProfile(userId: number, input: CreateTrainerProfileInput) {
@@ -244,8 +315,14 @@ export class TrainerService {
 
     // Crypto: only enforce mint match if a crypto price is being set
     const tokenMintAddress = input.priceInLamports
-      ? (input.tokenMintAddress ?? profile.payoutMintAddress ?? 'So11111111111111111111111111111111111111112')
+      ? (input.tokenMintAddress ?? profile.payoutMintAddress ?? null)
       : null;
+
+    if (input.priceInLamports && !tokenMintAddress) {
+      throw new BadRequestException(
+        'Set a token mint address for this service or configure a default payout mint in Crypto Setup first',
+      );
+    }
 
     const service = await this.prisma.trainerService.create({
       data: {
@@ -283,6 +360,21 @@ export class TrainerService {
       throw new ForbiddenException('You can only edit your own services');
     }
 
+    const nextPriceInLamports =
+      input.priceInLamports !== undefined ? input.priceInLamports : service.priceInLamports;
+    const nextTokenMintAddress =
+      nextPriceInLamports
+        ? (input.tokenMintAddress !== undefined
+            ? input.tokenMintAddress
+            : service.tokenMintAddress ?? profile.payoutMintAddress ?? null)
+        : null;
+
+    if (nextPriceInLamports && !nextTokenMintAddress) {
+      throw new BadRequestException(
+        'Set a token mint address for this service or configure a default payout mint in Crypto Setup first',
+      );
+    }
+
     return this.prisma.trainerService.update({
       where: { id: input.serviceId },
       data: {
@@ -290,6 +382,10 @@ export class TrainerService {
         description: input.description,
         priceInLamports: input.priceInLamports ?? undefined,
         priceInIdr: input.priceInIdr ?? undefined,
+        tokenMintAddress:
+          input.tokenMintAddress !== undefined || nextPriceInLamports === null
+            ? nextTokenMintAddress
+            : undefined,
         isActive: input.isActive,
       },
     });
@@ -297,6 +393,11 @@ export class TrainerService {
 
   // ─── Bookings ─────────────────────────────────────────────────────────────
   async createBooking(clientId: number, input: CreateBookingInput) {
+    await this.expireAbandonedPendingBookings({
+      clientId,
+      trainerId: input.trainerId,
+    });
+
     const service = await this.prisma.trainerService.findUnique({
       where: { id: input.serviceId },
       include: { trainer: true },
@@ -311,6 +412,41 @@ export class TrainerService {
 
     const scheduledStart = new Date(input.scheduledStart);
     const scheduledEnd = new Date(input.scheduledEnd);
+    const now = new Date();
+    const paymentType =
+      input.paymentType === PaymentType.FIAT
+        ? PaymentType.FIAT
+        : input.paymentType === PaymentType.CRYPTO
+          ? PaymentType.CRYPTO
+          : null;
+
+    const reusablePendingBooking = await this.prisma.booking.findFirst({
+      where: {
+        clientId,
+        trainerId: input.trainerId,
+        serviceId: input.serviceId,
+        status: BookingStatus.PENDING,
+        pendingExpiresAt: { gt: now },
+        scheduledStart,
+        scheduledEnd,
+      },
+      include: { trainer: { include: { user: true } }, service: true, client: true },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (reusablePendingBooking) {
+      const refreshedBooking = await this.prisma.booking.update({
+        where: { id: reusablePendingBooking.id },
+        data: {
+          paymentType: paymentType ?? reusablePendingBooking.paymentType,
+          timezone: input.timezone ?? reusablePendingBooking.timezone ?? 'Asia/Jakarta',
+          pendingExpiresAt: getPendingBookingExpiresAt(now),
+        },
+        include: { trainer: { include: { user: true } }, service: true, client: true },
+      });
+
+      return this.sanitizeBooking(refreshedBooking);
+    }
     
     // Assert no conflicts before proceeding
     await this.availabilityService.assertNoSchedulingConflict(
@@ -325,9 +461,11 @@ export class TrainerService {
         trainerId: input.trainerId,
         serviceId: input.serviceId,
         status: BookingStatus.PENDING,
+        paymentType,
         scheduledStart,
         scheduledEnd,
         timezone: input.timezone ?? 'Asia/Jakarta',
+        pendingExpiresAt: getPendingBookingExpiresAt(now),
       },
       include: { trainer: { include: { user: true } }, service: true, client: true },
     });
@@ -381,6 +519,40 @@ export class TrainerService {
     if (booking.trainer.user.walletAddress !== params.trainerWallet) {
       throw new ForbiddenException('On-chain trainer wallet does not match booking trainer');
     }
+    const expiredWithoutSettlement =
+      booking.pendingExpiresAt != null &&
+      booking.pendingExpiresAt.getTime() <= Date.now() &&
+      !booking.txHash &&
+      (booking.status === BookingStatus.PENDING || booking.status === BookingStatus.CANCELLED);
+
+    if (expiredWithoutSettlement) {
+      const expiredBooking = await this.prisma.booking.update({
+        where: { id: params.bookingId },
+        data: {
+          status: BookingStatus.CANCELLED,
+          txHash: params.txHash,
+          escrowAddress: params.escrowAddress,
+          paymentType: 'CRYPTO',
+        },
+        include: { trainer: { include: { user: true } }, service: true, client: true },
+      });
+
+      try {
+        await this.notificationService.create({
+          userId: expiredBooking.clientId,
+          title: 'Crypto booking expired',
+          body: `Your payment for "${expiredBooking.service?.title ?? 'this session'}" arrived after the 15-minute checkout window. The slot was released, and you can now request a refund from your bookings page.`,
+          link: '/client/dashboard',
+        });
+      } catch (err) {
+        this.logger.warn(`Failed to send expired-crypto notification: ${(err as Error).message}`);
+      }
+
+      return this.sanitizeBooking(expiredBooking);
+    }
+    if (booking.status === BookingStatus.CANCELLED && booking.txHash) {
+      return this.sanitizeBooking(booking);
+    }
     if (booking.status !== BookingStatus.PENDING) {
       return this.sanitizeBooking(booking);
     }
@@ -391,6 +563,7 @@ export class TrainerService {
         txHash: params.txHash,
         escrowAddress: params.escrowAddress,
         status: BookingStatus.ACTIVE,
+        paymentType: 'CRYPTO',
       },
       include: { trainer: { include: { user: true } }, service: true, client: true },
     });
@@ -398,6 +571,8 @@ export class TrainerService {
   }
 
   async getClientBookings(clientId: number) {
+    await this.expireAbandonedPendingBookings({ clientId });
+
     const bookings = await this.prisma.booking.findMany({
       where: { clientId },
       include: { trainer: { include: { user: true } }, service: true, review: true },
@@ -408,6 +583,8 @@ export class TrainerService {
   async getTrainerBookings(userId: number) {
     const profile = await this.prisma.trainerProfile.findUnique({ where: { userId } });
     if (!profile) return [];
+
+    await this.expireAbandonedPendingBookings({ trainerId: profile.id });
 
     const bookings = await this.prisma.booking.findMany({
       where: { trainerId: profile.id },
@@ -869,6 +1046,10 @@ export class TrainerService {
       throw new ConflictException('A cancellation request is already pending for this booking');
     }
 
+    // --- AUTO-CANCEL LOGIC ---
+    // Perform status update FIRST to prevent database corruption on failure.
+    await this.updateBookingStatus(userId, { bookingId: input.bookingId, status: BookingStatus.CANCELLED });
+    
     const request = await this.prisma.bookingCancellationRequest.create({
       data: {
         bookingId: input.bookingId,
@@ -883,13 +1064,14 @@ export class TrainerService {
     try {
       await this.notificationService.create({
         userId: otherUserId,
-        title: '🚫 Cancellation Requested',
-        body: `${proposerName} has requested to cancel the "${booking.service.title}" session. Please review and respond.`,
+        title: '🚫 Booking Cancelled',
+        body: `${proposerName} has cancelled the "${booking.service.title}" session. Any payments will be refunded.`,
         link: isClient ? '/trainer/bookings' : '/client/dashboard',
       });
     } catch (err) {
       this.logger.warn(`Notification failed for cancellation request on booking ${input.bookingId}: ${(err as Error).message}`);
     }
+    // -------------------------
 
     return request;
   }
@@ -908,6 +1090,7 @@ export class TrainerService {
     const isAccepted = input.action === 'ACCEPT';
 
     if (isAccepted) {
+      /*
       await this.prisma.$transaction([
         this.prisma.bookingCancellationRequest.update({
           where: { id: input.requestId },
@@ -945,7 +1128,18 @@ export class TrainerService {
       } catch (err) {
         this.logger.warn(`Notifications failed for mutual cancellation of booking ${request.bookingId}: ${(err as Error).message}`);
       }
+      */
+      
+      // --- AUTO-CANCEL RESOLVE LOGIC ---
+      // The booking was already cancelled when the request was made.
+      // Now we just dismiss the notification by accepting the request.
+      await this.prisma.bookingCancellationRequest.update({
+        where: { id: input.requestId },
+        data: { status: 'ACCEPTED' },
+      });
+      // ---------------------------------
     } else {
+      /*
       await this.prisma.bookingCancellationRequest.update({
         where: { id: input.requestId },
         data: { status: 'REJECTED' },
@@ -961,6 +1155,8 @@ export class TrainerService {
       } catch (err) {
         this.logger.warn(`Notification failed resolving cancellation ${input.requestId}: ${(err as Error).message}`);
       }
+      */
+      throw new BadRequestException('Rejecting a cancellation is no longer supported.');
     }
 
     return this.prisma.bookingCancellationRequest.findUnique({ where: { id: input.requestId } });
@@ -1082,4 +1278,3 @@ export class TrainerService {
     };
   }
 }
-

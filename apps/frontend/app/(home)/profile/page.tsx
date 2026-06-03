@@ -52,6 +52,7 @@ export default async function ProfilePage() {
   <ProfilePageClient
     user={{
       ...user,
+      role: session.user.role,
       bio: user.bio,
       avatar: user.avatar ?? null,
       fitnessLevel: user.fitnessLevel ?? null,

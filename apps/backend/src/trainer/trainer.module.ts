@@ -5,6 +5,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TrainerService } from './trainer.service';
 import { TrainerResolver } from './trainer.resolver';
 import { TrainerAvailabilityService } from './trainer-availability.service';
+import { PendingBookingExpiryService } from './pending-booking-expiry.service';
 import { TrainerAvailabilityResolver } from './trainer-availability.resolver';
 import { PrismaModule } from '../prisma/prisma.module';
 import { FiatPaymentModule } from '../fiat-payment/fiat-payment.module';
@@ -30,6 +31,7 @@ import { CoreModule } from '../core/core.module'; // Fix #5: shared CoreModule
   ],
   providers: [
     TrainerService,
+    PendingBookingExpiryService,
     TrainerResolver,
     TrainerAvailabilityService,
     TrainerAvailabilityResolver,
@@ -37,4 +39,3 @@ import { CoreModule } from '../core/core.module'; // Fix #5: shared CoreModule
   exports: [TrainerService, TrainerAvailabilityService],
 })
 export class TrainerModule {}
-

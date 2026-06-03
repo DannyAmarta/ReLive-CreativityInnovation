@@ -34,7 +34,8 @@ export default function Home() {
         <>
             <LandingHeader />
 
-            <ParallaxHero />
+            <LandingHero />
+            {/* <ParallaxHero /> */}
             <ScrollFlipRoles />
 
             <SvgFollowScroll />
@@ -46,7 +47,6 @@ export default function Home() {
             <HorizontalText />
             <Testimonials />
             <MotionFooter />
-            {/* <LandingHero /> */}
             {/* <LazySkyComponent /> */}
             {/* <AboutUs /> */}
         </>

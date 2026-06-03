@@ -10,6 +10,7 @@ import {
 import { Server, Socket } from "socket.io";
 import { MessagingService } from "./messaging.service";
 import { jwtVerify } from "jose";
+import { OnEvent } from "@nestjs/event-emitter";
 
 @WebSocketGateway({
   // Fix #3: Use env var so production domain is not blocked
@@ -228,6 +229,17 @@ export class MessagingGateway
       conversationId: payload.conversationId,
       userId,
     });
+  }
+
+  @OnEvent('notification.created')
+  handleNotificationCreated(notification: any) {
+    const userId = notification.userId;
+    const recipientSockets = this.activeUsers.get(userId);
+    if (recipientSockets) {
+      for (const socketId of recipientSockets) {
+        this.server.to(socketId).emit("new_notification", notification);
+      }
+    }
   }
 }
 

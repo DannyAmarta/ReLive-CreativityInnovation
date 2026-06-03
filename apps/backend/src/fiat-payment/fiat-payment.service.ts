@@ -7,6 +7,10 @@ import { DuitkuCreateInvoiceResponse, DuitkuDisbursementResponse } from './fiat-
 import { DuitkuWebhookPayload } from './dto/duitku-webhook-payload.dto';
 import { CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 import { NotificationService } from '../core/notification.service';
+import {
+  getPendingBookingExpiresAt,
+  isPendingBookingExpired,
+} from '../trainer/pending-booking.util';
 
 @Injectable()
 export class FiatPaymentService {
@@ -45,6 +49,13 @@ export class FiatPaymentService {
     });
     if (!booking) throw new NotFoundException('Booking not found');
     if (booking.clientId !== user.id) throw new BadRequestException('Not your booking');
+    if (isPendingBookingExpired(booking)) {
+      await this.prisma.booking.update({
+        where: { id: bookingId },
+        data: { status: BookingStatus.CANCELLED },
+      });
+      throw new BadRequestException('This checkout session expired. Please book the slot again.');
+    }
     if (booking.status !== BookingStatus.PENDING) throw new BadRequestException('Booking not pending');
     if (!booking.service.priceInIdr) throw new BadRequestException('Service has no IDR price');
 
@@ -117,6 +128,7 @@ export class FiatPaymentService {
         servicePriceIdr: amount,
         processingFeeIdr: fee,
         gatewayTxId: json.reference,
+        pendingExpiresAt: getPendingBookingExpiresAt(),
       },
     });
 

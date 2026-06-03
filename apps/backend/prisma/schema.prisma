@@ -36,6 +36,12 @@ enum PaymentType {
   FIAT
 }
 
+enum WalletProvider {
+  SOLFLARE
+  PHANTOM
+  OTHER
+}
+
 enum WithdrawalStatus {
   PENDING
   PROCESSING
@@ -96,6 +102,22 @@ model User {
   // Food persistence
   favoriteFoods        UserFavoriteFood[]
   mealItems            UserMealItem[]
+  walletAccounts       UserWalletAccount[]
+}
+
+model UserWalletAccount {
+  id            Int            @id @default(autoincrement())
+  userId        Int
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider      WalletProvider
+  walletAddress String
+  isActive      Boolean        @default(false)
+  lastUsedAt    DateTime       @default(now())
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@unique([userId, walletAddress])
+  @@index([userId, isActive])
 }
 
 model Exercise {
@@ -297,6 +319,7 @@ model Booking {
   scheduledEnd   DateTime? // Session end time (UTC)
   timezone       String?   @default("Asia/Jakarta") // Agreed timezone label
   meetingLink    String?   // Optional virtual session URL
+  pendingExpiresAt DateTime? // Abandoned checkout lease expiry for unpaid pending bookings
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -311,6 +334,8 @@ model Booking {
   // Review for this completed session (one per booking)
   review               Review?
   conversation Conversation?
+
+  @@index([status, pendingExpiresAt])
 }
 
 // --- Trainer Availability / Scheduling ---

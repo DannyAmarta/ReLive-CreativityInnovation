@@ -14,9 +14,9 @@ export type TrainerServiceRecord = {
   id: number;
   title: string;
   description: string;
-  priceInLamports: number;
+  priceInLamports?: number | null;
   priceInIdr?: number | null;
-  tokenMintAddress: string;
+  tokenMintAddress?: string | null;
   isActive: boolean;
 };
 
@@ -41,11 +41,15 @@ export type TrainerProfileRecord = {
   bio?: string | null;
   certifications: string[];
   rating: number;
+  payoutAtaAddress?: string | null;
+  payoutMintAddress?: string | null;
+  ataInitializedAt?: string | null;
   user: {
     id: number;
     name: string;
     avatar?: string | null;
     bio?: string | null;
+    walletAddress?: string | null;
   };
   services: TrainerServiceRecord[];
   reviews?: ReviewRecord[];

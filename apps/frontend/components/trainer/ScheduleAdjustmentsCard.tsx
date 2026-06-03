@@ -202,7 +202,7 @@ export function ScheduleAdjustmentsCard({
                   </div>
                   <div>
                     <h3 className="text-sm font-bold text-primary-deep leading-snug">
-                      Mutual Cancellation Request for &ldquo;{booking.service?.title ?? "Session"}&rdquo;
+                      Cancellation Notification for &ldquo;{booking.service?.title ?? "Session"}&rdquo;
                     </h3>
                     <p className="text-xs text-muted-foreground mt-0.5">
                       Client: <span className="font-medium text-foreground">{booking.client?.name ?? "Client"}</span>
@@ -210,7 +210,7 @@ export function ScheduleAdjustmentsCard({
                   </div>
                 </div>
                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-red-500/10 text-red-700 dark:text-red-400 border border-red-500/20">
-                  <CircleSlash className="size-3" /> Cancel Requested
+                  <CircleSlash className="size-3" /> Cancelled by Client
                 </span>
               </div>
 
@@ -239,24 +239,13 @@ export function ScheduleAdjustmentsCard({
                   <div className="flex gap-2">
                     <form action={resolveCancellationAction}>
                       <input type="hidden" name="requestId" value={req.id} />
-                      <input type="hidden" name="action" value="REJECT" />
-                      <input type="hidden" name="redirectTo" value="/trainer" />
-                      <button
-                        type="submit"
-                        className="inline-flex items-center justify-center gap-1 rounded-full border border-muted-foreground/30 px-4 py-1.5 text-xs font-bold text-foreground hover:bg-muted/10 transition-colors"
-                      >
-                        Keep Session
-                      </button>
-                    </form>
-                    <form action={resolveCancellationAction}>
-                      <input type="hidden" name="requestId" value={req.id} />
                       <input type="hidden" name="action" value="ACCEPT" />
                       <input type="hidden" name="redirectTo" value="/trainer" />
                       <button
                         type="submit"
                         className="inline-flex items-center justify-center gap-1 rounded-full bg-red-600 px-4 py-1.5 text-xs font-bold text-white hover:bg-red-700 shadow-md shadow-red-600/10 transition-colors"
                       >
-                        <Check className="size-3.5" /> Agree to Cancel
+                        <Check className="size-3.5" /> I understand
                       </button>
                     </form>
                   </div>

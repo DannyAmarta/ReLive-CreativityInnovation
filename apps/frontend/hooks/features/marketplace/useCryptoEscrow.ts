@@ -14,7 +14,7 @@ import {
 type EscrowAction = "deposit" | "release" | "refund";
 
 interface UseCryptoEscrowResult {
-  execute: (bookingId: number, action: EscrowAction) => Promise<string | null>;
+  execute: (bookingId: number, action: EscrowAction) => Promise<string>;
   isLoading: boolean;
   error: string | null;
 }
@@ -26,10 +26,11 @@ export function useCryptoEscrow(): UseCryptoEscrowResult {
   const [error, setError] = useState<string | null>(null);
 
   const execute = useCallback(
-    async (bookingId: number, action: EscrowAction): Promise<string | null> => {
+    async (bookingId: number, action: EscrowAction): Promise<string> => {
       if (!connected || !publicKey || !signTransaction) {
-        setError("Wallet not connected. Please connect your wallet first.");
-        return null;
+        const message = "Wallet not connected. Please connect your wallet first.";
+        setError(message);
+        throw new Error(message);
       }
 
       setIsLoading(true);
@@ -89,12 +90,16 @@ export function useCryptoEscrow(): UseCryptoEscrowResult {
 
         return signature;
       } catch (err: any) {
-        const message =
-          err?.message?.includes("User rejected")
-            ? "Transaction cancelled by user."
-            : err?.message ?? "An unknown error occurred during the transaction.";
+        const rawMessage =
+          err?.message ||
+          err?.cause?.message ||
+          err?.error?.message ||
+          err?.toString?.();
+        const message = rawMessage?.includes("User rejected")
+          ? "Transaction cancelled by user."
+          : rawMessage ?? "An unknown error occurred during the transaction.";
         setError(message);
-        return null;
+        throw new Error(message);
       } finally {
         setIsLoading(false);
       }

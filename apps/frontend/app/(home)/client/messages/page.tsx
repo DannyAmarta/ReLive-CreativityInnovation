@@ -20,12 +20,12 @@ export default async function ClientMessagesPage({
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 md:px-6 md:py-10">
-      <Link
+      {/* <Link
         href="/client"
         className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors mb-6"
       >
         <ArrowLeft className="size-4" /> Back to Dashboard
-      </Link>
+      </Link> */}
 
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>

@@ -218,6 +218,11 @@ export class BlockchainIndexerService extends WorkerHost implements OnModuleInit
     }, 30000);
   }
 
+  private isPendingExpiryColumnMissing(err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    return message.includes('Booking.pendingExpiresAt') && message.includes('does not exist');
+  }
+
   // BullMQ repeatable reconciliation check (running every 5 minutes)
   async process(job: Job<any>): Promise<void> {
     return tracer.startActiveSpan('processReconciliation', async (span) => {
@@ -236,14 +241,30 @@ export class BlockchainIndexerService extends WorkerHost implements OnModuleInit
     return tracer.startActiveSpan('backfillMissedTransactions', async (span) => {
       if (!this.connection) return;
       this.logger.log('[Backfill] Reconciling pending crypto bookings...');
+      const now = new Date();
+      let pendingBookings;
 
-      const pendingBookings = await this.prisma.booking.findMany({
-        where: {
-          status: BookingStatus.PENDING,
-          paymentType: 'CRYPTO',
-          escrowAddress: { not: null },
-        },
-      });
+      try {
+        pendingBookings = await this.prisma.booking.findMany({
+          where: {
+            status: BookingStatus.PENDING,
+            paymentType: 'CRYPTO',
+            escrowAddress: { not: null },
+            pendingExpiresAt: { gt: now },
+          },
+        });
+      } catch (err) {
+        if (this.isPendingExpiryColumnMissing(err)) {
+          this.logger.error(
+            '[Backfill] Database migration missing: apply the pending booking expiry migration before running the blockchain indexer.',
+          );
+          span.setStatus({ code: SpanStatusCode.ERROR, message: 'Missing pending booking expiry migration' });
+          span.recordException(err as Error);
+          span.end();
+          return;
+        }
+        throw err;
+      }
 
       span.setAttribute('pending_bookings.count', pendingBookings.length);
       if (pendingBookings.length === 0) {

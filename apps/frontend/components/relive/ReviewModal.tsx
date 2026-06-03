@@ -83,19 +83,17 @@ export function ReviewModal({
       <div
         className="relative w-full max-w-md rounded-3xl overflow-hidden shadow-2xl"
         style={{
-          background:
-            "linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%)",
-          border: "1px solid rgba(255,255,255,0.12)",
+          background: "linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(250, 250, 250, 0.98) 100%)",
+          border: "1px solid rgba(0, 0, 0, 0.08)",
           backdropFilter: "blur(20px)",
           WebkitBackdropFilter: "blur(20px)",
         }}
       >
         {/* Ambient glow top-right */}
         <div
-          className="pointer-events-none absolute -top-12 -right-12 h-48 w-48 rounded-full opacity-20"
+          className="pointer-events-none absolute -top-12 -right-12 h-48 w-48 rounded-full opacity-15"
           style={{
-            background:
-              "radial-gradient(circle, hsl(270,80%,60%) 0%, transparent 70%)",
+            background: "radial-gradient(circle, rgba(74, 93, 62, 0.15) 0%, transparent 70%)",
           }}
         />
 
@@ -103,28 +101,28 @@ export function ReviewModal({
         <div className="relative px-6 pt-6 pb-5">
           <button
             onClick={onClose}
-            className="absolute right-5 top-5 flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-white/10"
+            className="absolute right-5 top-5 flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-black/5"
             aria-label="Close"
           >
-            <X className="h-4 w-4 text-white/60" />
+            <X className="h-4 w-4 text-muted-foreground" />
           </button>
-          <p className="text-xs font-semibold uppercase tracking-widest text-purple-300">
+          <p className="text-xs font-semibold uppercase tracking-widest text-[#4a5d3e]">
             Leave a Review
           </p>
-          <h2 className="mt-1 font-display text-xl font-bold text-white">
+          <h2 className="mt-1 font-display text-xl font-bold text-foreground">
             {trainerName}
           </h2>
-          <p className="text-sm text-white/50">{serviceName}</p>
+          <p className="text-sm text-muted-foreground">{serviceName}</p>
         </div>
 
         {/* Divider */}
-        <div className="h-px bg-white/10 mx-6" />
+        <div className="h-px bg-border mx-6" />
 
         {/* Form */}
         <form ref={formRef} onSubmit={handleSubmit} className="px-6 py-5 space-y-5">
           {/* Star Rating */}
           <div>
-            <p className="mb-3 text-sm font-semibold text-white/70">
+            <p className="mb-3 text-sm font-semibold text-foreground/80">
               How would you rate this session?
             </p>
             <div className="flex items-center gap-2">
@@ -142,13 +140,13 @@ export function ReviewModal({
                     className={`h-9 w-9 transition-all duration-150 ${
                       star <= displayRating
                         ? "fill-amber-400 text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.5)]"
-                        : "fill-transparent text-white/25 group-hover:text-amber-300/50"
+                        : "fill-transparent text-muted-foreground/30 group-hover:text-amber-300/50"
                     }`}
                   />
                 </button>
               ))}
               {displayRating > 0 && (
-                <span className="ml-2 text-sm font-semibold text-amber-300 transition-all">
+                <span className="ml-2 text-sm font-semibold text-amber-500 transition-all">
                   {starLabels[displayRating]}
                 </span>
               )}
@@ -159,10 +157,10 @@ export function ReviewModal({
           <div>
             <label
               htmlFor="review-comment"
-              className="mb-2 block text-sm font-semibold text-white/70"
+              className="mb-2 block text-sm font-semibold text-foreground/80"
             >
               Comment{" "}
-              <span className="font-normal text-white/30">(optional)</span>
+              <span className="font-normal text-muted-foreground">(optional)</span>
             </label>
             <textarea
               id="review-comment"
@@ -170,27 +168,27 @@ export function ReviewModal({
               onChange={(e) => setComment(e.target.value)}
               rows={3}
               placeholder="Share your experience with this trainer…"
-              className="w-full rounded-2xl px-4 py-3 text-sm text-white placeholder:text-white/25 resize-none focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all"
+              className="w-full rounded-2xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 resize-none focus:outline-none focus:ring-2 focus:ring-[#4a5d3e]/50 transition-all"
               style={{
-                background: "rgba(255,255,255,0.06)",
-                border: "1px solid rgba(255,255,255,0.10)",
+                background: "rgba(0, 0, 0, 0.02)",
+                border: "1px solid rgba(0, 0, 0, 0.08)",
               }}
             />
           </div>
 
           {/* Anonymity toggle */}
-          <div className="flex items-center justify-between rounded-2xl px-4 py-3" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}>
+          <div className="flex items-center justify-between rounded-2xl px-4 py-3" style={{ background: "rgba(0, 0, 0, 0.02)", border: "1px solid rgba(0, 0, 0, 0.05)" }}>
             <div className="flex items-center gap-3">
               {isAnonymous ? (
-                <EyeOff className="h-4 w-4 text-purple-300" />
+                <EyeOff className="h-4 w-4 text-[#4a5d3e]" />
               ) : (
-                <Eye className="h-4 w-4 text-white/40" />
+                <Eye className="h-4 w-4 text-muted-foreground" />
               )}
               <div>
-                <p className="text-sm font-semibold text-white/80">
+                <p className="text-sm font-semibold text-foreground/90">
                   {isAnonymous ? "Posting anonymously" : "Posting as yourself"}
                 </p>
-                <p className="text-xs text-white/35">
+                <p className="text-xs text-muted-foreground">
                   {isAnonymous
                     ? "Your name will be hidden from this review"
                     : "Your name and avatar will be visible"}
@@ -201,7 +199,7 @@ export function ReviewModal({
               type="button"
               onClick={() => setIsAnonymous(!isAnonymous)}
               className={`relative h-6 w-11 rounded-full transition-colors duration-200 focus:outline-none ${
-                isAnonymous ? "bg-purple-500" : "bg-white/15"
+                isAnonymous ? "bg-[#4a5d3e]" : "bg-black/15"
               }`}
               aria-checked={isAnonymous}
               role="switch"
@@ -216,7 +214,7 @@ export function ReviewModal({
 
           {/* Error */}
           {error && (
-            <p className="rounded-xl bg-red-500/15 px-4 py-2 text-sm text-red-300 border border-red-500/20">
+            <p className="rounded-xl bg-red-50 px-4 py-2 text-sm text-red-600 border border-red-200">
               {error}
             </p>
           )}
@@ -226,19 +224,14 @@ export function ReviewModal({
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 rounded-2xl border border-white/12 px-4 py-2.5 text-sm font-semibold text-white/60 transition-colors hover:bg-white/8 hover:text-white/80"
+              className="flex-1 rounded-2xl border border-border px-4 py-2.5 text-sm font-semibold text-muted-foreground transition-colors hover:bg-black/5 hover:text-foreground"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting || rating === 0}
-              className="flex flex-1 items-center justify-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-bold text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-              style={{
-                background:
-                  "linear-gradient(135deg, hsl(270,80%,55%) 0%, hsl(250,80%,60%) 100%)",
-                boxShadow: "0 4px 20px rgba(147,51,234,0.35)",
-              }}
+              className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-[#4a5d3e] px-4 py-2.5 text-sm font-bold text-[#f8f6ef] shadow-[0_12px_24px_rgba(74,93,62,0.16)] transition-all hover:bg-[#3d4f32] disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Send className="h-4 w-4" />
               {isSubmitting ? "Submitting…" : "Submit Review"}

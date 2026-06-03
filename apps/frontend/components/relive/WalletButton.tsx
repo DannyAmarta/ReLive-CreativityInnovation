@@ -15,7 +15,7 @@ export const truncateAddress = (a?: string) =>
   !a ? "" : `${a.slice(0, 4)}…${a.slice(-4)}`;
 
 export function WalletButton() {
-  const { connected, publicKey, disconnect, wallet } = useWallet();
+  const { connected, publicKey, disconnect, wallet, select } = useWallet();
   const [open, setOpen] = useState(false);
 
   const address = publicKey?.toBase58();
@@ -54,9 +54,10 @@ export function WalletButton() {
           </p>
         </div>
         <button
-          onClick={() => {
-            disconnect();
-            toast("Wallet disconnected");
+          onClick={async () => {
+            await disconnect();
+            select(null);
+            toast("Wallet disconnected. Choose a wallet again when you are ready.");
           }}
           className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-full border border-border px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted"
         >

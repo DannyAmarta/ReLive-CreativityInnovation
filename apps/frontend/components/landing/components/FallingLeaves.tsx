@@ -144,7 +144,7 @@ const FallingLeaves = () => {
     }, []);
 
     return (
-        <div className="pointer-events-none overflow-hidden z-15">
+        <div className="absolute inset-0 pointer-events-none overflow-hidden z-15">
             <div className="absolute bottom-0 w-full h-full z-18">
                 <Image
                     src={Bench}
@@ -159,7 +159,7 @@ const FallingLeaves = () => {
                     className="w-full h-full object-cover"
                 />
             </div>
-            <div className="hidden xl:block absolute bottom-[-5vh] right-0 z-20 h-screen overflow-hidden">
+            <div className="hidden xl:block absolute bottom-0 right-0 z-20 h-screen overflow-hidden">
                 <Image
                     src={Tree}
                     alt="Tree"

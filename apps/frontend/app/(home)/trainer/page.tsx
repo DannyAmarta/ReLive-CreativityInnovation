@@ -3,6 +3,7 @@ import { HeroSessionBanner } from "@/components/trainer/HeroSessionBanner";
 import { TodayScheduleCard } from "@/components/trainer/TodayScheduleCard";
 import { BalanceWidget } from "@/components/trainer/BalanceWidget";
 import { ActiveServicesStrip } from "@/components/trainer/ActiveServicesStrip";
+import { CryptoReadinessCard } from "@/components/trainer/CryptoReadinessCard";
 import { PageHeader } from "@/components/trainer/PageHeader";
 import { HealthGuidebookWidget } from "@/components/trainer/HealthGuidebookWidget";
 import { ScheduleAdjustmentsCard } from "@/components/trainer/ScheduleAdjustmentsCard";
@@ -21,6 +22,7 @@ import {
 } from "@/lib/marketplace";
 import MessagesWidget from "@/components/trainer/MessagesWidget";
 import { getTrainerAvailabilityRules } from "@/lib/actions/availability";
+import { getTrainerCryptoReadiness, getTrainerCryptoWarningCopy } from "@/lib/trainerCrypto";
 
 function toMinutes(time: string): number {
   const [h, m] = time.split(':').map(Number);
@@ -155,6 +157,9 @@ export default async function TrainerDashboardPage({
 
   const hasNoAvailability = profileResult.status === "fulfilled" && !hasGreenSlots;
   const hasNoActiveServices = profileResult.status === "fulfilled" && (services.filter(s => s.isActive).length === 0);
+  const cryptoReadiness = getTrainerCryptoReadiness(profile);
+  const missingCryptoItems = getTrainerCryptoWarningCopy(cryptoReadiness);
+  const hasIncompleteCryptoSetup = profileResult.status === "fulfilled" && !cryptoReadiness.isReady;
 
   return (
     <div className="space-y-6">
@@ -224,6 +229,22 @@ export default async function TrainerDashboardPage({
         </div>
       )}
 
+      {hasIncompleteCryptoSetup && (
+        <div className="flex items-start gap-3 rounded-xl border border-amber-300/40 bg-amber-50/50 dark:bg-amber-900/20 px-4 py-3 text-sm text-amber-700 dark:text-amber-400">
+          <AlertTriangle className="size-4.5 text-amber-600 shrink-0 mt-0.5" />
+          <p>
+            <strong>Crypto setup incomplete:</strong> Finish your {missingCryptoItems.join(", ")} before
+            clients can reliably book your services with Solana-based payments.{" "}
+            <Link
+              href="/trainer/crypto"
+              className="font-semibold underline hover:text-amber-900 dark:hover:text-amber-200 transition-colors"
+            >
+              Open Crypto Setup
+            </Link>
+          </p>
+        </div>
+      )}
+
       {/* ── Main grid ── */}
       <div className="grid grid-cols-1 lg:grid-cols-[1.45fr_1fr] gap-6 items-start">
         {/* ── Left column ── */}
@@ -242,6 +263,7 @@ export default async function TrainerDashboardPage({
 
         {/* ── Right column ── */}
         <div className="flex flex-col gap-5">
+          <CryptoReadinessCard profile={profile} />
           <BalanceWidget wallet={wallet} bookings={bookings} />
           <MessagesWidget />
           <BookingsPreviewCard bookings={bookings} />

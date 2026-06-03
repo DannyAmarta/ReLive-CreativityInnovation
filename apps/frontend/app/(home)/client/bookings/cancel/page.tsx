@@ -48,6 +48,8 @@ export default async function CancelPage({
   let bookings: Booking[] = [];
   let cancellationRequests: CancellationRequest[] = [];
   let rescheduleRequests: any[] = [];
+  const cancellationsByBooking = new Map<number, CancellationRequest>();
+  const reschedulesByBooking = new Map<number, any>();
 
   try {
     const [bookingsData, cancellationsData, reschedulesData] = await Promise.all([
@@ -55,23 +57,25 @@ export default async function CancelPage({
       authFetchGraphql<CancellationRequestsResponse>(print(MY_CANCELLATION_REQUESTS_QUERY)),
       authFetchGraphql<{ myRescheduleRequests: any[] }>(print(MY_RESCHEDULE_REQUESTS_QUERY)),
     ]);
-    bookings = (bookingsData.myClientBookings ?? []).filter((b) => b.status === "ACTIVE");
+    
     cancellationRequests = cancellationsData.myCancellationRequests ?? [];
     rescheduleRequests = reschedulesData.myRescheduleRequests ?? [];
+    
+    // Map pending cancellation requests by bookingId
+    for (const r of cancellationRequests) {
+      if (!cancellationsByBooking.has(r.bookingId)) cancellationsByBooking.set(r.bookingId, r);
+    }
+
+    // Map pending reschedule requests by bookingId
+    for (const r of rescheduleRequests) {
+      if (!reschedulesByBooking.has(r.bookingId)) reschedulesByBooking.set(r.bookingId, r);
+    }
+
+    bookings = (bookingsData.myClientBookings ?? []).filter((b) => 
+      b.status === "ACTIVE" || b.status === "PENDING" || cancellationsByBooking.has(b.id) || reschedulesByBooking.has(b.id)
+    );
   } catch (error) {
     if (!isAuthenticationGraphqlError(error)) throw error;
-  }
-
-  // Map pending cancellation requests by bookingId
-  const cancellationsByBooking = new Map<number, CancellationRequest>();
-  for (const r of cancellationRequests) {
-    if (!cancellationsByBooking.has(r.bookingId)) cancellationsByBooking.set(r.bookingId, r);
-  }
-
-  // Map pending reschedule requests by bookingId
-  const reschedulesByBooking = new Map<number, any>();
-  for (const r of rescheduleRequests) {
-    if (!reschedulesByBooking.has(r.bookingId)) reschedulesByBooking.set(r.bookingId, r);
   }
 
   return (
@@ -93,7 +97,7 @@ export default async function CancelPage({
           Cancel Sessions
         </h1>
         <p className="mt-1.5 text-sm text-muted-foreground">
-          Request mutual cancellation for your active sessions. The trainer must accept for the cancellation and refund to process.
+          Cancel your active sessions. Refunds will be processed immediately.
         </p>
       </div>
 
@@ -101,7 +105,7 @@ export default async function CancelPage({
       {statusMsg === "requested" && (
         <div className="rounded-xl border border-blue-500/30 bg-blue-500/10 px-4 py-3 text-sm text-blue-700 dark:text-blue-300 flex items-center gap-2">
           <Check className="h-4 w-4 shrink-0" />
-          Cancellation request sent! Waiting for the trainer to respond.
+          Cancellation processed! Refunds will be issued shortly.
         </div>
       )}
       {statusMsg === "resolved" && (
@@ -146,9 +150,13 @@ export default async function CancelPage({
                       Trainer: {booking.trainer?.user?.name ?? "Unknown"}
                     </p>
                   </div>
-                  {hasPendingRequest ? (
+                  {booking.status === "CANCELLED" ? (
+                    <span className="inline-flex items-center rounded-full bg-red-500/10 border border-red-500/20 px-2.5 py-0.5 text-xs font-semibold text-red-700">
+                      Cancelled
+                    </span>
+                  ) : hasPendingRequest ? (
                     <span className="inline-flex items-center rounded-full bg-amber-500/10 border border-amber-500/20 px-2.5 py-0.5 text-xs font-semibold text-amber-700">
-                      Pending
+                      Pending Request
                     </span>
                   ) : (
                     <span className="inline-flex items-center rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">
@@ -207,7 +215,7 @@ export default async function CancelPage({
                     <div className="flex items-center gap-2">
                       <AlertTriangle className="h-4 w-4 text-amber-600" />
                       <span className="text-sm font-semibold text-amber-800 dark:text-amber-300">
-                        Cancellation Request Pending
+                        Cancellation Request Sent
                       </span>
                     </div>
                     {pendingCancellation.reason && (
@@ -219,7 +227,7 @@ export default async function CancelPage({
 
                     {isMyPendingCancellation ? (
                       <p className="text-xs text-muted-foreground italic">
-                        Waiting for the trainer to respond to your cancellation request.
+                        Your session has been cancelled. This notification is waiting for the trainer to acknowledge it.
                       </p>
                     ) : (
                       <div className="flex gap-3 pt-1">
@@ -282,7 +290,7 @@ export default async function CancelPage({
                         className="inline-flex items-center gap-2 rounded-xl bg-destructive px-5 py-2.5 text-sm font-semibold text-destructive-foreground hover:bg-destructive/90 transition-all duration-200 active:scale-[0.98]"
                       >
                         <CircleSlash className="h-4 w-4" />
-                        Send Cancellation Request
+                        Cancel Session
                       </button>
                     </form>
                   </details>

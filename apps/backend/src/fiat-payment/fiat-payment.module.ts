@@ -1,4 +1,4 @@
-import { Module, OnModuleInit, Logger } from '@nestjs/common';
+import { Module, OnModuleInit, Logger, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { BullModule, InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { PrismaModule } from '../prisma/prisma.module';
@@ -27,7 +27,7 @@ import { CoreModule } from '../core/core.module'; // Fix #5: shared CoreModule
   ],
   exports: [FiatPaymentService],
 })
-export class FiatPaymentModule implements OnModuleInit {
+export class FiatPaymentModule implements OnModuleInit, NestModule {
   private readonly logger = new Logger(FiatPaymentModule.name);
   private lastErrorLoggedAt = 0;
 
@@ -70,5 +70,19 @@ export class FiatPaymentModule implements OnModuleInit {
     } catch (err: any) {
       this.logger.error(`Failed to register outbox relay repeatable job: ${err.message}`);
     }
+  }
+
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply((req: any, res: any, next: () => void) => {
+        console.log('\n======= 📡 RAW INCOMING WEBHOOK REQUEST =======');
+        console.log(`TIME: ${new Date().toISOString()}`);
+        console.log(`URL: ${req.method} ${req.originalUrl}`);
+        console.log('HEADERS:', JSON.stringify(req.headers, null, 2));
+        console.log('BODY:', JSON.stringify(req.body, null, 2));
+        console.log('=================================================\n');
+        next();
+      })
+      .forRoutes(FiatPaymentWebhookController);
   }
 }

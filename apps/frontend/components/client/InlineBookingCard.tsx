@@ -87,7 +87,7 @@ export function InlineBookingCard({ services, trainerId, trainerName }: InlineBo
     );
   }
 
-  const tokenUnits = selectedService.priceInLamports ? selectedService.priceInLamports / 1e9 : 0;
+  const tokenUnits = selectedService.priceInLamports ? selectedService.priceInLamports / 1e6 : 0;
   const today = startOfToday();
 
   return (
@@ -123,7 +123,7 @@ export function InlineBookingCard({ services, trainerId, trainerName }: InlineBo
         <div className="grid gap-2.5">
           {services.map((service) => {
             const isSelected = selectedService.id === service.id;
-            const sTokenUnits = service.priceInLamports ? service.priceInLamports / 1e9 : 0;
+            const sTokenUnits = service.priceInLamports ? service.priceInLamports / 1e6 : 0;
             return (
               <button
                 key={service.id}
@@ -149,7 +149,7 @@ export function InlineBookingCard({ services, trainerId, trainerName }: InlineBo
                     <span className="text-sm font-bold text-primary block">
                       {service.priceInIdr ? formatIDR(service.priceInIdr) : "IDR not set"}
                     </span>
-                    {service.priceInLamports && (
+                    {service.priceInLamports && service.tokenMintAddress && (
                       <span className="text-[10px] text-muted-foreground block font-medium">
                         {formatUSDC(sTokenUnits)}
                       </span>
@@ -274,13 +274,18 @@ export function InlineBookingCard({ services, trainerId, trainerName }: InlineBo
                 slot={selectedSlot}
               />
             )}
-            {selectedService.priceInLamports && (
+            {selectedService.priceInLamports && selectedService.tokenMintAddress && (
               <CryptoBookingButton
                 service={selectedService as any}
                 trainerId={trainerId}
                 trainerName={trainerName}
                 slot={selectedSlot}
               />
+            )}
+            {selectedService.priceInLamports && !selectedService.tokenMintAddress && (
+              <p className="text-xs text-muted-foreground text-center">
+                Crypto checkout is not configured for this service yet.
+              </p>
             )}
           </div>
         </div>

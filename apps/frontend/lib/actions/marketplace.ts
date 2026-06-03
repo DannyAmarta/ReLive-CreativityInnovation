@@ -13,6 +13,7 @@ import {
   CREATE_REVIEW_MUTATION,
   REQUEST_FIAT_BOOKING_DEPOSIT_MUTATION,
   REQUEST_FIAT_WITHDRAWAL_MUTATION,
+  UPDATE_TRAINER_CRYPTO_SETTINGS_MUTATION,
   UPDATE_BOOKING_STATUS_MUTATION,
   UPDATE_TRAINER_SERVICE_MUTATION,
   PROPOSE_RESCHEDULE_MUTATION,
@@ -33,6 +34,12 @@ type FiatDepositResponse = {
   };
 };
 
+type UpdateTrainerCryptoSettingsResponse = {
+  updateTrainerCryptoSettings: {
+    id: number;
+  };
+};
+
 export type ServiceFormState = {
   error: string | null;
   fields?: {
@@ -40,6 +47,15 @@ export type ServiceFormState = {
     description?: string;
     priceInIdr?: string;
     priceInTokenUnits?: string;
+    tokenMintAddress?: string;
+  };
+};
+
+export type CryptoSettingsFormState = {
+  error: string | null;
+  fields?: {
+    walletAddress?: string;
+    payoutMintAddress?: string;
   };
 };
 
@@ -50,11 +66,35 @@ const ServiceSchema = z
     description: z.string().min(10, "Description must be at least 10 characters"),
     priceInIdr: z.coerce.number().int().positive().nullable().optional(),
     priceInTokenUnits: z.coerce.number().positive().nullable().optional(),
+    tokenMintAddress: z
+      .string()
+      .trim()
+      .regex(/^[1-9A-HJ-NP-Za-km-z]{32,44}$/, "Token mint must be a valid Solana base58 address")
+      .optional(),
   })
   .refine((data) => data.priceInIdr || data.priceInTokenUnits, {
     message: "Set at least one price — either IDR or Token price",
     path: ["priceInIdr"],
   });
+
+const ServiceSchemaWithCrypto = ServiceSchema.refine(
+  (data) => !data.priceInTokenUnits || data.tokenMintAddress,
+  {
+    message: "Add a token mint address when enabling crypto pricing",
+    path: ["tokenMintAddress"],
+  },
+);
+
+const CryptoSettingsSchema = z.object({
+  walletAddress: z
+    .string()
+    .trim()
+    .regex(/^[1-9A-HJ-NP-Za-km-z]{32,44}$/, "Wallet address must be a valid Solana base58 address"),
+  payoutMintAddress: z
+    .string()
+    .trim()
+    .regex(/^[1-9A-HJ-NP-Za-km-z]{32,44}$/, "Default token mint must be a valid Solana base58 address"),
+});
 
 function parseIntField(value: FormDataEntryValue | null, fieldName: string) {
   const parsed = Number(value);
@@ -90,7 +130,7 @@ export async function createBookingAction(formData: FormData) {
 
   try {
     bookingData = await authFetchGraphql<CreateBookingResponse>(print(CREATE_BOOKING_MUTATION), {
-      input: { trainerId, serviceId, scheduledStart, scheduledEnd, timezone },
+      input: { trainerId, serviceId, scheduledStart, scheduledEnd, timezone, paymentType: paymentMethod },
     });
   } catch (error) {
     if (isAuthenticationGraphqlError(error)) {
@@ -146,7 +186,14 @@ export async function createCryptoBookingWithoutRedirect(
 ) {
   try {
     const bookingData = await authFetchGraphql<CreateBookingResponse>(print(CREATE_BOOKING_MUTATION), {
-      input: { trainerId, serviceId, scheduledStart, scheduledEnd, timezone },
+      input: {
+        trainerId,
+        serviceId,
+        scheduledStart,
+        scheduledEnd,
+        timezone,
+        paymentType: "CRYPTO",
+      },
     });
     return bookingData.createBooking.id;
   } catch (error) {
@@ -212,15 +259,17 @@ export async function saveTrainerServiceAction(
   // Parse raw values (allow empty strings → null)
   const priceInIdrRaw = formData.get("priceInIdr")?.toString().trim();
   const priceInTokenRaw = formData.get("priceInTokenUnits")?.toString().trim();
+  const tokenMintAddressRaw = formData.get("tokenMintAddress")?.toString().trim();
 
   const title = formData.get("title")?.toString() || "";
   const description = formData.get("description")?.toString() || "";
 
-  const parsed = ServiceSchema.safeParse({
+  const parsed = ServiceSchemaWithCrypto.safeParse({
     title,
     description,
     priceInIdr: priceInIdrRaw || undefined,
     priceInTokenUnits: priceInTokenRaw || undefined,
+    tokenMintAddress: tokenMintAddressRaw || undefined,
   });
 
   if (!parsed.success) {
@@ -232,11 +281,12 @@ export async function saveTrainerServiceAction(
         description,
         priceInIdr: priceInIdrRaw,
         priceInTokenUnits: priceInTokenRaw,
+        tokenMintAddress: tokenMintAddressRaw,
       },
     };
   }
 
-  const { priceInIdr, priceInTokenUnits } = parsed.data;
+  const { priceInIdr, priceInTokenUnits, tokenMintAddress } = parsed.data;
   const priceInLamports = priceInTokenUnits ? Math.round(priceInTokenUnits * 1_000_000) : null;
 
   try {
@@ -248,6 +298,7 @@ export async function saveTrainerServiceAction(
           description,
           priceInLamports,
           priceInIdr: priceInIdr ?? null,
+          tokenMintAddress: tokenMintAddress ?? null,
         },
       });
     } else {
@@ -257,6 +308,7 @@ export async function saveTrainerServiceAction(
           description,
           priceInLamports,
           priceInIdr: priceInIdr ?? null,
+          tokenMintAddress: tokenMintAddress ?? null,
         },
       });
     }
@@ -274,14 +326,59 @@ export async function saveTrainerServiceAction(
         description,
         priceInIdr: priceInIdrRaw,
         priceInTokenUnits: priceInTokenRaw,
+        tokenMintAddress: tokenMintAddressRaw,
       },
     };
   }
 
   revalidatePath("/trainer/services");
+  revalidatePath("/trainer/crypto");
   revalidatePath("/client/trainers");
   revalidatePath("/trainer");
   redirect("/trainer/services");
+}
+
+export async function updateTrainerCryptoSettingsAction(
+  _prevState: CryptoSettingsFormState,
+  formData: FormData,
+): Promise<CryptoSettingsFormState> {
+  const walletAddress = formData.get("walletAddress")?.toString().trim() || "";
+  const payoutMintAddress = formData.get("payoutMintAddress")?.toString().trim() || "";
+
+  const parsed = CryptoSettingsSchema.safeParse({
+    walletAddress,
+    payoutMintAddress,
+  });
+
+  if (!parsed.success) {
+    const firstError = parsed.error.issues?.[0]?.message || "Validation failed";
+    return {
+      error: firstError,
+      fields: { walletAddress, payoutMintAddress },
+    };
+  }
+
+  try {
+    await authFetchGraphql<UpdateTrainerCryptoSettingsResponse>(
+      print(UPDATE_TRAINER_CRYPTO_SETTINGS_MUTATION),
+      { input: parsed.data },
+    );
+  } catch (error) {
+    if (isAuthenticationGraphqlError(error)) {
+      redirectWithSessionWarning("/trainer/crypto");
+    }
+
+    return {
+      error: error instanceof Error ? error.message : "Failed to save crypto settings",
+      fields: { walletAddress, payoutMintAddress },
+    };
+  }
+
+  revalidatePath("/trainer");
+  revalidatePath("/trainer/crypto");
+  revalidatePath("/trainer/services");
+  revalidatePath("/client/trainers");
+  redirect("/trainer/crypto?crypto=updated");
 }
 
 export async function toggleTrainerServiceAction(formData: FormData) {

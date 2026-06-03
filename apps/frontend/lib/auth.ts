@@ -133,7 +133,7 @@ export async function Login(
         accessToken: data.signIn.accessToken,
     });
 
-    const redirectPath = role === "TRAINER" || role === "ADMIN" ? "/trainer" : "/client";
+    const redirectPath = role === "TRAINER" || role === "ADMIN" ? "/trainer" : "/client/trainers";
     revalidatePath(redirectPath);
     redirect(redirectPath);
 }

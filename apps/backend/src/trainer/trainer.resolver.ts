@@ -15,6 +15,7 @@ import { UpgradeToTrainerInput } from './dto/upgrade-to-trainer.input';
 import { UpdateTrainerServiceInput } from './dto/update-trainer-service.input';
 import { UpdateBookingStatusInput } from './dto/update-booking-status.input';
 import { RegisterTrainerFiatInput } from './dto/register-trainer-fiat.input';
+import { UpdateTrainerCryptoSettingsInput } from './dto/update-trainer-crypto-settings.input';
 import { ProposeRescheduleInput } from './dto/propose-reschedule.input';
 import { ResolveRequestInput } from './dto/resolve-request.input';
 import { RequestCancellationInput } from './dto/request-cancellation.input';
@@ -151,6 +152,16 @@ export class TrainerResolver {
     const userId = this.extractUserIdFromContext(ctx);
     await this.requireRole(userId, Role.TRAINER);
     return this.trainerService.updateTrainerService(userId, input);
+  }
+
+  @Mutation(() => TrainerProfile)
+  async updateTrainerCryptoSettings(
+    @Context() ctx: { req: { headers: Record<string, string> } },
+    @Args('input') input: UpdateTrainerCryptoSettingsInput,
+  ) {
+    const userId = this.extractUserIdFromContext(ctx);
+    await this.requireRole(userId, Role.TRAINER);
+    return this.trainerService.updateTrainerCryptoSettings(userId, input);
   }
 
   @Mutation(() => Booking)

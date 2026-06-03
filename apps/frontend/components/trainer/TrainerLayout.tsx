@@ -1,6 +1,7 @@
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import { useState } from "react";
+import Logo from "@/public/assets/wallpaper/logo.png";
 import { NotificationBell } from "./NotificationBell";
 import { Avatar } from "./Avatar";
 import { cn } from "@/lib/utils";
@@ -29,9 +30,7 @@ export function TrainerLayout() {
       <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
           <NavLink to="/trainer" className="flex items-center gap-2.5 shrink-0">
-            <div className="relative size-8 rounded-lg bg-gradient-primary shadow-glow flex items-center justify-center">
-              <div className="size-3 rounded-sm bg-highlight" />
-            </div>
+            <img src={Logo} alt="ReLive Logo" className="size-8 rounded-lg object-cover" />
             <div className="leading-tight">
               <p className="font-semibold text-sm tracking-tight">ReLive</p>
               <p className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground -mt-0.5">Trainer Hub</p>
